@@ -14,13 +14,11 @@ namespace OdinNative.Unity
         /// Enable additional Logs
         /// </summary>
         public bool Verbose = OdinDefaults.Verbose;
-
-        [Header("Client")]
-        public string ApiKey = OdinDefaults.ApiKey;
+        
+        public string ApiKey;
         public string Server = OdinDefaults.Server;
         public string UserDataText = OdinDefaults.UserDataText;
-
-        [Header("Audio")]
+        
         /// <summary>
         /// Microphone Sample-Rate
         /// </summary>
@@ -38,8 +36,7 @@ namespace OdinNative.Unity
         /// Playback Channels
         /// </summary>
         public MediaChannels RemoteChannels = OdinDefaults.RemoteChannels;
-
-        [Header("Events")]
+        
         #region Events
         public bool PeerJoinedEvent = OdinDefaults.PeerJoinedEvent;
         public bool PeerLeftEvent = OdinDefaults.PeerLeftEvent;
@@ -47,15 +44,35 @@ namespace OdinNative.Unity
         public bool MediaAddedEvent = OdinDefaults.MediaAddedEvent;
         public bool MediaRemovedEvent = OdinDefaults.MediaRemovedEvent;
         #endregion Events
-
-        [Header("Room")]
+        
+        /// <summary>
+        /// Time untill the token expires
+        /// </summary>
         public ulong TokenLifetime = OdinDefaults.TokenLifetime;
         #region Apm
+        /// <summary>
+        /// Turns VAC on and off
+        /// </summary>
         public bool VadEnable = OdinDefaults.VadEnable;
+        /// <summary>
+        /// Turns Echo cancellation on and off
+        /// </summary>
         public bool EchoCanceller = OdinDefaults.EchoCanceller;
+        /// <summary>
+        /// Reduces lower frequencies of the input (Automatic game control)
+        /// </summary>
         public bool HighPassFilter = OdinDefaults.HighPassFilter;
+        /// <summary>
+        /// Amplifies the audio input
+        /// </summary>
         public bool PreAmplifier = OdinDefaults.PreAmplifier;
+        /// <summary>
+        /// Turns noise suppression on and off
+        /// </summary>
         public Core.Imports.NativeBindings.OdinNoiseSuppsressionLevel NoiseSuppressionLevel = OdinDefaults.NoiseSuppressionLevel;
+        /// <summary>
+        /// Filters high amplitude noices
+        /// </summary>
         public bool TransientSuppressor = OdinDefaults.TransientSuppressor;
         #endregion Apm
 

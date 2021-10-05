@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0.99999946, b: 0.99999946, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -130,8 +130,28 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 923744098729652767, guid: f4033c2bcba24fd438033c821af49a45,
         type: 3}
+      propertyPath: ApiKey
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 923744098729652767, guid: f4033c2bcba24fd438033c821af49a45,
+        type: 3}
       propertyPath: Server
-      value: https://gateway.odin.4players.io
+      value: https://gateway.odin.4players.io/
+      objectReference: {fileID: 0}
+    - target: {fileID: 923744098729652767, guid: f4033c2bcba24fd438033c821af49a45,
+        type: 3}
+      propertyPath: Verbose
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 923744098729652767, guid: f4033c2bcba24fd438033c821af49a45,
+        type: 3}
+      propertyPath: MediaRemovedEvent
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3266094381424490074, guid: f4033c2bcba24fd438033c821af49a45,
+        type: 3}
+      propertyPath: _persistent
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6283423407077655610, guid: f4033c2bcba24fd438033c821af49a45,
         type: 3}
@@ -141,7 +161,7 @@ PrefabInstance:
     - target: {fileID: 8797637433296035792, guid: f4033c2bcba24fd438033c821af49a45,
         type: 3}
       propertyPath: m_RootOrder
-      value: 5
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 8797637433296035792, guid: f4033c2bcba24fd438033c821af49a45,
         type: 3}
@@ -262,13 +282,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1229333033}
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -0, y: 17.44, z: 0}
+  m_LocalRotation: {x: 0.60840136, y: 0.04024966, z: -0.026234517, w: 0.792174}
+  m_LocalPosition: {x: -0.59, y: 18.73, z: -6.71}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 104.97699, y: -172.921, z: -178.357}
 --- !u!1 &1605191421
 GameObject:
   m_ObjectHideFlags: 0
@@ -519,7 +539,7 @@ Transform:
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &6084702699848505704
 PrefabInstance:
@@ -528,6 +548,26 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 6084702701525884553, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.792174
+      objectReference: {fileID: 0}
+    - target: {fileID: 6084702701525884553, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.60840136
+      objectReference: {fileID: 0}
+    - target: {fileID: 6084702701525884553, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.04024966
+      objectReference: {fileID: 0}
+    - target: {fileID: 6084702701525884553, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.026234517
+      objectReference: {fileID: 0}
     - target: {fileID: 6084702701634868275, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
         type: 3}
       propertyPath: m_Pivot.x
@@ -541,7 +581,7 @@ PrefabInstance:
     - target: {fileID: 6084702701634868275, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
         type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6084702701634868275, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
         type: 3}
@@ -586,7 +626,7 @@ PrefabInstance:
     - target: {fileID: 6084702701634868275, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 1.09
       objectReference: {fileID: 0}
     - target: {fileID: 6084702701634868275, guid: 0aa3dc20449b9e9408c1dfd5003b76f6,
         type: 3}
