@@ -235,13 +235,17 @@ namespace OdinNative.Core.Platform
             string ffiPath = PackageName + "/Plugins/ffi";
             string PackagePath = string.Format("{0}/{1}", "Packages", ffiPath);
             string AssetPath = string.Format("{0}/{1}", "Assets", ffiPath);
+            string LibraryCache = System.IO.Directory.GetDirectories("Library/PackageCache")
+                .Where(dir => dir.Contains(PackageName))
+                .FirstOrDefault();
 
             switch (platform)
             {
                 case SupportedPlatform.MacOSX:
                     names = new string[] { MacLibName,
                         string.Format("{0}/{1}/{2}", PackagePath, "macos-x86_64/sdk", MacLibName), // PkgManager
-                        string.Format("{0}/{1}/{2}", AssetPath, "macos-x86_64/sdk", MacLibName) // Editor
+                        string.Format("{0}/{1}/{2}", AssetPath, "macos-x86_64/sdk", MacLibName), // Editor
+                        string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/macos-x86_64/sdk", MacLibName) // PackageCache
 #if UNITY_64
                         ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", MacLibName),string.Format("{0}/{1}", "Plugins", MacLibName) // Standalone appbundle
 #endif
@@ -251,7 +255,8 @@ namespace OdinNative.Core.Platform
                     names = is64Bit
                         ? new string[] { LinuxLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "linux-x86_64/sdk", LinuxLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "linux-x86_64/sdk", LinuxLibName) // Editor
+                            string.Format("{0}/{1}/{2}", AssetPath, "linux-x86_64/sdk", LinuxLibName), // Editor
+                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/linux-x86_64/sdk", LinuxLibName) // PackageCache
 #if UNITY_64
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86_64", LinuxLibName) // Standalone
 #endif
@@ -264,14 +269,16 @@ namespace OdinNative.Core.Platform
                     names = is64Bit
                         ? new string[] { WindowsLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "windows-x86_64/sdk", WindowsLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "windows-x86_64/sdk", WindowsLibName) // Editor
+                            string.Format("{0}/{1}/{2}", AssetPath, "windows-x86_64/sdk", WindowsLibName), // Editor
+                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/windows-x86_64/sdk", WindowsLibName) // PackageCache
 #if UNITY_64
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", WindowsLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86_64", WindowsLibName)  // Standalone
 #endif
                             }
                         : new string[] { WindowsLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "windows-x86/sdk", WindowsLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "windows-x86/sdk", WindowsLibName) // Editor
+                            string.Format("{0}/{1}/{2}", AssetPath, "windows-x86/sdk", WindowsLibName), // Editor
+                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/windows-x86/sdk", WindowsLibName) // PackageCache
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86", WindowsLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86", WindowsLibName)  // Standalone
 #endif

@@ -18,7 +18,7 @@ namespace OdinNative.Odin
         /// </summary>
         public static bool Verbose = false;
 
-        public static string ApiKey { get; set; } = "";
+        public static string AccessKey { get; set; } = "";
         public static string Server { get; set; } = "https://gateway.odin.4players.io";
         public static string UserDataText { get; set; } = "{}";
 

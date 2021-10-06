@@ -143,14 +143,14 @@ public class OdinHandler : MonoBehaviour
         if (userData.IsEmpty())
             userData = new OdinUserData().ToUserData();
 
-        if (string.IsNullOrEmpty(Config.ApiKey))
+        if (string.IsNullOrEmpty(Config.AccessKey))
         {
-            Debug.LogError("Api-Key was not set!");
-            Config.ApiKey = OdinClient.CreateApiKey();
+            Debug.LogError("Access-Key was not set!");
+            Config.AccessKey = OdinClient.CreateAccessKey();
             Debug.LogWarning("Using a generated test key!");
         }
 
-        Client = new OdinClient(new System.Uri(Config.Server), Config.ApiKey, userData);
+        Client = new OdinClient(new System.Uri(Config.Server), Config.AccessKey, userData);
 
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.quitting += () => { Client?.Shutdown(); };

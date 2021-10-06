@@ -14,7 +14,7 @@ public class OdinEditorConfigEditor : Editor
     public Texture2D myGUITexture;
 
     SerializedProperty Verbose;
-    SerializedProperty ApiKey;
+    SerializedProperty AccessKey;
     SerializedProperty Server;
     SerializedProperty UserDataText;
     
@@ -39,8 +39,8 @@ public class OdinEditorConfigEditor : Editor
     void OnEnable()
     {
         Verbose = serializedObject.FindProperty("Verbose");
-        
-        ApiKey = serializedObject.FindProperty("ApiKey");
+
+        AccessKey = serializedObject.FindProperty("AccessKey");
         Server = serializedObject.FindProperty("Server");
         UserDataText = serializedObject.FindProperty("UserDataText");
         
@@ -73,7 +73,6 @@ public class OdinEditorConfigEditor : Editor
         {
             return;
         }
-        myGUITexture = (Texture2D)Resources.Load("1024x340_odin_2");
 
         if (!myGUITexture)
         {
@@ -103,7 +102,7 @@ public class OdinEditorConfigEditor : Editor
     private void CreateClientSettingsLayout()
     {
         GUILayout.Label("Client-Settings", EditorStyles.boldLabel);
-        EditorGUILayout.PropertyField(ApiKey, new GUIContent("Api Key", "Grants access to the ODIN-Network for a customer"));
+        EditorGUILayout.PropertyField(AccessKey, new GUIContent("Access Key", "Grants access to the ODIN-Network for a customer"));
         EditorGUILayout.PropertyField(Server, new GUIContent("Server", "Server URL"));
         EditorGUILayout.PropertyField(UserDataText, new GUIContent("User data", "Custom user data"));
     }

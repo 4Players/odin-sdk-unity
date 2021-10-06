@@ -31,9 +31,9 @@ namespace OdinNative.Odin
         /// </summary>
         public Uri EndPoint { get; private set; }
         /// <summary>
-        /// Client ApiKey for all new rooms. Default from OdinHandler config.
+        /// Client AccessKey for all new rooms. Default from OdinHandler config.
         /// </summary>
-        public string ApiKey { get; private set; }
+        public string AccessKey { get; private set; }
         /// <summary>
         /// Client custom UserData
         /// </summary>
@@ -48,9 +48,9 @@ namespace OdinNative.Odin
         /// </summary>
         /// <remarks><see cref="UserData.UserData"/> will be empty</remarks>
         /// <param name="url"><see cref="EndPoint"/> Odin Server</param>
-        /// <param name="apiKey">Odin ApiKey</param>
-        public OdinClient(string url, string apiKey)
-            : this(new Uri(url), apiKey, new UserData())
+        /// <param name="accessKey">Odin access key</param>
+        public OdinClient(string url, string accessKey)
+            : this(new Uri(url), accessKey, new UserData())
         { }
 
 
@@ -59,9 +59,9 @@ namespace OdinNative.Odin
         /// </summary>
         /// <remarks><see cref="UserData.UserData"/> will be empty</remarks>
         /// <param name="server"><see cref="EndPoint"/> Odin Server</param>
-        /// <param name="apiKey">Odin ApiKey</param>
-        public OdinClient(Uri server, string apiKey)
-            : this(server, apiKey, new UserData())
+        /// <param name="accessKey">Odin access key</param>
+        public OdinClient(Uri server, string accessKey)
+            : this(server, accessKey, new UserData())
         { }
 
         /// <summary>
@@ -69,13 +69,13 @@ namespace OdinNative.Odin
         /// </summary>
         /// <remarks><see cref="UserData.UserData"/> is optional</remarks>
         /// <param name="server"><see cref="EndPoint"/> Odin Server</param>
-        /// <param name="apiKey">Odin ApiKey</param>
+        /// <param name="accessKey">Odin access key</param>
         /// <param name="userData"><see cref="UserData.UserData"/> to set</param>
-        public OdinClient(Uri server, string apiKey, UserData userData = null)
+        public OdinClient(Uri server, string accessKey, UserData userData = null)
         {
             EndPoint = server;
             UserData = userData;
-            ApiKey = apiKey;
+            AccessKey = accessKey;
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace OdinNative.Odin
             IsInitialized = true;
         }
 
-        internal static string CreateApiKey()
+        internal static string CreateAccessKey()
         {
             return OdinLibrary.Api.GenerateKey();
         }
@@ -132,7 +132,7 @@ namespace OdinNative.Odin
             UserData = userData.IsEmpty() ? UserData : userData;
             return await Task.Factory.StartNew<Room.Room>(() =>
             {
-                var room = new Room.Room(EndPoint.ToString(), ApiKey, name);
+                var room = new Room.Room(EndPoint.ToString(), AccessKey, name);
                 setup?.Invoke(room);
                 Rooms.Add(room);
                 if (room.Join(customerId, UserData) == false)
@@ -190,7 +190,7 @@ namespace OdinNative.Odin
             UserData = userData.IsEmpty() ? UserData : userData;
             return await Task.Factory.StartNew<Room.Room>(() =>
             {
-                var room = new Room.Room(EndPoint.ToString(), ApiKey, name);
+                var room = new Room.Room(EndPoint.ToString(), AccessKey, name);
                 setup?.Invoke(room);
                 Rooms.Add(room);
                 if (room.Join(name, userId, customerId, UserData) == false)
@@ -219,7 +219,7 @@ namespace OdinNative.Odin
             UserData = userData.IsEmpty() ? UserData : userData;
             return await Task.Factory.StartNew<Room.Room>(() =>
             {
-                var room = new Room.Room(EndPoint.ToString(), ApiKey, token);
+                var room = new Room.Room(EndPoint.ToString(), AccessKey, token);
                 setup?.Invoke(room);
                 Rooms.Add(room);
                 if (room.Join(token, UserData) == false)

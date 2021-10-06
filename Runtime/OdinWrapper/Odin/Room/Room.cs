@@ -50,22 +50,23 @@ namespace OdinNative.Odin.Room
         private TokenGeneratorHandle _AuthHandle;
         internal IntPtr AuthHandle { get { return _AuthHandle.IsInvalid || _AuthHandle.IsClosed ? IntPtr.Zero : _AuthHandle.DangerousGetHandle(); } }
 
-        internal Room(string server, string apiKey, string name, OdinRoomConfig apmConfig = null)
-            : this(server, apiKey, name, new OdinMediaConfig(MediaSampleRate.Hz48000, MediaChannels.Mono), apmConfig ?? new OdinRoomConfig(), true)
+        internal Room(string server, string accessKey, string name, OdinRoomConfig apmConfig = null)
+            : this(server, accessKey, name, new OdinMediaConfig(MediaSampleRate.Hz48000, MediaChannels.Mono), apmConfig ?? new OdinRoomConfig(), true)
         { }
 
         /// <summary>
         /// Create a ODIN ffi room 
         /// </summary>
         /// <param name="server">Endpoint</param>
+        /// <param name="accessKey">Room access Key</param>
         /// <param name="name">Room name</param>
         /// <param name="playbackMediaConfig">Config to use for <see cref="MediaStream"/> on new medias</param>
         /// <param name="apmConfig">Config to use for <see cref="OdinRoomConfig"/></param>
         /// <param name="registerEventCallback">true for <see cref="RegisterEventCallback"/> or false for no room events</param>
-        public Room(string server, string apiKey, string name, OdinMediaConfig playbackMediaConfig, OdinRoomConfig apmConfig, bool registerEventCallback)
+        public Room(string server, string accessKey, string name, OdinMediaConfig playbackMediaConfig, OdinRoomConfig apmConfig, bool registerEventCallback)
             : this(new RoomConfig()
             {
-                ApiKey = apiKey,
+                AccessKey = accessKey,
                 Server = server,
                 Name = name,
                 PlaybackMediaConfig = playbackMediaConfig,
@@ -88,7 +89,7 @@ namespace OdinNative.Odin.Room
         {
             RemotePeers = new PeerCollection();
             _Handle = OdinLibrary.Api.RoomCreate();
-            _AuthHandle = OdinLibrary.Api.TokenGeneratorCreate(Config.ApiKey);
+            _AuthHandle = OdinLibrary.Api.TokenGeneratorCreate(Config.AccessKey);
 
             if (Config.HasEventCallbacks)
             {

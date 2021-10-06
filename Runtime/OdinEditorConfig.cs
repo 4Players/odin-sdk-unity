@@ -15,7 +15,7 @@ namespace OdinNative.Unity
         /// </summary>
         public bool Verbose = OdinDefaults.Verbose;
         
-        public string ApiKey;
+        public string AccessKey;
         public string Server = OdinDefaults.Server;
         public string UserDataText = OdinDefaults.UserDataText;
         

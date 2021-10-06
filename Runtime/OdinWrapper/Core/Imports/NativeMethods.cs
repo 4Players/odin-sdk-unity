@@ -20,12 +20,12 @@ namespace OdinNative.Core.Imports
         readonly OdinShutdownDelegate _OdinShutdown;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinGenerateApiKeyDelegate([In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
-        readonly OdinGenerateApiKeyDelegate _OdinApiKeyGenerate;
+        internal delegate uint OdinGenerateAccessKeyDelegate([In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
+        readonly OdinGenerateAccessKeyDelegate _OdinAccessKeyGenerate;
 
         #region Token Generator
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate IntPtr OdinTokenGeneratorCreateDelegate(string apiKey);
+        internal delegate IntPtr OdinTokenGeneratorCreateDelegate(string accessKey);
         readonly OdinTokenGeneratorCreateDelegate _OdinTokenGeneratorCreate;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
@@ -136,7 +136,7 @@ namespace OdinNative.Core.Imports
             handle.GetLibraryMethod("odin_audio_data_len", out _OdinAudioDataLen);
             handle.GetLibraryMethod("odin_audio_read_data", out _OdinAudioReadData);
             handle.GetLibraryMethod("odin_error_format", out _OdinErrorFormat);
-            handle.GetLibraryMethod("odin_api_key_generate", out _OdinApiKeyGenerate);
+            handle.GetLibraryMethod("odin_access_key_generate", out _OdinAccessKeyGenerate);
             handle.GetLibraryMethod("odin_token_generator_create", out _OdinTokenGeneratorCreate);
             handle.GetLibraryMethod("odin_token_generator_destroy", out _OdinTokenGeneratorDestroy);
             handle.GetLibraryMethod("odin_token_generator_create_token", out _OdinTokenGeneratorCreateToken);
@@ -189,7 +189,7 @@ namespace OdinNative.Core.Imports
         internal string GenerateKey(int bufferSize = 128)
         {
             _keyPointer = Marshal.AllocHGlobal(bufferSize);
-            uint size = _OdinApiKeyGenerate(_keyPointer, bufferSize);
+            uint size = _OdinAccessKeyGenerate(_keyPointer, bufferSize);
             if (InternalIsError(size))
             {
                 Marshal.FreeHGlobal(_keyPointer);
@@ -455,13 +455,13 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// Allocate TokenGenerator
         /// </summary>
-        /// <param name="apiKey">*const c_char</param>
+        /// <param name="accessKey">*const c_char</param>
         /// <returns><see cref="TokenGeneratorHandle"/> always owns the <see cref="IntPtr"/> handle</returns>
-        public TokenGeneratorHandle TokenGeneratorCreate(string apiKey)
+        public TokenGeneratorHandle TokenGeneratorCreate(string accessKey)
         {
             using (Lock)
             {
-                IntPtr handle = _OdinTokenGeneratorCreate(apiKey);
+                IntPtr handle = _OdinTokenGeneratorCreate(accessKey);
                 return new TokenGeneratorHandle(handle, _OdinTokenGeneratorDestroy);
             }
         }

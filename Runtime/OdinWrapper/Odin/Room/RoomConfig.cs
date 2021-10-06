@@ -9,9 +9,9 @@ using OdinNative.Core;
 public class RoomConfig
 {
     /// <summary>
-    /// Room associated ApiKey 
+    /// Room associated AccessKey 
     /// </summary>
-    public string ApiKey;
+    public string AccessKey;
     /// <summary>
     /// Room associated Token lifetime 
     /// </summary>
