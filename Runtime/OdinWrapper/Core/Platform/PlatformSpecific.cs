@@ -9,26 +9,15 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Core.Platform
 {
-    /// <summary>
-    /// Platforms the SDK can run on
-    /// </summary>
-    public enum SupportedPlatform
-    {
-#pragma warning disable 1591
-        Android,
-        iOS,
-        MacOSX,
-        Linux,
-        Windows,
-    }
-#pragma warning restore
-
     internal static class PlatformSpecific
     {
+        private const string AssetPath = "Assets/" + FfiPath;
+        private const string PackagePath = "Packages/" + FfiPath;
+
+        private const string FfiPath = PackageName + "/Plugins/ffi";
         private const string PackageName = "io.fourplayers.odin";
         private const string WindowsLibName = "odin.dll";
         private const string LinuxLibName = "libodin.so";
-        private const string AndriodLibName = "libodin.so";
         private const string MacLibName = "libodin.dylib";
 
         private static class NativeWindowsMethods
@@ -98,14 +87,7 @@ namespace OdinNative.Core.Platform
                 case SupportedPlatform.MacOSX:
                     handle = NativeUnixMehods.dlopen(name, 2 /* RTLD_NOW */);
                     if (handle == IntPtr.Zero)
-                    {
-#if ENABLE_IL2CPP
-                        IntPtr pointer = NativeUnixMehods.dlerror();
-                        string msg = Marshal.PtrToStringAnsi(pointer);
-                        UnityEngine.Debug.LogError(msg);
-#endif
                         goto default;
-                    }
                     location = name;
                     return true;
                 default:
@@ -162,14 +144,12 @@ namespace OdinNative.Core.Platform
             }
         }
 
-        //From Managed.Windows.Forms/XplatUI
         static bool IsRunningOnMac()
         {
             IntPtr buf = IntPtr.Zero;
             try
             {
                 buf = Marshal.AllocHGlobal(8192);
-                // This is a hacktastic way of getting sysname from uname ()
                 if (NativeUnixMehods.uname(buf) == 0)
                 {
                     string os = Marshal.PtrToStringAnsi(buf);
@@ -231,13 +211,15 @@ namespace OdinNative.Core.Platform
                     else goto default;
                 default: platform = 0; names = null; return false;
             }
-            // get name of the binary
-            string ffiPath = PackageName + "/Plugins/ffi";
-            string PackagePath = string.Format("{0}/{1}", "Packages", ffiPath);
-            string AssetPath = string.Format("{0}/{1}", "Assets", ffiPath);
-            string LibraryCache = System.IO.Directory.GetDirectories("Library/PackageCache")
-                .Where(dir => dir.Contains(PackageName))
-                .FirstOrDefault();
+
+            string LibraryCache = "Library/PackageCache";
+
+            try
+            {
+                LibraryCache = System.IO.Directory.GetDirectories(LibraryCache)
+                    .Where(dir => dir.Contains(PackageName))
+                    .FirstOrDefault();
+            } catch (System.IO.DirectoryNotFoundException) { /* nop */ }
 
             switch (platform)
             {

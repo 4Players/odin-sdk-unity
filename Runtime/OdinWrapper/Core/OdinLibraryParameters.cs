@@ -36,12 +36,7 @@ namespace OdinNative.Core
         public SupportedPlatform Platform { get; set; }
 
         /// <summary>
-        /// Path pointing to the directory where the soundbackends folder is located.
-        /// </summary>
-        public string ResourcesFolder { get; set; }
-
-        /// <summary>
-        /// Creates a new <see cref="LibraryParameters"/>-Object.
+        /// Creates a new <see cref="OdinLibraryParameters"/>-Object.
         /// </summary>
         public OdinLibraryParameters()
             : this(null)
@@ -49,29 +44,16 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Creates a new ClientLibraryLoadInfo-Object.
+        /// Creates a new <see cref="OdinLibraryParameters"/>-Object.
         /// </summary>
         /// <param name="odinBinaryFolder">location where the native Aki sdk files can be found.</param>
         public OdinLibraryParameters(string odinBinaryFolder)
-            : this(odinBinaryFolder, null)
         {
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="LibraryParameters"/>-Object.
-        /// </summary>
-        /// <param name="odinBinaryFolder">location where the native Aki sdk files can be found.</param>
-        /// <param name="resourcesFolder">Path pointing to the directory where the soundbackends folder is located.</param>
-        public OdinLibraryParameters(string odinBinaryFolder, string resourcesFolder)
-        {
-            string[] nativeBinaryLocations;
-            SupportedPlatform platform;
-            if (TryGetNativeBinaryName(out nativeBinaryLocations, out platform) == false)
+            if (TryGetNativeBinaryName(out string[] nativeBinaryLocations, out SupportedPlatform platform) == false)
                 throw new NotSupportedException("platform is not supported");
 
             PossibleNativeBinaryLocations = ExtendPossibleLocations(nativeBinaryLocations, odinBinaryFolder);
             Platform = platform;
-            ResourcesFolder = resourcesFolder;
         }
 
         private string[] ExtendPossibleLocations(string[] nativeBinaryLocations, string odinBinaryFolder)
@@ -97,16 +79,15 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Creates a new <see cref="LibraryParameters"/>-Object.
+        /// Creates a new <see cref="OdinLibraryParameters"/>-Object.
         /// </summary>
         /// <param name="nativeBinaryLocation">Location to the Aki library binary.</param>
         /// <param name="platform">Determines which platform specific code will be executed.</param>
         /// <param name="resourcesFolder">Path pointing to the directory where the soundbackends folder is located.</param>
-        public OdinLibraryParameters(string nativeBinaryLocation, SupportedPlatform platform, string resourcesFolder)
+        public OdinLibraryParameters(string nativeBinaryLocation, SupportedPlatform platform)
         {
             PossibleNativeBinaryLocations = new string[] { nativeBinaryLocation };
             Platform = platform;
-            ResourcesFolder = resourcesFolder;
         }
     }
 }

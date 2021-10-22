@@ -7,31 +7,53 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Odin.Room
 {
-    public class PeerJoinedEvent : EventArgs
+    //Room
+    public class RoomJoinEventArgs : EventArgs
+    {
+        public Room Room;
+    }
+
+    public class RoomJoinedEventArgs : EventArgs
+    {
+        public Room Room;
+    }
+
+    public class RoomLeaveEventArgs : EventArgs
+    {
+        public Room Room;
+    }
+
+    public class RoomLeftEventArgs : EventArgs
+    {
+        public string RoomName;
+    }
+
+    //SubRoom
+    public class PeerJoinedEventArgs : EventArgs
     {
         public ulong PeerId { get; internal set; }
         public Peer.Peer Peer;
     }
 
-    public class PeerLeftEvent : EventArgs
+    public class PeerLeftEventArgs : EventArgs
     {
         public ulong PeerId { get; internal set; }
     }
 
-    public class PeerUpdatedEvent : EventArgs
+    public class PeerUpdatedEventArgs : EventArgs
     {
         public ulong PeerId { get; internal set; }
         public byte[] UserData;
     }
 
-    public class MediaAddedEvent : EventArgs
+    public class MediaAddedEventArgs : EventArgs
     {
         public ulong PeerId { get; internal set; }
         public Peer.Peer Peer;
         public PlaybackStream Media;
     }
 
-    public class MediaRemovedEvent : EventArgs
+    public class MediaRemovedEventArgs : EventArgs
     {
         public ushort MediaId { get; internal set; }
         public Peer.Peer Peer;

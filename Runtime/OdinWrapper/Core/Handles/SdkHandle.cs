@@ -12,19 +12,16 @@ namespace OdinNative.Core.Handles
 {
     internal class OdinHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        public string Location { get; }
+        public SupportedPlatform Platform { get; }
         private static AutoResetEvent DllUnloaded = new AutoResetEvent(true);
 
         public static OdinHandle Load(SupportedPlatform platform, string[] possibleNames)
         {
             DllUnloaded.WaitOne();
-            IntPtr handle;
-            string location;
-            PlatformSpecific.LoadDynamicLibrary(platform, possibleNames, out handle, out location);
+            PlatformSpecific.LoadDynamicLibrary(platform, possibleNames, out IntPtr handle, out string location);
             return new OdinHandle(handle, platform, location);
         }
-
-        public string Location { get; }
-        public SupportedPlatform Platform { get; }
 
         private OdinHandle(IntPtr handle, SupportedPlatform platform, string location)
             : base(true)

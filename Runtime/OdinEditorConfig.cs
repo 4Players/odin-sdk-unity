@@ -1,6 +1,9 @@
-﻿using OdinNative.Core;
+using System;
+using System.Linq;
+using OdinNative.Core;
 using OdinNative.Odin;
 using UnityEngine;
+using Random = System.Random;
 
 namespace OdinNative.Unity
 {
@@ -14,11 +17,11 @@ namespace OdinNative.Unity
         /// Enable additional Logs
         /// </summary>
         public bool Verbose = OdinDefaults.Verbose;
-        
+
         public string AccessKey;
         public string Server = OdinDefaults.Server;
         public string UserDataText = OdinDefaults.UserDataText;
-        
+
         /// <summary>
         /// Microphone Sample-Rate
         /// </summary>
@@ -36,7 +39,7 @@ namespace OdinNative.Unity
         /// Playback Channels
         /// </summary>
         public MediaChannels RemoteChannels = OdinDefaults.RemoteChannels;
-        
+
         #region Events
         public bool PeerJoinedEvent = OdinDefaults.PeerJoinedEvent;
         public bool PeerLeftEvent = OdinDefaults.PeerLeftEvent;
@@ -44,7 +47,7 @@ namespace OdinNative.Unity
         public bool MediaAddedEvent = OdinDefaults.MediaAddedEvent;
         public bool MediaRemovedEvent = OdinDefaults.MediaRemovedEvent;
         #endregion Events
-        
+
         /// <summary>
         /// Time untill the token expires
         /// </summary>
@@ -75,7 +78,45 @@ namespace OdinNative.Unity
         /// </summary>
         public bool TransientSuppressor = OdinDefaults.TransientSuppressor;
         #endregion Apm
-
         internal string Identifier => SystemInfo.deviceUniqueIdentifier;
+
+        public void GenerateUIAccessKey()
+        {
+            AccessKey = GenerateAccessKey();
+        }
+
+        /// <summary>
+        /// Generates a new ODIN access key.
+        /// </summary>
+        /// <returns>ODIN access key</returns>
+        private static string GenerateAccessKey()
+        {
+            var rand = new Random();
+            byte[] key = new byte[33];
+            rand.NextBytes(key);
+            key[0] = 0x01;
+            byte[] subArray = new ArraySegment<byte>(key, 1, 31).ToArray();
+            key[32] = Crc8(subArray);
+            return Convert.ToBase64String(key);
+        }
+
+        private static byte Crc8(byte[] data)
+        {
+            byte crc = 0xff;
+            for (int i = 0; i < data.Length; i++)
+            {
+                crc ^= data[i];
+                for (int j = 0; j < 8; j++)
+                {
+                    if ((crc & 0x80) != 0) crc = (byte)((crc << 1) ^ 0x31);
+                    else crc <<= 1;
+                }
+                crc = (byte)(0xff & crc);
+            }
+            return crc;
+        }
+
     }
+
+
 }

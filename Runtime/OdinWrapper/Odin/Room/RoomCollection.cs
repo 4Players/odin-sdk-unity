@@ -50,9 +50,9 @@ namespace OdinNative.Odin.Room
 
         public bool IsReadOnly => false;
 
-        public void Add(Room item)
+        public bool Add(Room item)
         {
-            _Rooms.TryAdd(item.Config.Name, item);
+            return _Rooms.TryAdd(item.Config.Name, item);
         }
 
         public void Clear()

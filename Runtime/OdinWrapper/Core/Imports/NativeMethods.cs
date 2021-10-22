@@ -20,8 +20,16 @@ namespace OdinNative.Core.Imports
         readonly OdinShutdownDelegate _OdinShutdown;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinGenerateAccessKeyDelegate([In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
+        internal delegate int OdinGenerateAccessKeyDelegate([In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
         readonly OdinGenerateAccessKeyDelegate _OdinAccessKeyGenerate;
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinAccessKeyPublicKeyDelegate(string accessKey, [In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
+        readonly OdinAccessKeyPublicKeyDelegate _OdinAccessKeyPublicKey;
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinAccessKeySecretKeyDelegate(string accessKey,  [In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
+        readonly OdinAccessKeySecretKeyDelegate _OdinAccessKeySecretKey;
 
         #region Token Generator
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
@@ -33,13 +41,16 @@ namespace OdinNative.Core.Imports
         readonly OdinTokenGeneratorDestroyDelegate _OdinTokenGeneratorDestroy;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinTokenGeneratorCreateTokenDelegate(IntPtr tokenGenerator, string roomId, string userId, OdinTokenOptions options, [In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
+        internal delegate int OdinTokenGeneratorCreateTokenDelegate(IntPtr tokenGenerator, string roomId, string userId, [In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
         readonly OdinTokenGeneratorCreateTokenDelegate _OdinTokenGeneratorCreateToken;
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinTokenGeneratorCreateTokenExDelegate(IntPtr tokenGenerator, string roomId, string userId, OdinTokenOptions options, [In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
+        readonly OdinTokenGeneratorCreateTokenExDelegate _OdinTokenGeneratorCreateTokenEx;
         #endregion
 
         #region Room
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinRoomConfigureApmDelegate(IntPtr room, NativeBindings.OdinApmConfig apmConfig);
+        internal delegate int OdinRoomConfigureApmDelegate(IntPtr room, NativeBindings.OdinApmConfig apmConfig);
         readonly OdinRoomConfigureApmDelegate _OdinRoomConfigureApm;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
@@ -51,28 +62,32 @@ namespace OdinNative.Core.Imports
         readonly OdinRoomDestroyDelegate _OdinRoomDestroy;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinRoomJoinDelegate(IntPtr room, string gatewayUrl, string roomToken, byte[] userData, ulong userDataLength);
+        internal delegate int OdinRoomJoinDelegate(IntPtr room, string gatewayUrl, string roomToken, byte[] userData, ulong userDataLength);
         readonly OdinRoomJoinDelegate _OdinRoomJoin;
-        internal delegate uint OdinRoomJoinDirectDelegate(IntPtr room, string url, string roomId, byte[] userData, ulong userDataLength);
+        internal delegate int OdinRoomJoinDirectDelegate(IntPtr room, string url, string roomId, byte[] userData, ulong userDataLength);
         readonly OdinRoomJoinDirectDelegate _OdinRoomJoinDirect;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinRoomAddMediaDelegate(IntPtr room, IntPtr mediaStream);
+        internal delegate int OdinRoomAddMediaDelegate(IntPtr room, IntPtr mediaStream);
         readonly OdinRoomAddMediaDelegate _OdinRoomAddMedia;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinRoomUpdateUserDataDelegate(IntPtr room, byte[] userData, ulong userDataLength);
+        internal delegate int OdinRoomUpdateUserDataDelegate(IntPtr room, byte[] userData, ulong userDataLength);
         readonly OdinRoomUpdateUserDataDelegate _OdinRoomUpdateUserData;
-
-        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinRoomConfigureAudioOutputDelegate(IntPtr room, IntPtr config);
-        readonly OdinRoomConfigureAudioOutputDelegate _OdinRoomConfigureAudioOutput;
 
         public delegate void OdinEventCallback(IntPtr room, NativeBindings.OdinEvent odinEvent, IntPtr userDataPtr);
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinRoomSetEventCallbackDelegate(IntPtr room, OdinEventCallback callback);
+        internal delegate int OdinRoomSetEventCallbackDelegate(IntPtr room, OdinEventCallback callback);
         readonly OdinRoomSetEventCallbackDelegate _OdinRoomSetEventCallback;
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinAudioProcessReverseDelegate(IntPtr room, [In] float[] buffer, [In] int bufferLength, [In, Out][MarshalAs(UnmanagedType.I4)] OdinChannelLayout channelLayout);
+        readonly OdinAudioProcessReverseDelegate _OdinAudioProcessReverse;
         #endregion Room
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinAudioMixStreamsDelegate(IntPtr room, [In] IntPtr[] mediaStreams, [In] int streamsLength, [In, Out] float[] buffer, [In, Out] int bufferLength, [In, Out][MarshalAs(UnmanagedType.I4)] OdinChannelLayout channelLayout);
+        readonly OdinAudioMixStreamsDelegate _OdinAudioMixStreams;
 
         #region Media
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
@@ -92,24 +107,24 @@ namespace OdinNative.Core.Imports
         readonly OdinMediaStreamTypeDelegate _OdinMediaStreamType;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinAudioPushDataDelegate(IntPtr mediaStream, [In] float[] buffer, [In] int bufferLength);
+        internal delegate int OdinAudioPushDataDelegate(IntPtr mediaStream, [In] float[] buffer, [In] int bufferLength);
         readonly OdinAudioPushDataDelegate _OdinAudioPushData;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinAudioDataLenDelegate(IntPtr mediaStream);
+        internal delegate int OdinAudioDataLenDelegate(IntPtr mediaStream);
         readonly OdinAudioDataLenDelegate _OdinAudioDataLen;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinAudioReadDataDelegate(IntPtr mediaStream, [In, Out][MarshalAs(UnmanagedType.LPArray)] float[] buffer, [In] int bufferLength);
+        internal delegate int OdinAudioReadDataDelegate(IntPtr mediaStream, [In, Out][MarshalAs(UnmanagedType.LPArray)] float[] buffer, [In] int bufferLength);
         readonly OdinAudioReadDataDelegate _OdinAudioReadData;
         #endregion Media
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinErrorFormatDelegate(uint error, [In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
+        internal delegate uint OdinErrorFormatDelegate(int error, [In, Out][MarshalAs(UnmanagedType.SysUInt)] IntPtr buffer, [In] int bufferLength);
         readonly OdinErrorFormatDelegate _OdinErrorFormat;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate bool OdinIsErrorDelegate(uint error);
+        internal delegate bool OdinIsErrorDelegate(int error);
         readonly OdinIsErrorDelegate _OdinIsError;
 
         readonly OdinHandle Handle;
@@ -135,11 +150,16 @@ namespace OdinNative.Core.Imports
             handle.GetLibraryMethod("odin_audio_push_data", out _OdinAudioPushData);
             handle.GetLibraryMethod("odin_audio_data_len", out _OdinAudioDataLen);
             handle.GetLibraryMethod("odin_audio_read_data", out _OdinAudioReadData);
+            handle.GetLibraryMethod("odin_audio_mix_streams", out _OdinAudioMixStreams);
+            handle.GetLibraryMethod("odin_audio_process_reverse", out _OdinAudioProcessReverse);
             handle.GetLibraryMethod("odin_error_format", out _OdinErrorFormat);
             handle.GetLibraryMethod("odin_access_key_generate", out _OdinAccessKeyGenerate);
+            handle.GetLibraryMethod("odin_access_key_public_key", out _OdinAccessKeyPublicKey);
+            handle.GetLibraryMethod("odin_access_key_secret_key", out _OdinAccessKeySecretKey);
             handle.GetLibraryMethod("odin_token_generator_create", out _OdinTokenGeneratorCreate);
             handle.GetLibraryMethod("odin_token_generator_destroy", out _OdinTokenGeneratorDestroy);
             handle.GetLibraryMethod("odin_token_generator_create_token", out _OdinTokenGeneratorCreateToken);
+            handle.GetLibraryMethod("odin_token_generator_create_token_ex", out _OdinTokenGeneratorCreateTokenEx);
             handle.GetLibraryMethod("odin_is_error", out _OdinIsError);
         }
 
@@ -166,7 +186,7 @@ namespace OdinNative.Core.Imports
             get { return new LockObject(Handle); }
         }
 
-        private void CheckAndThrow(uint error, string message = null)
+        private void CheckAndThrow(int error, string message = null)
         {
             if (Check(error))
 #if !UNITY_STANDALONE && !UNITY_EDITOR && !ENABLE_IL2CPP && !ENABLE_MONO
@@ -176,9 +196,24 @@ namespace OdinNative.Core.Imports
 #endif
         }
 
-        private bool Check(uint error)
+        private bool Check(int error)
         {
             return IsError(error);
+        }
+
+        private string ConsumeKeyBuffer(IntPtr ptr, int ret)
+        {
+            if (ptr == IntPtr.Zero) return null;
+            if (InternalIsError(ret))
+            {
+                Marshal.FreeHGlobal(ptr);
+                return string.Empty;
+            }
+
+            byte[] buffer = new byte[ret];
+            Marshal.Copy(ptr, buffer, 0, buffer.Length);
+            Marshal.FreeHGlobal(ptr);
+            return Encoding.UTF8.GetString(buffer);
         }
 
         /// <summary>
@@ -186,21 +221,30 @@ namespace OdinNative.Core.Imports
         /// </summary>
         /// <param name="bufferSize">max string buffer size</param>
         /// <returns>Test Key</returns>
-        internal string GenerateKey(int bufferSize = 128)
+        internal string GenerateAccessKey(int bufferSize = 128)
         {
-            _keyPointer = Marshal.AllocHGlobal(bufferSize);
-            uint size = _OdinAccessKeyGenerate(_keyPointer, bufferSize);
-            if (InternalIsError(size))
-            {
-                Marshal.FreeHGlobal(_keyPointer);
-                return string.Empty;
-            }
-            byte[] buffer = new byte[size];
-            Marshal.Copy(_keyPointer, buffer, 0, buffer.Length);
-            Marshal.FreeHGlobal(_keyPointer);
-            return Encoding.UTF8.GetString(buffer);
+            _akeyPointer = Marshal.AllocHGlobal(bufferSize);
+            int size = _OdinAccessKeyGenerate(_akeyPointer, bufferSize);
+            return ConsumeKeyBuffer(_akeyPointer, size);
+
         }
-        private static IntPtr _keyPointer;
+        private static IntPtr _akeyPointer;
+
+        internal string LoadPublicKey(string accessKey, int bufferSize = 128)
+        {
+            _pkeyPointer = Marshal.AllocHGlobal(bufferSize);
+            int size = _OdinAccessKeyPublicKey(accessKey, _pkeyPointer, bufferSize);
+            return ConsumeKeyBuffer(_pkeyPointer, size);
+        }
+        private static IntPtr _pkeyPointer;
+
+        internal string LoadSecretKey(string accessKey, int bufferSize = 128)
+        {
+            _skeyPointer = Marshal.AllocHGlobal(bufferSize);
+            int size = _OdinAccessKeySecretKey(accessKey, _skeyPointer, bufferSize);
+            return ConsumeKeyBuffer(_skeyPointer, size);
+        }
+        private static IntPtr _skeyPointer;
 
         /// <summary>
         /// Provides a readable representation from the error code of ErrorFormat
@@ -208,7 +252,7 @@ namespace OdinNative.Core.Imports
         /// <param name="error">string buffer</param>
         /// <param name="bufferSize">max string buffer size</param>
         /// <returns>Error message</returns>
-        internal string GetErrorMessage(uint error, int bufferSize = 1024)
+        internal string GetErrorMessage(int error, int bufferSize = 1024)
         {
             _stringPointer = Marshal.AllocHGlobal(bufferSize);
             uint size = ErrorFormat(error, _stringPointer, bufferSize);
@@ -267,11 +311,11 @@ namespace OdinNative.Core.Imports
         /// <param name="room">*mut OdinRoom</param>
         /// <param name="config"><see cref="OdinRoomConfig"/></param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint RoomConfigure(RoomHandle room, OdinRoomConfig config)
+        public int RoomConfigure(RoomHandle room, OdinRoomConfig config)
         {
             using (Lock)
             {
-                uint error = _OdinRoomConfigureApm(room, config);
+                int error = _OdinRoomConfigureApm(room, config);
                 CheckAndThrow(error);
                 return error;
             }
@@ -296,11 +340,11 @@ namespace OdinNative.Core.Imports
         /// <param name="userData">*const u8</param>
         /// <param name="userDataLength">usize</param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint RoomJoin(RoomHandle room, string gatewayUrl, string roomToken, byte[] userData, int userDataLength)
+        public int RoomJoin(RoomHandle room, string gatewayUrl, string roomToken, byte[] userData, int userDataLength)
         {
             using (Lock)
             {
-                uint error = _OdinRoomJoin(room, gatewayUrl, roomToken, userData, (ulong)userDataLength);
+                int error = _OdinRoomJoin(room, gatewayUrl, roomToken, userData, (ulong)userDataLength);
                 CheckAndThrow(error);
                 return error;
             }
@@ -315,11 +359,11 @@ namespace OdinNative.Core.Imports
         /// <param name="userData">*const u8</param>
         /// <param name="userDataLength">usize</param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint RoomJoin(RoomHandle room, string url, string roomId, string customerId, byte[] userData, int userDataLength)
+        public int RoomJoinDirect(RoomHandle room, string url, string roomId, byte[] userData, int userDataLength)
         {
             using (Lock)
             {
-                uint error = _OdinRoomJoinDirect(room, url, roomId, userData, (ulong)userDataLength);
+                int error = _OdinRoomJoinDirect(room, url, roomId, userData, (ulong)userDataLength);
                 CheckAndThrow(error);
                 return error;
             }
@@ -331,11 +375,11 @@ namespace OdinNative.Core.Imports
         /// <param name="room">*mut OdinRoom</param>
         /// <param name="mediaStream">*mut <see cref="MediaStream"/></param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint RoomAddMedia(RoomHandle room, StreamHandle stream)
+        public int RoomAddMedia(RoomHandle room, StreamHandle stream)
         {
             using (Lock)
             {
-                uint error = _OdinRoomAddMedia(room, stream);
+                int error = _OdinRoomAddMedia(room, stream);
                 CheckAndThrow(error);
                 return error;
             }
@@ -348,11 +392,11 @@ namespace OdinNative.Core.Imports
         /// <param name="userData">*const u8</param>
         /// <param name="userDataLength">usize</param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint RoomUpdateUserData(RoomHandle room, byte[] userData, ulong userDataLength)
+        public int RoomUpdateUserData(RoomHandle room, byte[] userData, ulong userDataLength)
         {
             using (Lock)
             {
-                uint error = _OdinRoomUpdateUserData(room, userData, userDataLength);
+                int error = _OdinRoomUpdateUserData(room, userData, userDataLength);
                 CheckAndThrow(error);
                 return error;
             }
@@ -364,12 +408,57 @@ namespace OdinNative.Core.Imports
         /// <param name="room">*mut OdinRoom</param>
         /// <param name="callback">extern "C" fn(event: *const <see cref="NativeBindings.AkiEvent"/>) -> ()</param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint RoomSetEventCallback(RoomHandle room, OdinEventCallback callback)
+        public int RoomSetEventCallback(RoomHandle room, OdinEventCallback callback)
         {
             using (Lock)
             {
-                uint error = _OdinRoomSetEventCallback(room, callback);
+                int error = _OdinRoomSetEventCallback(room, callback);
                 CheckAndThrow(error);
+                return error;
+            }
+        }
+
+        /// <summary>
+        /// Send audio data with multiple MediaStreams to mix
+        /// </summary>
+        /// <remarks>OdinChannelLayout is currently unused!</remarks>
+        /// <param name="room">struct OdinRoom*</param>
+        /// <param name="handles">struct OdinMediaStream *const *</param>
+        /// <param name="buffer">float *</param>
+        /// <param name="channelLayout">enum <see cref="OdinChannelLayout"/></param>
+        /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
+        internal int AudioMixStreams(RoomHandle room, StreamHandle[] handles, float[] buffer, OdinChannelLayout channelLayout = OdinChannelLayout.OdinChannelLayout_Mono)
+        {
+            using (Lock)
+            {
+                IntPtr[] streams = handles
+                    .Select(h => h.DangerousGetHandle())
+                    .Where(p => p != IntPtr.Zero)
+                    .ToArray();
+
+                int error = _OdinAudioMixStreams(room, streams, streams.Length, buffer, buffer.Length, channelLayout);
+
+                if (InternalIsError(error))
+                    CheckAndThrow(error);
+                return error;
+            }
+        }
+
+        /// <summary>
+        /// Send audio data for the i.e Echo cancellor
+        /// </summary>
+        /// <remarks>OdinChannelLayout is currently unused!</remarks>
+        /// <param name="room">struct OdinRoom*</param>
+        /// <param name="buffer">float*</param>
+        /// <param name="channelLayout">enum <see cref="OdinChannelLayout"/></param>
+        /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
+        internal int AudioProcessReverse(RoomHandle room, float[] buffer, OdinChannelLayout channelLayout = OdinChannelLayout.OdinChannelLayout_Mono)
+        {
+            using (Lock)
+            {
+                int error = _OdinAudioProcessReverse(room, buffer, buffer.Length, channelLayout);
+                if (InternalIsError(error))
+                    CheckAndThrow(error);
                 return error;
             }
         }
@@ -417,12 +506,13 @@ namespace OdinNative.Core.Imports
         /// <param name="buffer">allocated buffer to read from</param>
         /// <param name="bufferLength">size of the buffer</param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint AudioPushData(StreamHandle mediaStream, float[] buffer, int bufferLength)
+        public int AudioPushData(StreamHandle mediaStream, float[] buffer, int bufferLength)
         {
             using (Lock)
             {
-                uint error = _OdinAudioPushData(mediaStream, buffer, bufferLength);
-                //CheckAndThrow(error);
+                int error = _OdinAudioPushData(mediaStream, buffer, bufferLength);
+                if(InternalIsError(error))
+                    CheckAndThrow(error);
                 return error;
             }
         }
@@ -432,7 +522,7 @@ namespace OdinNative.Core.Imports
         /// </summary>
         /// <param name="mediaStream">OdinMediaStream *</param>
         /// <returns>floats available to read with <see cref="AudioReadData"/></returns>
-        public uint AudioDataLength(StreamHandle mediaStream)
+        public int AudioDataLength(StreamHandle mediaStream)
         {
             using (Lock)
                 return _OdinAudioDataLen(mediaStream);
@@ -446,7 +536,7 @@ namespace OdinNative.Core.Imports
         /// <param name="buffer">allocated buffer to write to</param>
         /// <param name="bufferLength">size of the buffer</param>
         /// <returns>count of written data</returns>
-        public uint AudioReadData(StreamHandle mediaStream, [In, Out] float[] buffer, int bufferLength)
+        public int AudioReadData(StreamHandle mediaStream, [In, Out] float[] buffer, int bufferLength)
         {
             using (Lock)
                 return _OdinAudioReadData(mediaStream, buffer, bufferLength);
@@ -482,16 +572,15 @@ namespace OdinNative.Core.Imports
         /// <param name="tokenGenerator">allocated TokenGenerator</param>
         /// <param name="roomId">*const c_char</param>
         /// <param name="userId">*const c_char</param>
-        /// <param name="options"></param>
         /// <param name="buffer">*mut c_char</param>
         /// <param name="bufferLength">size *mut</param>
         /// <returns>Token or empty string</returns>
-        public string TokenGeneratorCreateToken(TokenGeneratorHandle tokenGenerator, string roomId, string userId, OdinTokenOptions options, int bufferLength = 512)
+        public string TokenGeneratorCreateToken(TokenGeneratorHandle tokenGenerator, string roomId, string userId, int bufferLength = 512)
         {
             using (Lock)
             {
                 _tokenPointer = Marshal.AllocHGlobal(bufferLength);
-                uint size = _OdinTokenGeneratorCreateToken(tokenGenerator, roomId, userId, options, _tokenPointer, bufferLength);
+                int size = _OdinTokenGeneratorCreateToken(tokenGenerator, roomId, userId, _tokenPointer, bufferLength);
                 if (InternalIsError(size))
                 {
                     Marshal.FreeHGlobal(_tokenPointer);
@@ -506,13 +595,42 @@ namespace OdinNative.Core.Imports
         private static IntPtr _tokenPointer;
 
         /// <summary>
+        /// Creat room token with options
+        /// </summary>
+        /// <param name="tokenGenerator">allocated TokenGenerator</param>
+        /// <param name="roomId">*const c_char</param>
+        /// <param name="userId">*const c_char</param>
+        /// <param name="options"></param>
+        /// <param name="buffer">*mut c_char</param>
+        /// <param name="bufferLength">size *mut</param>
+        /// <returns>Token or empty string</returns>
+        public string TokenGeneratorCreateTokenEx(TokenGeneratorHandle tokenGenerator, string roomId, string userId, OdinTokenOptions options, int bufferLength = 512)
+        {
+            using (Lock)
+            {
+                _tokenExPointer = Marshal.AllocHGlobal(bufferLength);
+                int size = _OdinTokenGeneratorCreateTokenEx(tokenGenerator, roomId, userId, options, _tokenExPointer, bufferLength);
+                if (InternalIsError(size))
+                {
+                    Marshal.FreeHGlobal(_tokenExPointer);
+                    return string.Empty;
+                }
+                byte[] token = new byte[size];
+                Marshal.Copy(_tokenExPointer, token, 0, token.Length);
+                Marshal.FreeHGlobal(_tokenExPointer);
+                return Encoding.UTF8.GetString(token);
+            }
+        }
+        private static IntPtr _tokenExPointer;
+
+        /// <summary>
         /// Writes a readable string representation of the error in a buffer.
         /// </summary>
         /// <param name="error">error code</param>
         /// <param name="buffer">String buffer pointer (e.g read with <see cref="Marshal.PtrToStringAnsi"/>)</param>
         /// <param name="bufferLength">String buffer length</param>
         /// <returns>0 or error code that is readable with <see cref="GetErrorMessage"/></returns>
-        internal uint ErrorFormat(uint error, IntPtr buffer, int bufferLength)
+        internal uint ErrorFormat(int error, IntPtr buffer, int bufferLength)
         {
             using (Lock)
                 return _OdinErrorFormat(error, buffer, bufferLength);
@@ -524,7 +642,7 @@ namespace OdinNative.Core.Imports
         /// <remarks>Code <see cref="Utility.OK"/> is never a error and will not be checked</remarks>
         /// <param name="error">error code</param>
         /// <returns>true if error</returns>
-        internal bool IsError(uint error)
+        internal bool IsError(int error)
         {
             if (error == Utility.OK) return false;
 
@@ -537,9 +655,9 @@ namespace OdinNative.Core.Imports
         /// </summary>
         /// <param name="error">error code</param>
         /// <returns>true if error</returns>
-        internal bool InternalIsError(uint error)
+        internal bool InternalIsError(int error)
         {
-            return (error >> 29) > 0;
+            return Utility.IsError(error);
         }
     }
 }

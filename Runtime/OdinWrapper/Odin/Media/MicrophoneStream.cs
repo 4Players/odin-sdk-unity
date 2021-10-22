@@ -21,25 +21,25 @@ namespace OdinNative.Odin.Media
             : base(0, config)
         { }
 
-        public override uint AudioReadData(float[] buffer)
+        public override int AudioReadData(float[] buffer)
         {
             throw new OdinWrapperException("Microphone streams are always writeonly!",
                 new NotSupportedException("AudioReadData, AudioReadDataTask and AudioReadDataAsync are not supported!"));
         }
 
-        public override Task<uint> AudioReadDataTask(float[] buffer, CancellationToken cancellationToken)
+        public override Task<int> AudioReadDataTask(float[] buffer, CancellationToken cancellationToken)
         {
             throw new OdinWrapperException("Microphone streams are always writeonly!",
                 new NotSupportedException("AudioReadData, AudioReadDataTask and AudioReadDataAsync are not supported!"));
         }
 
-        public override Task<uint> AudioReadDataAsync(float[] buffer)
+        public override Task<int> AudioReadDataAsync(float[] buffer)
         {
             throw new OdinWrapperException("Microphone streams are always writeonly!",
                 new NotSupportedException("AudioReadData, AudioReadDataTask and AudioReadDataAsync are not supported!"));
         }
 
-        public override uint AudioDataLength()
+        public override int AudioDataLength()
         {
             return 0;
         }

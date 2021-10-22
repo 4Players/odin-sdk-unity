@@ -37,9 +37,9 @@ namespace OdinNative.Odin.Media
 
         public bool IsReadOnly => false;
 
-        public void Add(MediaStream item)
+        public bool Add(MediaStream item)
         {
-            _Medias.TryAdd(item.Id, item);
+            return _Medias.TryAdd(item.Id, item);
         }
 
         public void Clear()

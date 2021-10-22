@@ -10,7 +10,7 @@ namespace OdinNative.Core.Handles
 {
     class TokenGeneratorHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        public static implicit operator IntPtr(TokenGeneratorHandle handle) => handle.DangerousGetHandle();
+        public static implicit operator IntPtr(TokenGeneratorHandle handle) => handle?.DangerousGetHandle() ?? IntPtr.Zero;
         internal NativeMethods.OdinTokenGeneratorDestroyDelegate Free;
 
         /// <summary>

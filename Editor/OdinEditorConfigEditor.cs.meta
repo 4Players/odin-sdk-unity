@@ -4,7 +4,7 @@ MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
-  - myGUITexture: {fileID: 2800000, guid: ea9c35b1f04e56e438236790736a0791, type: 3}
+  - OdinBanner: {fileID: 2800000, guid: ea9c35b1f04e56e438236790736a0791, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

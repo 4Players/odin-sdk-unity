@@ -35,9 +35,9 @@ namespace OdinNative.Odin.Peer
 
         public bool IsReadOnly => false;
 
-        public void Add(Peer item)
+        public bool Add(Peer item)
         {
-            _Peers.TryAdd(item.Id, item);
+            return _Peers.TryAdd(item.Id, item);
         }
 
         public void Clear()

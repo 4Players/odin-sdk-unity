@@ -89,62 +89,8 @@ namespace OdinNative.Odin
 
         internal static string CreateAccessKey()
         {
-            return OdinLibrary.Api.GenerateKey();
+            return OdinLibrary.Api.GenerateAccessKey();
         }
-
-        #region Server
-        /// <summary>
-        /// Direct join or create a <see cref="Room.Room"/> by name
-        /// </summary>
-        /// <remarks>Initialize ODIN if <see cref="IsInitialized"/> is false</remarks>
-        /// <param name="name">Room name</param>
-        /// <returns><see cref="Room.Room"/> or null</returns>
-        public async Task<Room.Room> JoinRoom(string name, string customerId)
-        {
-            return await JoinRoom(name, customerId, UserData, null);
-        }
-
-        /// <summary>
-        /// Direct join or create a <see cref="Room.Room"/> by name
-        /// </summary>
-        /// <remarks>Initialize ODIN if <see cref="IsInitialized"/> is false</remarks>
-        /// <param name="name">Room name</param>
-        /// <param name="setup">will invoke to setup a room before adding or joining</param>
-        /// <returns><see cref="Room.Room"/> or null</returns>
-        public async Task<Room.Room> JoinRoom(string name, string customerId, Action<Room.Room> setup = null)
-        {
-            return await JoinRoom(name, customerId, UserData, setup);
-        }
-
-        /// <summary>
-        /// Direct join or create a <see cref="Room.Room"/> by name
-        /// </summary>
-        /// <remarks>Initialize ODIN if <see cref="IsInitialized"/> is false</remarks>
-        /// <param name="name">Room name</param>
-        /// <param name="userData">Set new <see cref="UserData"/> on room join</param>
-        /// <param name="setup">will invoke to setup a room before adding or joining</param>
-        /// <returns><see cref="Room.Room"/> or null</returns>
-        public async Task<Room.Room> JoinRoom(string name, string customerId, UserData userData, Action<Room.Room> setup)
-        {
-            if (string.IsNullOrEmpty(name)) throw new OdinWrapperException("Room name can not be null or empty!", new ArgumentNullException());
-            if (IsInitialized == false) Startup();
-
-            UserData = userData.IsEmpty() ? UserData : userData;
-            return await Task.Factory.StartNew<Room.Room>(() =>
-            {
-                var room = new Room.Room(EndPoint.ToString(), AccessKey, name);
-                setup?.Invoke(room);
-                Rooms.Add(room);
-                if (room.Join(customerId, UserData) == false)
-                {
-                    Rooms.Remove(room);
-                    room.Dispose();
-                    room = null;
-                }
-                return room;
-            });
-        }
-        #endregion Server
 
         #region Gateway
         /// <summary>
@@ -154,9 +100,9 @@ namespace OdinNative.Odin
         /// <param name="name">Room name</param>
         /// <param name="customerId">Customer ID</param>
         /// <returns><see cref="Room.Room"/> or null</returns>
-        public async Task<Room.Room> JoinRoom(string name, string userId, string customerId)
+        public async Task<Room.Room> JoinRoom(string name, string userId)
         {
-            return await JoinRoom(name, userId, customerId, UserData, null);
+            return await JoinRoom(name, userId, UserData, null);
         }
 
         /// <summary>
@@ -167,9 +113,9 @@ namespace OdinNative.Odin
         /// <param name="customerId">Customer ID</param>
         /// <param name="setup">will invoke to setup a room before adding or joining</param>
         /// <returns><see cref="Room.Room"/> or null</returns>
-        public async Task<Room.Room> JoinRoom(string name, string userId, string customerId, Action<Room.Room> setup = null)
+        public async Task<Room.Room> JoinRoom(string name, string userId, Action<Room.Room> setup = null)
         {
-            return await JoinRoom(name, userId, customerId, UserData, setup);
+            return await JoinRoom(name, userId, UserData, setup);
         }
 
         /// <summary>
@@ -182,7 +128,7 @@ namespace OdinNative.Odin
         /// <param name="userData">Set new <see cref="UserData"/> on room join</param>
         /// <param name="setup">will invoke to setup a room before adding or joining</param>
         /// <returns><see cref="Room.Room"/> or null</returns>
-        public async Task<Room.Room> JoinRoom(string name, string userId, string customerId, UserData userData, Action<Room.Room> setup)
+        public async Task<Room.Room> JoinRoom(string name, string userId, UserData userData, Action<Room.Room> setup)
         {
             if (string.IsNullOrEmpty(name)) throw new OdinWrapperException("Room name can not be null or empty!", new ArgumentNullException());
             if (IsInitialized == false) Startup();
@@ -193,7 +139,7 @@ namespace OdinNative.Odin
                 var room = new Room.Room(EndPoint.ToString(), AccessKey, name);
                 setup?.Invoke(room);
                 Rooms.Add(room);
-                if (room.Join(name, userId, customerId, UserData) == false)
+                if (room.Join(name, userId, UserData) == false)
                 {
                     Rooms.Remove(room);
                     room.Dispose();
@@ -257,6 +203,9 @@ namespace OdinNative.Odin
         /// <returns>true if removed from <see cref="Rooms"/> or false</returns>
         public async Task<bool> LeaveRoom(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return false;
+
             return await Task.Factory.StartNew<bool>(() =>
             {
                 // remove and dispose

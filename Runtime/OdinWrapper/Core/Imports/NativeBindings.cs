@@ -212,6 +212,12 @@ namespace OdinNative.Core.Imports
             public uint sample_rate;
             public byte channel_count;
         }
+
+        public enum OdinChannelLayout
+        {
+            OdinChannelLayout_Mono,
+            OdinChannelLayout_Stereo
+        }
         #endregion Odin
     }
 }

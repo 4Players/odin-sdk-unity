@@ -3,6 +3,7 @@ using OdinNative.Odin.Media;
 using OdinNative.Odin.Room;
 using OdinNative.Unity;
 using OdinNative.Unity.Audio;
+using OdinNative.Unity.Events;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -26,22 +27,68 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     public MicrophoneReader Microphone;
 
-    public delegate void CreateAudioMedia(string roomName, ulong peerId, int mediaId);
-    public delegate void CreateAudioMediaEx(Room room, OdinNative.Odin.Peer.Peer peer, PlaybackStream media);
-    public event CreateAudioMedia OnCreateMediaObject;
-    public event CreateAudioMediaEx OnCreatedMediaObject;
-
-    public delegate void DeleteAudioMedia(int mediaId);
-    public event DeleteAudioMedia OnDeleteMediaObject;
-
     public RoomCollection Rooms => Client.Rooms;
+    /// <summary>
+    /// Called before an actual room join
+    /// </summary>
+    public RoomJoinProxy OnRoomJoin;
+    /// <summary>
+    /// Called after a room is joined successfully
+    /// </summary>
+    /// <remarks>Invokes only on success</remarks>
+    public RoomJoinedProxy OnRoomJoined;
+    /// <summary>
+    /// Called before a room leave
+    /// </summary>
+    public RoomLeaveProxy OnRoomLeave;
+    /// <summary>
+    /// Called after a room is destroyed
+    /// </summary>
+    public RoomLeftProxy OnRoomLeft;
+
+    /// <summary>
+    /// Called on every Peer that joins in the same room(s)
+    /// </summary>
+    /// <remarks>Self is marked as Peer and this handler will trigger this invoke too</remarks>
+    public PeerJoinedProxy OnPeerJoined;
+    /// <summary>
+    /// Called on every Peer that updates his UserData in the same room(s)
+    /// </summary>
+    public PeerUpdatedProxy OnPeerUpdated;
+    /// <summary>
+    /// Called on every Peer that left in the same room(s)
+    /// </summary>
+    public PeerLeftProxy OnPeerLeft;
+    /// <summary>
+    /// Called on every Peer that created a media in the same room(s)
+    /// </summary>
+    public MediaAddedProxy OnMediaAdded;
+    /// <summary>
+    /// Called on every Peer that closed/destroyed one of his own media in the same room(s)
+    /// </summary>
+    /// <remarks>Invokes before <see cref="OnDeleteMediaObject"/></remarks>
+    public MediaRemovedProxy OnMediaRemoved;
+
+    /// <summary>
+    /// Called if this OdinHandler created a MediaStream that was requested by the MediaQueue
+    /// </summary>
+    /// <remarks>Invokes after <see cref="OnMediaAdded"/></remarks>
+    public UnityCreatedMediaObject OnCreatedMediaObject;
+    /// <summary>
+    /// Called if this OdinHandler destroyed a MediaStream that was closed by a remote peer and was requested by the MediaQueue
+    /// </summary>
+    /// <remarks>Invokes after <see cref="OnMediaRemoved"/></remarks>
+    public UnityDeleteMediaObject OnDeleteMediaObject;
+
+    internal ConcurrentQueue<KeyValuePair<object, System.EventArgs>> EventQueue;
+
     /// <summary>
     /// Internal Client Wrapper instance for ODIN ffi
     /// </summary>
     internal OdinClient Client;
     internal static bool Corrupted;
-    private ConcurrentQueue<KeyValuePair<Room, MediaAddedEvent>> MediaAddedQueue;
-    private ConcurrentQueue<KeyValuePair<Room, MediaRemovedEvent>> MediaRemovedQueue;
+    private ConcurrentQueue<KeyValuePair<Room, MediaAddedEventArgs>> MediaAddedQueue;
+    private ConcurrentQueue<KeyValuePair<Room, MediaRemovedEventArgs>> MediaRemovedQueue;
 
     private static readonly object Lock = new object();
     private static OdinEditorConfig _config;
@@ -80,7 +127,7 @@ public class OdinHandler : MonoBehaviour
         {
             lock (Lock)
             {
-                if(Corrupted) Debug.LogError("Native Plugin libraries in Unity corrupted!");
+                if (Corrupted) Debug.LogError("Native Plugin libraries in Unity corrupted!");
 
                 if (_instance != null)
                     return _instance;
@@ -136,44 +183,71 @@ public class OdinHandler : MonoBehaviour
             DontDestroyOnLoad(gameObject);
         Identifier = SystemInfo.deviceUniqueIdentifier;
 
-        MediaAddedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaAddedEvent>>();
-        MediaRemovedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaRemovedEvent>>();
+        MediaAddedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaAddedEventArgs>>();
+        MediaRemovedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaRemovedEventArgs>>();
+    }
+
+    void Start()
+    {
+        SetupEventProxy();
 
         UserData userData = new UserData(Config.UserDataText);
         if (userData.IsEmpty())
             userData = new OdinUserData().ToUserData();
 
-        if (string.IsNullOrEmpty(Config.AccessKey))
-        {
-            Debug.LogError("Access-Key was not set!");
-            Config.AccessKey = OdinClient.CreateAccessKey();
-            Debug.LogWarning("Using a generated test key!");
-        }
-
-        Client = new OdinClient(new System.Uri(Config.Server), Config.AccessKey, userData);
-
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.quitting += () => { Client?.Shutdown(); };
-#endif
-    }
-
-    void Start()
-    {
         try
         {
+            if (string.IsNullOrEmpty(Config.AccessKey))
+            {
+                Debug.LogError("Access-Key was not set!");
+                Config.AccessKey = OdinClient.CreateAccessKey();
+                Debug.LogWarning("Using a generated test key!");
+            }
+
+            Client = new OdinClient(new System.Uri(Config.Server), Config.AccessKey, userData);
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.quitting += () => { Client?.Shutdown(); };
+#endif
+
             Client.Startup();
         }
         catch (System.DllNotFoundException e)
         {
             Corrupted = true;
-            Debug.LogError("Native Plugin libraries for Unity corrupted!");
+            Debug.LogError("Native Plugin libraries for Unity not found!");
             Debug.LogException(e);
-            Destroy(this);
+            Destroy(this.gameObject);
             return;
         }
 
-        if (Microphone == null)
+        if (Microphone == null && Corrupted == false)
             Microphone = gameObject.AddComponent<MicrophoneReader>();
+    }
+
+    private void SetupEventProxy(bool customProxy = false)
+    {
+        EventQueue = new ConcurrentQueue<KeyValuePair<object, System.EventArgs>>();
+
+        if (OnCreatedMediaObject == null) OnCreatedMediaObject = new UnityCreatedMediaObject();
+        if (OnDeleteMediaObject == null) OnDeleteMediaObject = new UnityDeleteMediaObject();
+
+        //Room
+        if (OnRoomJoin == null) OnRoomJoin = new RoomJoinProxy();
+        if (OnRoomJoined == null) OnRoomJoined = new RoomJoinedProxy();
+        if (OnRoomLeave == null) OnRoomLeave = new RoomLeaveProxy();
+        if (OnRoomLeft == null) OnRoomLeft = new RoomLeftProxy();
+        //sub Room
+        if (OnPeerJoined == null) OnPeerJoined = new PeerJoinedProxy();
+        if (customProxy) OnPeerJoined.AddListener(new UnityEngine.Events.UnityAction<object, PeerJoinedEventArgs>(Room_OnPeerJoined));
+        if (OnPeerUpdated == null) OnPeerUpdated = new PeerUpdatedProxy();
+        if (customProxy) OnPeerUpdated.AddListener(new UnityEngine.Events.UnityAction<object, PeerUpdatedEventArgs>(Room_OnPeerUpdated));
+        if (OnPeerLeft == null) OnPeerLeft = new PeerLeftProxy();
+        if (customProxy) OnPeerLeft.AddListener(new UnityEngine.Events.UnityAction<object, PeerLeftEventArgs>(Room_OnPeerLeft));
+        if (OnMediaAdded == null) OnMediaAdded = new MediaAddedProxy();
+        if (customProxy) OnMediaAdded.AddListener(new UnityEngine.Events.UnityAction<object, MediaAddedEventArgs>(Room_OnMediaAdded));
+        if (OnMediaRemoved == null) OnMediaRemoved = new MediaRemovedProxy();
+        if (customProxy) OnMediaRemoved.AddListener(new UnityEngine.Events.UnityAction<object, MediaRemovedEventArgs>(Room_OnMediaRemoved));
     }
 
     public OdinUserData GetUserData()
@@ -186,8 +260,14 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     /// <remarks>Configure event liseners with <see cref="Config"/></remarks>
     /// <param name="name">Room name</param>
-    public async void JoinRoom(string roomName, string userId, string customerId = "", System.Action<Room> setup = null)
+    public async void JoinRoom(string roomName, string userId, System.Action<Room> setup = null)
     {
+        if(string.IsNullOrEmpty(roomName))
+        {
+            Debug.LogError("Room name can not be empty!");
+            return;
+        }
+
         if (Client.Rooms[roomName] != null)
         {
             Debug.LogError($"Room {roomName} already joined!");
@@ -213,17 +293,25 @@ public class OdinHandler : MonoBehaviour
                     NoiseSuppsressionLevel = cfg.NoiseSuppressionLevel,
                     TransientSuppressor = cfg.TransientSuppressor,
                 });
+
+                EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
+                    this,
+                    new RoomJoinEventArgs() { Room = r }));
             };
 
-        Room room = await Client.JoinRoom(roomName, userId, customerId, setup);
+        Room room = await Client.JoinRoom(roomName, userId, setup);
 
         if (room == null || room.IsJoined == false)
         {
             Debug.LogError($"Room {roomName} join failed!");
             return;
         }
-
         Debug.Log($"Room {room.Config.Name} joined as {userId}.");
+
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
+            this, 
+            new RoomJoinedEventArgs() { Room = room }));
+
         if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
             Debug.Log($"MicrophoneStream added to room {roomName}.");
     }
@@ -234,8 +322,33 @@ public class OdinHandler : MonoBehaviour
     /// <param name="roomName">Room name</param>
     public async void LeaveRoom(string roomName)
     {
+        if (string.IsNullOrEmpty(roomName))
+        {
+            Debug.LogError("Room name can not be empty!");
+            return;
+        }
+
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
+            this, 
+            new RoomLeaveEventArgs() { Room = Rooms[roomName] } ));
+
+        if (CreatePlayback && Use3DAudio == false)
+        {
+            var playbacks = FindObjectsOfType<PlaybackComponent>()
+                .Where(p => p.RoomName == roomName);
+
+            foreach (PlaybackComponent playback in playbacks)
+                DestroyImmediate(playback);
+        }
+
         if (await Client.LeaveRoom(roomName) == false)
             Debug.LogWarning($"Room {roomName} not found!");
+        else
+        {
+            EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
+                this,
+                new RoomLeftEventArgs() { RoomName = roomName }));
+        }
     }
 
     /// <summary>
@@ -243,7 +356,7 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     /// <param name="sender"><see cref="Room"/> object</param>
     /// <param name="e">PeerJoined Args</param>
-    protected virtual void Room_OnPeerJoined(object sender, PeerJoinedEvent e)
+    protected virtual void Room_OnPeerJoined(object sender, PeerJoinedEventArgs e)
     {
         if (Config.Verbose)
         {
@@ -254,6 +367,8 @@ public class OdinHandler : MonoBehaviour
         if (room.Self == null)
             if (e.Peer.UserData.Contains(Identifier))
                 room.Self = e.Peer;
+
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
 
     /// <summary>
@@ -261,13 +376,15 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     /// <param name="sender"><see cref="Room"/> object</param>
     /// <param name="e">PeerLeft Args</param>
-    protected virtual void Room_OnPeerLeft(object sender, PeerLeftEvent e)
+    protected virtual void Room_OnPeerLeft(object sender, PeerLeftEventArgs e)
     {
         if (Config.Verbose)
         {
             Debug.Log("Room: " + (sender as Room).Config.Name);
             Debug.Log(string.Format("User left {0}", e.PeerId));
         }
+
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
 
     /// <summary>
@@ -275,13 +392,15 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     /// <param name="sender"><see cref="Room"/> object</param>
     /// <param name="e">PeerUpdated Args</param>
-    protected virtual void Room_OnPeerUpdated(object sender, PeerUpdatedEvent e)
+    protected virtual void Room_OnPeerUpdated(object sender, PeerUpdatedEventArgs e)
     {
         if (Config.Verbose)
         {
             Debug.Log("Room: " + (sender as Room).Config.Name);
             Debug.Log(string.Format("User {0} updated {1}", e.PeerId, e.UserData));
         }
+
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
 
     /// <summary>
@@ -290,7 +409,7 @@ public class OdinHandler : MonoBehaviour
     /// <remarks>The remote <see cref="MediaStream"/> is always a <see cref="PlaybackStream"/> and readonly.</remarks>
     /// <param name="sender"><see cref="Room"/> object</param>
     /// <param name="e">MediaAdded Args</param>
-    protected virtual void Room_OnMediaAdded(object sender, MediaAddedEvent e)
+    protected virtual void Room_OnMediaAdded(object sender, MediaAddedEventArgs e)
     {
         if (Config.Verbose)
         {
@@ -299,16 +418,17 @@ public class OdinHandler : MonoBehaviour
         }
 
         // Push for unity thread
-        MediaAddedQueue.Enqueue(new KeyValuePair<Room, MediaAddedEvent>(sender as Room, e));
+        MediaAddedQueue.Enqueue(new KeyValuePair<Room, MediaAddedEventArgs>(sender as Room, e));
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
 
     /// <summary>
     /// Room audio/video stream is closed in the room.
     /// </summary>
-    /// <remarks>Peer and Media in <see cref="MediaRemovedEvent"/> is null if the peer left before the owned Medias are removed</remarks>
+    /// <remarks>Peer and Media in <see cref="MediaRemovedEventArgs"/> is null if the peer left before the owned Medias are removed</remarks>
     /// <param name="sender"><see cref="Room"/> object</param>
     /// <param name="e">MediaRemoved Args with MediaId</param>
-    protected virtual void Room_OnMediaRemoved(object sender, MediaRemovedEvent e)
+    protected virtual void Room_OnMediaRemoved(object sender, MediaRemovedEventArgs e)
     {
         if (Config.Verbose)
         {
@@ -317,7 +437,8 @@ public class OdinHandler : MonoBehaviour
         }
 
         // Push for unity thread
-        MediaRemovedQueue.Enqueue(new KeyValuePair<Room, MediaRemovedEvent>(sender as Room, e));
+        MediaRemovedQueue.Enqueue(new KeyValuePair<Room, MediaRemovedEventArgs>(sender as Room, e));
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
 
     private void FixedUpdate()
@@ -326,27 +447,59 @@ public class OdinHandler : MonoBehaviour
 
         HandleNewMediaQueue();
         HandleRemoveMediaQueue();
+        HandleEventQueue();
+    }
+
+    private void HandleEventQueue()
+    {
+        while (EventQueue.TryDequeue(out KeyValuePair<object, System.EventArgs> uEvent))
+        {
+            //Room
+            if (uEvent.Value is RoomJoinEventArgs)
+                OnRoomJoin?.Invoke(uEvent.Value as RoomJoinEventArgs);
+            else if (uEvent.Value is RoomJoinedEventArgs)
+                OnRoomJoined?.Invoke(uEvent.Value as RoomJoinedEventArgs);
+            else if (uEvent.Value is RoomLeaveEventArgs)
+                OnRoomLeave?.Invoke(uEvent.Value as RoomLeaveEventArgs);
+            else if (uEvent.Value is RoomLeftEventArgs)
+                OnRoomLeft?.Invoke(uEvent.Value as RoomLeftEventArgs);
+            //SubRoom
+            else if (uEvent.Value is PeerJoinedEventArgs)
+                OnPeerJoined?.Invoke(uEvent.Key, uEvent.Value as PeerJoinedEventArgs);
+            else if (uEvent.Value is PeerUpdatedEventArgs)
+                OnPeerUpdated?.Invoke(uEvent.Key, uEvent.Value as PeerUpdatedEventArgs);
+            else if (uEvent.Value is PeerLeftEventArgs)
+                OnPeerLeft?.Invoke(uEvent.Key, uEvent.Value as PeerLeftEventArgs);
+            else if (uEvent.Value is MediaAddedEventArgs)
+                OnMediaAdded?.Invoke(uEvent.Key, uEvent.Value as MediaAddedEventArgs);
+            else if (uEvent.Value is MediaRemovedEventArgs)
+                OnMediaRemoved?.Invoke(uEvent.Key, uEvent.Value as MediaRemovedEventArgs);
+            else
+                Debug.LogWarning($"Call to invoke unknown event skipped: {uEvent.Value.GetType()} from {nameof(uEvent.Key)} ({uEvent.Key.GetType()})");
+        }
     }
 
     private void HandleNewMediaQueue()
     {
-        if (MediaAddedQueue.TryDequeue(out KeyValuePair<Room, MediaAddedEvent> addedEvent))
+        if (MediaAddedQueue.TryDequeue(out KeyValuePair<Room, MediaAddedEventArgs> addedEvent))
         {
-            OnCreateMediaObject?.Invoke(addedEvent.Key.Config.Name, addedEvent.Value.Peer.Id, addedEvent.Value.Media.Id);
 
             if (CreatePlayback)
                 if (Use3DAudio)
+                {
+                    Debug.LogWarning("Create Playback and 3D Audio enabled at the same time has currently limit support and uses FindGameObjectsWithTag with UnityAudioSourceTag tagged gameobjects.");
                     AssignPlaybackComponent(UnityAudioSourceTag, addedEvent);
+                }
                 else
                     AssignPlaybackComponent(this.gameObject, addedEvent);
-            else if(Config.Verbose)
+            else if (Config.Verbose)
                 Debug.LogWarning($"No available consumers for playback found.");
 
-            OnCreatedMediaObject?.Invoke(addedEvent.Key, addedEvent.Value.Peer, addedEvent.Value.Media);
+            OnCreatedMediaObject?.Invoke(addedEvent.Key.Config.Name, addedEvent.Value.Peer.Id, addedEvent.Value.Media.Id);
         }
     }
 
-    private PlaybackComponent AssignPlaybackComponent(string gameObjectTag, KeyValuePair<Room, MediaAddedEvent> addedEvent)
+    private PlaybackComponent AssignPlaybackComponent(string gameObjectTag, KeyValuePair<Room, MediaAddedEventArgs> addedEvent)
     {
         return AssignPlaybackComponent(GetPeerContainer(gameObjectTag),
             addedEvent.Key.Config.Name,
@@ -354,7 +507,7 @@ public class OdinHandler : MonoBehaviour
             addedEvent.Value.Media.Id);
     }
 
-    private PlaybackComponent AssignPlaybackComponent(GameObject peerContainer, KeyValuePair<Room, MediaAddedEvent> addedEvent)
+    private PlaybackComponent AssignPlaybackComponent(GameObject peerContainer, KeyValuePair<Room, MediaAddedEventArgs> addedEvent)
     {
         return AssignPlaybackComponent(peerContainer,
             addedEvent.Key.Config.Name,
@@ -375,9 +528,12 @@ public class OdinHandler : MonoBehaviour
     {
         GameObject[] gameObjects = GameObject.FindGameObjectsWithTag(gameObjectTag);
         if (gameObjects.Length == 0)
-            Debug.Log($"No game objects are tagged with '{gameObjectTag}'");
+            Debug.LogWarning($"No game objects are tagged with '{gameObjectTag}'");
+        var free = gameObjects.Where(g => g.GetComponent<PlaybackComponent>() == null);
+        if (free.Count() == 0)
+            Debug.LogWarning($"No game objects are free with '{gameObjectTag}' tag ({free.Count()}/{gameObjects.Length})");
 
-        return gameObjects.LastOrDefault();
+        return free.FirstOrDefault();
     }
 
     public PlaybackComponent AssignPlaybackComponent(GameObject peerContainer, string roomName, ulong peerId, int mediaId, bool autoDestroySource = true)
@@ -402,7 +558,7 @@ public class OdinHandler : MonoBehaviour
 
     private void HandleRemoveMediaQueue()
     {
-        if (MediaRemovedQueue.TryDequeue(out KeyValuePair<Room, MediaRemovedEvent> removedEvent))
+        if (MediaRemovedQueue.TryDequeue(out KeyValuePair<Room, MediaRemovedEventArgs> removedEvent))
         {
             OnDeleteMediaObject?.Invoke(removedEvent.Value.MediaId);
 

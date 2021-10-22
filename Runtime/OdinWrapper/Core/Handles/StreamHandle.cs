@@ -10,7 +10,7 @@ namespace OdinNative.Core.Handles
 {
     class StreamHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        public static implicit operator IntPtr(StreamHandle handle) => handle.DangerousGetHandle();
+        public static implicit operator IntPtr(StreamHandle handle) => handle?.DangerousGetHandle() ?? IntPtr.Zero;
         internal NativeMethods.OdinMediaStreamDestroyDelegate Free;
         private bool OwnsHandle;
 

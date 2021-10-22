@@ -3,6 +3,7 @@ using OdinNative.Odin.Peer;
 using OdinNative.Odin.Room;
 using OdinNative.Unity;
 using OdinNative.Unity.Audio;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +17,9 @@ public class Odin3dTrigger : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        OdinHandler.Instance.OnCreatedMediaObject += Instance_OnCreatedMediaObject;
-        OdinHandler.Instance.OnDeleteMediaObject += Instance_OnDeleteMediaObject;
+        OdinHandler.Instance.OnCreatedMediaObject.AddListener(Instance_OnCreatedMediaObject);
+        OdinHandler.Instance.OnDeleteMediaObject.AddListener(Instance_OnDeleteMediaObject);
+        OdinHandler.Instance.OnRoomLeft.AddListener(Instance_OnRoomLeft);
 
         var SelfData = OdinHandler.Instance.GetUserData();
         //Set Player
@@ -34,14 +36,16 @@ public class Odin3dTrigger : MonoBehaviour
         return Instantiate(prefab, new Vector3(0, 0.5f, 6), Quaternion.identity);
     }
 
-    private void Instance_OnCreatedMediaObject(Room room, Peer peer, PlaybackStream media)
+    private void Instance_OnCreatedMediaObject(string roomName, ulong peerId, int mediaId)
     {
-        if (room.Self.Id == peer.Id) return;
+        Room room = OdinHandler.Instance.Rooms[roomName];
+        if (room == null || room.Self.Id == peerId) return;
+
         //create dummy PeerCube
         var peerContainer = CreateObject();
+        //Add PlaybackComponent to new dummy PeerCube
+        PlaybackComponent playback = OdinHandler.Instance.AssignPlaybackComponent(peerContainer, room.Config.Name, peerId, mediaId);
 
-        //Add PlaybackComponent to dummy PeerCube
-        var playback = OdinHandler.Instance.AssignPlaybackComponent(peerContainer, room.Config.Name, peer.Id, media.Id);
         //Update Example
         //playback.CheckPlayingStatusInUpdate = true; // set checking status per frame active
         //InvokeRepeating Example
@@ -53,9 +57,9 @@ public class Odin3dTrigger : MonoBehaviour
         playback.PlaybackSource.spatialBlend = 1.0f; // set AudioSource to full 3D
 
         //set dummy PeerCube label
-        var data = OdinUserData.FromUserData(peer.UserData);
-        peerContainer.GetComponentInChildren<TextMesh>().text = $"{data.name} (Peer {playback.PeerId} Media {playback.MediaId})";
-        PeersObjects.Add(peerContainer);
+        var data = OdinUserData.FromUserData(room.RemotePeers[peerId]?.UserData);
+        playback.gameObject.GetComponentInChildren<TextMesh>().text = $"{data.name} (Peer {peerId} Media {mediaId})";
+        PeersObjects.Add(playback.gameObject);
     }
 
     private void TalkIndicator(PlaybackComponent playback, bool status)
@@ -72,11 +76,26 @@ public class Odin3dTrigger : MonoBehaviour
 
     private void Instance_OnDeleteMediaObject(int mediaId)
     {
-        var obj = PeersObjects.FirstOrDefault(o => o.GetComponent<PlaybackComponent>()?.MediaId == mediaId);
+        GameObject obj = PeersObjects.FirstOrDefault(o => o.GetComponent<PlaybackComponent>()?.MediaId == mediaId);
         if (obj == null) return;
 
         PeersObjects.Remove(obj);
         Destroy(obj);
+    }
+
+    private void Instance_OnRoomLeft(RoomLeftEventArgs args)
+    {
+        GameObject[] objs = PeersObjects
+            .Where(o => o.GetComponent<PlaybackComponent>()?.RoomName == args.RoomName)
+            .ToArray();
+
+        if (objs.Length <= 0) return;
+
+        foreach (var obj in objs)
+        {
+            PeersObjects.Remove(obj);
+            Destroy(obj);
+        }
     }
 
     private void OnDestroy()

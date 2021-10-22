@@ -77,7 +77,7 @@ namespace OdinNative.Core
         /// <exception cref="NullReferenceException"><paramref name="OdinLibraryParameters"/> is null</exception>
         public static void Initialize(OdinLibraryParameters parameters)
         {
-            Utility.Require.NotNull(nameof(parameters), parameters);
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
             InitializedLock.AcquireWriterLock(Timeout.Infinite);
             try
@@ -140,7 +140,7 @@ namespace OdinNative.Core
             Release();
         }
 
-        internal static Exception CreateException(uint error, string extraMessage = null)
+        internal static Exception CreateException(int error, string extraMessage = null)
         {
             string message = Api.GetErrorMessage(error);
             OdinException result = new OdinException(error, message);
