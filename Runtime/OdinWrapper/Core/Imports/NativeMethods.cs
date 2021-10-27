@@ -75,7 +75,7 @@ namespace OdinNative.Core.Imports
         internal delegate int OdinRoomUpdateUserDataDelegate(IntPtr room, byte[] userData, ulong userDataLength);
         readonly OdinRoomUpdateUserDataDelegate _OdinRoomUpdateUserData;
 
-        public delegate void OdinEventCallback(IntPtr room, NativeBindings.OdinEvent odinEvent, IntPtr userDataPtr);
+        public delegate void OdinEventCallback(IntPtr room, IntPtr odinEvent, IntPtr userData);
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate int OdinRoomSetEventCallbackDelegate(IntPtr room, OdinEventCallback callback);
         readonly OdinRoomSetEventCallbackDelegate _OdinRoomSetEventCallback;

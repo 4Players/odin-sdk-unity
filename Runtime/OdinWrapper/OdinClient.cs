@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -224,10 +225,12 @@ namespace OdinNative.Odin
 #if ENABLE_MONO
         [AOT.MonoPInvokeCallback(typeof(Core.Imports.NativeMethods.OdinEventCallback))]
 #endif
-        internal static void OnEventReceivedProxy(IntPtr roomPtr, Core.Imports.NativeBindings.OdinEvent @event, IntPtr userDataPtr)
+        internal static void OnEventReceivedProxy(IntPtr roomPtr, IntPtr odinEvent, IntPtr userData)
         {
             try
             {
+                var @event = Marshal.PtrToStructure<Core.Imports.NativeBindings.OdinEvent>(odinEvent);
+
                 if (@event.tag == Core.Imports.NativeBindings.OdinEventTag.OdinEvent_ConnectionStateChanged)
                 {
                     ConnectionState = @event.StateChanged.state;
@@ -238,7 +241,7 @@ namespace OdinNative.Odin
                 if (sender != null)
                 {
                     //TODO get event userDataPtr and sanitize e.g 3D-Audio
-                    sender.OnEventReceived(sender, @event, userDataPtr);
+                    sender.OnEventReceived(sender, @event, userData);
                 }
             }
             catch
