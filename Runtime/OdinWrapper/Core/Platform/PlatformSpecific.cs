@@ -34,7 +34,7 @@ namespace OdinNative.Core.Platform
 
         private static class NativeUnixMehods
         {
-#if UNITY_STANDALONE_WIN && ENABLE_IL2CPP
+#if (UNITY_STANDALONE_WIN && ENABLE_IL2CPP) || UNITY_WSA || UNITY_UWP
             public static IntPtr dlopen(string filename, int flags) => IntPtr.Zero;
             public static IntPtr dlerror() => IntPtr.Zero;
             public static IntPtr dlsym(IntPtr id, string symbol) => IntPtr.Zero;
