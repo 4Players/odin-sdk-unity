@@ -95,7 +95,7 @@ public class OdinHandler : MonoBehaviour
 
     internal string Identifier { get; private set; }
     /// <summary>
-    /// Singleton reference to Global <see cref="OdinEditorConfig"/>
+    /// Static reference to Global <see cref="OdinEditorConfig"/>
     /// </summary>
     /// <remarks>Is a <see cref="RequireComponent"/></remarks>
     public static OdinEditorConfig Config
@@ -116,38 +116,11 @@ public class OdinHandler : MonoBehaviour
         }
     }
 
-    private static OdinHandler _instance;
     /// <summary>
     /// Singleton reference to this <see cref="OdinHandler"/>
     /// </summary>
     /// <remarks>Provides access to the client with a usual Unity singleton pattern and add a instance if the client is missing in the scene</remarks>
-    public static OdinHandler Instance
-    {
-        get
-        {
-            lock (Lock)
-            {
-                if (Corrupted) Debug.LogError("Native Plugin libraries in Unity corrupted!");
-
-                if (_instance != null)
-                    return _instance;
-
-                var instances = FindObjectsOfType<OdinHandler>();
-                if (instances.Length > 0)
-                {
-                    if (instances.Length == 1)
-                        return _instance = instances[0];
-
-                    for (var i = 1; i < instances.Length; i++)
-                        Destroy(instances[i]);
-
-                    return _instance = instances[0];
-                }
-
-                return _instance;
-            }
-        }
-    }
+    public static OdinHandler Instance { get; private set; }
 
     [Header("OdinClient Settings")]
     [SerializeField]
@@ -178,19 +151,27 @@ public class OdinHandler : MonoBehaviour
 
     void Awake()
     {
-        _instance = this;
+        if (Instance != null && Instance != this)
+            Destroy(gameObject);
+        else
+            Instance = this;
+
         if (_persistent)
             DontDestroyOnLoad(gameObject);
+
         Identifier = SystemInfo.deviceUniqueIdentifier;
 
         MediaAddedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaAddedEventArgs>>();
         MediaRemovedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaRemovedEventArgs>>();
     }
 
-    void Start()
+    void OnEnable()
     {
         SetupEventProxy();
+    }
 
+    void Start()
+    {
         UserData userData = new UserData(Config.UserDataText);
         if (userData.IsEmpty())
             userData = new OdinUserData().ToUserData();
@@ -606,7 +587,6 @@ public class OdinHandler : MonoBehaviour
     {
         if (Corrupted) return;
 
-        Client.Shutdown();
-        Client.Dispose();
+        Client?.Dispose();
     }
 }

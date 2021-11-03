@@ -25,7 +25,7 @@ namespace OdinNative.Core
         /// <returns>true if error</returns>
         public static bool IsError(int error)
         {
-            return (error >> 29) > 0;
+            return ((UInt32)error >> 29) > 0;
         }
     }
 }

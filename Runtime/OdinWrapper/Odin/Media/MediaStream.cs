@@ -19,6 +19,7 @@ namespace OdinNative.Odin.Media
         /// Media id
         /// </summary>
         public int Id { get; internal set; }
+        internal ulong PeerId => GetPeerId();
         /// <summary>
         /// Audio config
         /// </summary>
@@ -48,10 +49,24 @@ namespace OdinNative.Odin.Media
         }
 
         /// <summary>
-        /// Media id
+        /// Refresh the media id and set <see cref="Id"/>
         /// </summary>
         /// <returns>id value</returns>
-        public int GetId() => Id;
+        public int GetMediaId()
+        { 
+            OdinLibrary.Api.MediaStreamMediaId(Handle, out ushort mediaId);
+            return Id = mediaId;
+        }
+
+        /// <summary>
+        /// Get the peer id
+        /// </summary>
+        /// <returns>id</returns>
+        public ulong GetPeerId()
+        {
+            OdinLibrary.Api.MediaStreamPeerId(Handle, out ulong peerId);
+            return peerId;
+        }
 
         /// <summary>
         /// Set <see cref="IsMuted"/>

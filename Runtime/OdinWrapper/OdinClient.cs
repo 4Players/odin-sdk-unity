@@ -222,10 +222,10 @@ namespace OdinNative.Odin
         /// <param name="roomPtr">sender room pointer</param>
         /// <param name="event">OdinEvent struct</param>
         /// <param name="userDataPtr">userdata pointer</param>
-#if ENABLE_MONO
+#if ENABLE_MONO || UNITY_STANDALONE_WIN
         [AOT.MonoPInvokeCallback(typeof(Core.Imports.NativeMethods.OdinEventCallback))]
 #endif
-        internal static void OnEventReceivedProxy(IntPtr roomPtr, IntPtr odinEvent, IntPtr userData)
+        internal static void OnEventReceivedProxy(IntPtr roomPtr, IntPtr odinEvent, IntPtr extraData)
         {
             try
             {
@@ -241,7 +241,7 @@ namespace OdinNative.Odin
                 if (sender != null)
                 {
                     //TODO get event userDataPtr and sanitize e.g 3D-Audio
-                    sender.OnEventReceived(sender, @event, userData);
+                    sender.OnEventReceived(sender, @event, extraData);
                 }
             }
             catch
@@ -256,10 +256,8 @@ namespace OdinNative.Odin
         {
             if (Rooms == null) return;
 
-            foreach (var room in Rooms)
-                room.Dispose();
-
-            Rooms.Clear();
+            try { Rooms.FreeAll(); }
+            catch { /* nop */ }
         }
 
         /// <summary>
@@ -267,8 +265,9 @@ namespace OdinNative.Odin
         /// </summary>
         internal void Shutdown()
         {
-            OdinLibrary.Api.Shutdown();
-            //IsInitialized = false;
+            try { OdinLibrary.Api.Shutdown(); }
+            catch { /* nop */ }
+            IsInitialized = false;
         }
 
         private bool disposedValue;
@@ -280,7 +279,10 @@ namespace OdinNative.Odin
                 {
                     Close();
                 }
-                Shutdown();
+
+                if (IsInitialized)
+                    Shutdown();
+
                 disposedValue = true;
             }
         }

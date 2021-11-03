@@ -107,6 +107,12 @@ namespace OdinNative.Odin.Room
             return result;
         }
 
+        internal void FreeAll()
+        {
+            foreach (var kvp in _Rooms)
+                Free(kvp.Key);
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
             return _Rooms.GetEnumerator();

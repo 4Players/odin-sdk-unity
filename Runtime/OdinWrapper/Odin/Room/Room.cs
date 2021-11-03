@@ -30,6 +30,8 @@ namespace OdinNative.Odin.Room
         /// Client Peer
         /// </summary>
         public Peer.Peer Self { get; internal set; }
+        private ulong _JoinedId;
+        internal ref readonly ulong OwnId => ref _JoinedId;
         private UserData Data;
 
         /// <summary>
@@ -143,7 +145,8 @@ namespace OdinNative.Odin.Room
                 Config.Server,
                 token,
                 data,
-                data.Length);
+                data.Length,
+                out _JoinedId);
         }
 
         /// <summary>
@@ -158,7 +161,10 @@ namespace OdinNative.Odin.Room
             MicrophoneStream stream = new MicrophoneStream(config);
             bool result = stream.AddMediaToRoom(_Handle);
             if (result)
+            {
+                stream.GetMediaId();
                 MicrophoneMedia = stream;
+            }
             else
                 stream.Dispose();
 
@@ -258,8 +264,8 @@ namespace OdinNative.Odin.Room
         /// <remarks>Events: PeerJoined, PeerLeft, PeerUpdated, MediaAdded, MediaRemoved</remarks>
         /// <param name="_">this instance</param>
         /// <param name="event">OdinEvent struct</param>
-        /// <param name="userDataPtr">userdata pointer</param>
-        internal void OnEventReceived(Room _, OdinEvent @event, IntPtr userDataPtr)
+        /// <param name="extraData">userdata pointer</param>
+        internal void OnEventReceived(Room _, OdinEvent @event, IntPtr extraData)
         {
             byte[] GetUserData(IntPtr data, ulong size)
             {
@@ -280,7 +286,11 @@ namespace OdinNative.Odin.Room
                     byte[] data = GetUserData(@event.peer_joined.user_data, @event.peer_joined.user_data_len);
                     UserData userData = new UserData(data);
                     var peer = new Peer.Peer(@event.peer_left.id, this.Config.Name, userData);
-                    RemotePeers.Add(peer);
+
+                    if (OwnId == peer.Id)
+                        Self = peer;
+                    else
+                        RemotePeers.Add(peer);
 
                     OnPeerJoined?.Invoke(this, new PeerJoinedEventArgs()
                     {
@@ -347,23 +357,21 @@ namespace OdinNative.Odin.Room
                     });
                     break;
                 case OdinEventTag.OdinEvent_MediaRemoved:
-                    MediaStream removingMedia = null;
-                    // Remove media from peer
-                    var peerWithMedia = RemotePeers.FirstOrDefault(p => p.Medias.Any(m => m.Id == @event.media_removed.media_id));
-                    if (peerWithMedia == null)
+                    if(Self != null && Self.Medias.Any(m => m.Id == @event.media_removed.media_id))
                     {
                         Self?.RemoveMedia(@event.media_removed.media_id);
+                        break;
                     }
-                    else
-                    {
-                        removingMedia = peerWithMedia?.Medias[@event.media_removed.media_id];
-                        peerWithMedia?.RemoveMedia(@event.media_removed.media_id);
-                    }
+
+                    // Remove media from peer
+                    var peerWithMedia = RemotePeers.FirstOrDefault(p => p.Medias.Any(m => m.Id == @event.media_removed.media_id));
+                    peerWithMedia?.RemoveMedia(@event.media_removed.media_id);
+
                     OnMediaRemoved?.Invoke(this, new MediaRemovedEventArgs()
                     {
                         MediaId = @event.media_removed.media_id,
                         Peer = peerWithMedia,
-                        Media = removingMedia
+                        Media = peerWithMedia?.Medias[@event.media_removed.media_id]
                     });
                     break;
                 case OdinEventTag.OdinEvent_None:

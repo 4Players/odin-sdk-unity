@@ -62,10 +62,8 @@ namespace OdinNative.Core.Imports
         readonly OdinRoomDestroyDelegate _OdinRoomDestroy;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate int OdinRoomJoinDelegate(IntPtr room, string gatewayUrl, string roomToken, byte[] userData, ulong userDataLength);
+        internal delegate int OdinRoomJoinDelegate(IntPtr room, string gatewayUrl, string roomToken, byte[] userData, ulong userDataLength, [Out] out UInt64 ownPeerIdOut);
         readonly OdinRoomJoinDelegate _OdinRoomJoin;
-        internal delegate int OdinRoomJoinDirectDelegate(IntPtr room, string url, string roomId, byte[] userData, ulong userDataLength);
-        readonly OdinRoomJoinDirectDelegate _OdinRoomJoinDirect;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate int OdinRoomAddMediaDelegate(IntPtr room, IntPtr mediaStream);
@@ -117,6 +115,14 @@ namespace OdinNative.Core.Imports
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate int OdinAudioReadDataDelegate(IntPtr mediaStream, [In, Out][MarshalAs(UnmanagedType.LPArray)] float[] buffer, [In] int bufferLength);
         readonly OdinAudioReadDataDelegate _OdinAudioReadData;
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinMediaStreamMediaIdDelegate(IntPtr mediaStream, [Out] out ushort mediaId);
+        readonly OdinMediaStreamMediaIdDelegate _OdinMediaStreamMediaId;
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinMediaStreamPeerIdDelegate(IntPtr mediaStream, [Out] out ulong peerId);
+        readonly OdinMediaStreamPeerIdDelegate _OdinMediaStreamPeerId;        
         #endregion Media
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
@@ -139,7 +145,6 @@ namespace OdinNative.Core.Imports
             handle.GetLibraryMethod("odin_room_configure_apm", out _OdinRoomConfigureApm);
             handle.GetLibraryMethod("odin_room_destroy", out _OdinRoomDestroy);
             handle.GetLibraryMethod("odin_room_join", out _OdinRoomJoin);
-            handle.GetLibraryMethod("odin_room_join_direct", out _OdinRoomJoinDirect);
             handle.GetLibraryMethod("odin_room_add_media", out _OdinRoomAddMedia);
             handle.GetLibraryMethod("odin_room_update_user_data", out _OdinRoomUpdateUserData);
             handle.GetLibraryMethod("odin_room_set_event_callback", out _OdinRoomSetEventCallback);
@@ -147,6 +152,8 @@ namespace OdinNative.Core.Imports
             handle.GetLibraryMethod("odin_audio_stream_create", out _OdinAudioStreamCreate);
             handle.GetLibraryMethod("odin_media_stream_destroy", out _OdinMediaStreamDestroy);
             handle.GetLibraryMethod("odin_media_stream_type", out _OdinMediaStreamType);
+            handle.GetLibraryMethod("odin_media_stream_media_id", out _OdinMediaStreamMediaId);
+            handle.GetLibraryMethod("odin_media_stream_peer_id", out _OdinMediaStreamPeerId);
             handle.GetLibraryMethod("odin_audio_push_data", out _OdinAudioPushData);
             handle.GetLibraryMethod("odin_audio_data_len", out _OdinAudioDataLen);
             handle.GetLibraryMethod("odin_audio_read_data", out _OdinAudioReadData);
@@ -340,30 +347,11 @@ namespace OdinNative.Core.Imports
         /// <param name="userData">*const u8</param>
         /// <param name="userDataLength">usize</param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public int RoomJoin(RoomHandle room, string gatewayUrl, string roomToken, byte[] userData, int userDataLength)
+        public int RoomJoin(RoomHandle room, string gatewayUrl, string roomToken, byte[] userData, int userDataLength, out ulong ownPeerId)
         {
             using (Lock)
             {
-                int error = _OdinRoomJoin(room, gatewayUrl, roomToken, userData, (ulong)userDataLength);
-                CheckAndThrow(error);
-                return error;
-            }
-        }
-
-        /// <summary>
-        /// Connect and join room on the url provided server
-        /// </summary>
-        /// <param name="room">*mut OdinRoom</param>
-        /// <param name="url">*const c_char</param>
-        /// <param name="roomId">*const c_char</param>
-        /// <param name="userData">*const u8</param>
-        /// <param name="userDataLength">usize</param>
-        /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public int RoomJoinDirect(RoomHandle room, string url, string roomId, byte[] userData, int userDataLength)
-        {
-            using (Lock)
-            {
-                int error = _OdinRoomJoinDirect(room, url, roomId, userData, (ulong)userDataLength);
+                int error = _OdinRoomJoin(room, gatewayUrl, roomToken, userData, (ulong)userDataLength, out ownPeerId);
                 CheckAndThrow(error);
                 return error;
             }
@@ -488,11 +476,44 @@ namespace OdinNative.Core.Imports
             }
         }
 
+
+        /// <summary>
+        /// Returns the media ID of the specified <see cref="StreamHandle"/>
+        /// </summary>
+        /// <param name="handle"><see cref="StreamHandle"/> *mut</param>
+        /// <param name="mediaId">media id of the handle</param>
+        /// <returns>error code that is readable with <see cref="ErrorFormat"/></returns>
+        public int MediaStreamMediaId(StreamHandle handle, out UInt16 mediaId)
+        {
+            using (Lock)
+            {
+                int error = _OdinMediaStreamMediaId(handle, out mediaId);
+                CheckAndThrow(error);
+                return error;
+            }
+        }
+
+        /// <summary>
+        /// Returns the peer ID of the specified <see cref="StreamHandle"/>
+        /// </summary>
+        /// <param name="handle"><see cref="StreamHandle"/> *mut</param>
+        /// <param name="peerId">peer id of the handle</param>
+        /// <returns>error code that is readable with <see cref="ErrorFormat"/></returns>
+        public int MediaStreamPeerId(StreamHandle handle, out UInt64 peerId)
+        {
+            using (Lock)
+            {
+                int error = _OdinMediaStreamPeerId(handle, out peerId);
+                CheckAndThrow(error);
+                return error;
+            }
+        }
+
         /// <summary>
         /// Destroy a native <see cref="StreamHandle"/> that is created before with <see cref="AudioStreamCreate"/>.
         /// </summary>
         /// <remarks> Should not be called on remote streams from <see cref="NativeBindings.AkiEvent"/>.</remarks>
-        /// <param name="mediaStream"><see cref="StreamHandle"/> *</param>
+        /// <param name="handle"><see cref="StreamHandle"/> *</param>
         public void MediaStreamDestroy(StreamHandle handle)
         {
             using (Lock)

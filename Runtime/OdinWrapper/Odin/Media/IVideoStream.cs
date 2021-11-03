@@ -8,6 +8,6 @@ namespace OdinNative.Odin.Media
 {
     interface IVideoStream
     {
-        int GetId();
+        int GetMediaId();
     }
 }
