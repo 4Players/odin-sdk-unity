@@ -93,6 +93,7 @@ public class OdinHandler : MonoBehaviour
     private static readonly object Lock = new object();
     private static OdinEditorConfig _config;
 
+    internal string ClientId { get; private set; }
     internal string Identifier { get; private set; }
     /// <summary>
     /// Static reference to Global <see cref="OdinEditorConfig"/>
@@ -122,6 +123,9 @@ public class OdinHandler : MonoBehaviour
     /// <remarks>Provides access to the client with a usual Unity singleton pattern and add a instance if the client is missing in the scene</remarks>
     public static OdinHandler Instance { get; private set; }
 
+    /// <summary>
+    /// Identify Odin client
+    /// </summary>
     [Header("OdinClient Settings")]
     [SerializeField]
     private bool _persistent = true;
@@ -159,19 +163,30 @@ public class OdinHandler : MonoBehaviour
         if (_persistent)
             DontDestroyOnLoad(gameObject);
 
+        ClientId = string.Join(".", Application.companyName, Application.productName);
         Identifier = SystemInfo.deviceUniqueIdentifier;
 
         MediaAddedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaAddedEventArgs>>();
         MediaRemovedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaRemovedEventArgs>>();
+
+        SetupEventProxy();
     }
 
     void OnEnable()
     {
-        SetupEventProxy();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.quitting += OnEditorApplicationQuitting;
+
+        UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+        UnityEditor.AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+#endif
     }
 
     void Start()
     {
+        if (string.IsNullOrEmpty(Config.ClientId))
+            Config.ClientId = ClientId;
+
         UserData userData = new UserData(Config.UserDataText);
         if (userData.IsEmpty())
             userData = new OdinUserData().ToUserData();
@@ -186,11 +201,6 @@ public class OdinHandler : MonoBehaviour
             }
 
             Client = new OdinClient(new System.Uri(Config.Server), Config.AccessKey, userData);
-
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.quitting += () => { Client?.Shutdown(); };
-#endif
-
             Client.Startup();
         }
         catch (System.DllNotFoundException e)
@@ -239,9 +249,11 @@ public class OdinHandler : MonoBehaviour
     /// <summary>
     /// Join or create a room by name and attach a <see cref="MicrophoneStream"/>
     /// </summary>
-    /// <remarks>Configure event liseners with <see cref="Config"/></remarks>
-    /// <param name="name">Room name</param>
-    public async void JoinRoom(string roomName, string userId, System.Action<Room> setup = null)
+    /// <remarks>Configure Room-Apm i.e VadEnable, ... or Odin-Event-Listeners i.e PeerJoinedEvent, ... with <see cref="Config"/></remarks>
+    /// <param name="roomName">Room name</param>
+    /// <param name="userData">Override OdinClient default UserData</param>
+    /// <param name="setup">Override default Room setup</param>
+    public async void JoinRoom(string roomName, UserData userData = null, System.Action<Room> setup = null)
     {
         if(string.IsNullOrEmpty(roomName))
         {
@@ -255,6 +267,13 @@ public class OdinHandler : MonoBehaviour
             return;
         }
 
+        if (userData == null)
+        {
+            userData = new UserData(Config.UserDataText);
+            if (userData.IsEmpty())
+                userData = new OdinUserData().ToUserData();
+        }
+        
         if (setup == null)
             setup = (r) =>
             {
@@ -280,14 +299,14 @@ public class OdinHandler : MonoBehaviour
                     new RoomJoinEventArgs() { Room = r }));
             };
 
-        Room room = await Client.JoinRoom(roomName, userId, setup);
+        Room room = await Client.JoinRoom(roomName, Config.ClientId, userData, setup);
 
         if (room == null || room.IsJoined == false)
         {
-            Debug.LogError($"Room {roomName} join failed!");
+            Debug.LogError($"Odin {Config.ClientId}: Room {roomName} join failed!");
             return;
         }
-        Debug.Log($"Room {room.Config.Name} joined as {userId}.");
+        Debug.Log($"Odin {Config.ClientId}: Room {room.Config.Name} joined.");
 
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
             this, 
@@ -574,6 +593,40 @@ public class OdinHandler : MonoBehaviour
             return room.MicrophoneMedia = new MicrophoneStream(config ?? new OdinNative.Core.OdinMediaConfig(Config.DeviceSampleRate, Config.DeviceChannels));
         else
             return room.MicrophoneMedia;
+    }
+
+    public void OnBeforeAssemblyReload()
+    {
+        Client.Close();
+        if (Client.IsInitialized)
+            Client.Shutdown();
+
+        Client.ReloadLibrary(false);
+        Debug.LogException(new System.NotSupportedException("Odin currently not supports reloading while in Playmode!"));
+    }
+
+    public void OnAfterAssemblyReload()
+    {
+        Awake();
+        Start();
+
+        Debug.LogWarning("Odin instance lost! Please, restart the application.");
+    }
+
+    void OnDisable()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.quitting -= OnEditorApplicationQuitting;
+
+        UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+        UnityEditor.AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
+#endif
+    }
+
+    private void OnEditorApplicationQuitting()
+    {
+        Debug.LogWarning("After Assembly Reload");
+        Client?.Shutdown();
     }
 
     void OnDestroy()

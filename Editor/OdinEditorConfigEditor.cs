@@ -11,6 +11,7 @@ public class OdinEditorConfigEditor : Editor
 {
     SerializedProperty Verbose;
     SerializedProperty AccessKey;
+    SerializedProperty ClientId;
     SerializedProperty Server;
     SerializedProperty UserDataText;
     
@@ -44,6 +45,7 @@ public class OdinEditorConfigEditor : Editor
         Verbose = serializedObject.FindProperty("Verbose");
 
         AccessKey = serializedObject.FindProperty("AccessKey");
+        ClientId = serializedObject.FindProperty("ClientId");
         Server = serializedObject.FindProperty("Server");
         UserDataText = serializedObject.FindProperty("UserDataText");
         
@@ -122,6 +124,8 @@ public class OdinEditorConfigEditor : Editor
                 OdinKeysWindow.ShowWindow();
             }
             GUILayout.EndHorizontal();
+
+            EditorGUILayout.LabelField("Client ID", ClientId.stringValue);   
             GUILayout.Space(5);
             EditorGUILayout.PropertyField(UserDataText, new GUIContent("User data", "Custom user data"));   
         }

@@ -18,8 +18,22 @@ namespace OdinNative.Unity
         /// </summary>
         public bool Verbose = OdinDefaults.Verbose;
 
+        /// <summary>
+        /// Odin Client ApiKey
+        /// </summary>
         public string AccessKey;
+        /// <summary>
+        /// Odin Client ID
+        /// </summary>
+        /// <remarks>Room token userId</remarks>
+        public string ClientId;
+        /// <summary>
+        /// Gateway
+        /// </summary>
         public string Server = OdinDefaults.Server;
+        /// <summary>
+        /// Default UserData content
+        /// </summary>
         public string UserDataText = OdinDefaults.UserDataText;
 
         /// <summary>
@@ -52,6 +66,7 @@ namespace OdinNative.Unity
         /// Time untill the token expires
         /// </summary>
         public ulong TokenLifetime = OdinDefaults.TokenLifetime;
+
         #region Apm
         /// <summary>
         /// Turns VAC on and off
@@ -78,7 +93,15 @@ namespace OdinNative.Unity
         /// </summary>
         public bool TransientSuppressor = OdinDefaults.TransientSuppressor;
         #endregion Apm
+
         internal string Identifier => SystemInfo.deviceUniqueIdentifier;
+
+        void Awake()
+        {
+            ClientId = string.Join(".", Application.companyName, Application.productName);
+            if (string.IsNullOrEmpty(ClientId))
+                ClientId = Identifier;
+        }
 
         public void GenerateUIAccessKey()
         {

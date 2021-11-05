@@ -11,10 +11,13 @@ namespace OdinNative.Unity
     [Serializable]
     public class OdinUserData
     {
+        public static implicit operator UserData(OdinUserData data) => data?.ToUserData() ?? null;
+
         public string name;
         public string seed;
         public string status;
         public int muted;
+        public string user;
         public string renderer;
         public string platform;
         public string revision;
@@ -28,11 +31,12 @@ namespace OdinNative.Unity
             this.seed = SystemInfo.deviceUniqueIdentifier;
             this.status = status;
             this.muted = 0;
+            this.user = string.Format("{0}.{1}", Application.companyName, Application.productName);
             this.renderer = Application.unityVersion;
             this.platform = string.Format("{0}/{1}", Application.platform, Application.unityVersion);
             this.revision = "0";
             this.version = Application.version;
-            this.buildno = Application.version;
+            this.buildno = Application.buildGUID;
         }
 
         public UserData ToUserData()

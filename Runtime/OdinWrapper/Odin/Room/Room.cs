@@ -395,6 +395,7 @@ namespace OdinNative.Odin.Room
                     MicrophoneMedia?.Dispose();
                 }
 
+                _AuthHandle.Close();
                 _Handle.Close();
                 disposedValue = true;
             }

@@ -15,7 +15,7 @@ public class SimpleRoomJoin : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        OdinHandler.Instance.JoinRoom(RoomName, "Player" + DateTime.Now.Ticks);
+        OdinHandler.Instance.JoinRoom(RoomName);
     }
 
     // Update is called once per frame

@@ -79,6 +79,12 @@ namespace OdinNative.Odin
             AccessKey = accessKey;
         }
 
+        protected internal void ReloadLibrary(bool init = true)
+        {
+            if (OdinLibrary.IsInitialized) OdinLibrary.Release();
+            if(init) OdinLibrary.Initialize();
+        }
+
         /// <summary>
         /// Start internal ffi worker threads
         /// </summary>
@@ -111,7 +117,7 @@ namespace OdinNative.Odin
         /// </summary>
         /// <remarks>Initialize ODIN if <see cref="IsInitialized"/> is false</remarks>
         /// <param name="name">Room name</param>
-        /// <param name="customerId">Customer ID</param>
+        /// <param name="userId">Odin client ID</param>
         /// <param name="setup">will invoke to setup a room before adding or joining</param>
         /// <returns><see cref="Room.Room"/> or null</returns>
         public async Task<Room.Room> JoinRoom(string name, string userId, Action<Room.Room> setup = null)
@@ -124,8 +130,7 @@ namespace OdinNative.Odin
         /// </summary>
         /// <remarks>Initialize ODIN if <see cref="IsInitialized"/> is false</remarks>
         /// <param name="name">Room name</param>
-        /// <param name="userId">User ID</param>
-        /// <param name="customerId">Customer ID</param>
+        /// <param name="userId">Odin client ID</param>
         /// <param name="userData">Set new <see cref="UserData"/> on room join</param>
         /// <param name="setup">will invoke to setup a room before adding or joining</param>
         /// <returns><see cref="Room.Room"/> or null</returns>
@@ -154,7 +159,7 @@ namespace OdinNative.Odin
         /// Join or create a <see cref="Room.Room"/> by token via a gateway (use <see cref="JoinRoom(string, string, string, UserData, Action{Room.Room})"/>)
         /// </summary>
         /// <remarks>Initialize ODIN if <see cref="IsInitialized"/> is false and uses the token as name</remarks>
-        /// <param name="name">Room token</param>
+        /// <param name="token">Room token</param>
         /// <param name="userData">Set new <see cref="UserData"/> on room join</param>
         /// <param name="setup">will invoke to setup a room before adding or joining</param>
         /// <returns><see cref="Room.Room"/> or null</returns>

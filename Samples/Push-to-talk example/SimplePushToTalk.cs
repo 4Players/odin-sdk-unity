@@ -26,7 +26,7 @@ public class SimplePushToTalk : MonoBehaviour
         if (AudioSender == null) 
             AudioSender = FindObjectOfType<MicrophoneReader>();
 
-        OdinHandler.Instance.JoinRoom(RoomName, "Player" + DateTime.Now.Ticks);
+        OdinHandler.Instance.JoinRoom(RoomName);
     }
 
     // Update is called once per frame

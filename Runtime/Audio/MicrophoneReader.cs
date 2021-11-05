@@ -291,6 +291,13 @@ namespace OdinNative.Unity.Audio
 
         void Flush()
         {
+            if (MicBuffers == null || MicBuffers.All(b => b == null))
+            {
+                Debug.LogError("Odin MicBuffer corrupted. Try restart!");
+                Start();
+                return;
+            }
+
             if (IsStreaming == false || isActiveAndEnabled == false) return;
 
             int newPosition = Microphone.GetPosition(InputDevice);
