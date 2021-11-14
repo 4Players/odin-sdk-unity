@@ -3,35 +3,38 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(OdinBanner))]
-public class OdinBannerEditor : Editor
+namespace OdinNative.Unity.UIEditor
 {
-    public Texture2D OdinBannerTexture;
-    public override void OnInspectorGUI()
+    [CustomEditor(typeof(OdinNative.Unity.OdinBanner))]
+    public class OdinBannerEditor : Editor
     {
-        if (OdinBannerTexture)
+        public Texture2D OdinBannerTexture;
+        public override void OnInspectorGUI()
         {
-            GUILayout.Box(OdinBannerTexture, GUILayout.ExpandWidth(true), GUILayout.Height(100));
+            if (OdinBannerTexture)
+            {
+                GUILayout.Box(OdinBannerTexture, GUILayout.ExpandWidth(true), GUILayout.Height(100));
+            }
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Admin Panel"))
+                OpenAdminPanel();
+            if (GUILayout.Button("Documentation"))
+                OpenDocumentation();
+            GUILayout.EndHorizontal();
         }
 
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Admin Panel"))
-            OpenAdminPanel();
-        if (GUILayout.Button("Documentation"))
-            OpenDocumentation();
-        GUILayout.EndHorizontal();
-    }
+        [MenuItem("Window/4Players ODIN/Admin Panel", false, 90)]
+        static void OpenAdminPanel()
+        {
+            Application.OpenURL("https://admin.scill.4players.io");
+        }
 
-    [MenuItem("Window/Odin/Admin Panel", false, 90)]
-    static void OpenAdminPanel()
-    {
-        Application.OpenURL("https://admin.scill.4players.io");
-    }
-
-    [MenuItem("Window/Odin/Documentation", false, 91)]
-    static void OpenDocumentation()
-    {
-        Application.OpenURL("https://developers.4players.io/odin/");
+        [MenuItem("Window/4Players ODIN/Documentation", false, 91)]
+        static void OpenDocumentation()
+        {
+            Application.OpenURL("https://developers.4players.io/odin/");
+        }
     }
 }
 #endif
