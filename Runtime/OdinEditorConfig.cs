@@ -87,7 +87,7 @@ namespace OdinNative.Unity
         /// <summary>
         /// Turns noise suppression on and off
         /// </summary>
-        public Core.Imports.NativeBindings.OdinNoiseSuppsressionLevel NoiseSuppressionLevel = OdinDefaults.NoiseSuppressionLevel;
+        public Core.Imports.NativeBindings.OdinNoiseSuppressionLevel NoiseSuppressionLevel = OdinDefaults.NoiseSuppressionLevel;
         /// <summary>
         /// Filters high amplitude noices
         /// </summary>
@@ -98,9 +98,8 @@ namespace OdinNative.Unity
 
         void Awake()
         {
-            ClientId = string.Join(".", Application.companyName, Application.productName);
             if (string.IsNullOrEmpty(ClientId))
-                ClientId = Identifier;
+                ClientId = string.Join(".", Application.companyName, Application.productName);
         }
 
         public void GenerateUIAccessKey()

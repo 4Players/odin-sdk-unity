@@ -81,7 +81,15 @@ namespace OdinNative.Odin
 
         protected internal void ReloadLibrary(bool init = true)
         {
-            if (OdinLibrary.IsInitialized) OdinLibrary.Release();
+            if (OdinLibrary.IsInitialized)
+            {
+                if (this.IsInitialized)
+                {
+                    Close();
+                    Shutdown();
+                }
+                OdinLibrary.Release();
+            }
             if(init) OdinLibrary.Initialize();
         }
 
@@ -227,9 +235,7 @@ namespace OdinNative.Odin
         /// <param name="roomPtr">sender room pointer</param>
         /// <param name="event">OdinEvent struct</param>
         /// <param name="userDataPtr">userdata pointer</param>
-#if ENABLE_MONO || UNITY_STANDALONE_WIN
         [AOT.MonoPInvokeCallback(typeof(Core.Imports.NativeMethods.OdinEventCallback))]
-#endif
         internal static void OnEventReceivedProxy(IntPtr roomPtr, IntPtr odinEvent, IntPtr extraData)
         {
             try

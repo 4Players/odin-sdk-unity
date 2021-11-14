@@ -29,7 +29,7 @@ namespace OdinNative.Odin.Room
         /// <summary>
         /// Client Peer
         /// </summary>
-        public Peer.Peer Self { get; internal set; }
+        public Peer.Peer Self => RemotePeers[OwnId];
         private ulong _JoinedId;
         internal ref readonly ulong OwnId => ref _JoinedId;
         private UserData Data;
@@ -124,6 +124,8 @@ namespace OdinNative.Odin.Room
         /// <returns>true on successful join or false</returns>
         public bool Join(string name, string userId, UserData userData = null)
         {
+            if (IsJoined) return false;
+
             string token = OdinLibrary.Api.TokenGeneratorCreateToken(_AuthHandle, name, userId);
             return string.IsNullOrEmpty(token) ? false : Join(token, userData);
         }
@@ -138,6 +140,8 @@ namespace OdinNative.Odin.Room
         /// <returns>true on successful join or false</returns>
         public bool Join(string token, UserData userData = null)
         {
+            if (IsJoined) return false;
+
             Data = userData;
             byte[] data = Data?.ToBytes() ?? new byte[0];
             return IsJoined = Utility.OK == OdinLibrary.Api.RoomJoin(
@@ -177,15 +181,86 @@ namespace OdinNative.Odin.Room
         /// <remarks>Always false if the room is not joined</remarks>
         /// <param name="userData">Userdata to send</param>
         /// <returns>true if userdata was set for the room or false</returns>
-        public bool UpdateUserData(UserData userData)
+        public bool UpdateUserData(IUserData userData)
         {
             if (!IsJoined) return false;
 
-            Data = userData;
-            byte[] data = Data?.ToBytes();
-            if (data == null || data.Length == 0) return false;
-
+            byte[] data = (userData as UserData)?.ToBytes() ?? new byte[0];
             return OdinLibrary.Api.RoomUpdateUserData(_Handle, data, (ulong)data.Length) == Utility.OK;
+        }
+
+        /// <summary>
+        /// Sends arbitrary data to a peer that the <see cref="MediaStream"/> belongs to.
+        /// </summary>
+        /// <remarks>media that belongs to the peer must be in the same room</remarks>
+        /// <param name="media">media that belongs to a peer</param>
+        /// <param name="data">arbitrary byte array</param>
+        /// <returns>true if data was send or false</returns>
+        public bool SendMessage(MediaStream media, byte[] data)
+        {
+            return SendMessage(media.GetPeerId(), data);
+        }
+
+        /// <summary>
+        /// Sends arbitrary data to a peer.
+        /// </summary>
+        /// <remarks>Peer must be in the same room</remarks>
+        /// <param name="peer">peer to send</param>
+        /// <param name="data">arbitrary byte array</param>
+        /// <returns>true if data was send or false</returns>
+        public bool SendMessage(Peer.Peer peer, byte[] data)
+        {
+            return SendMessage(peer.Id, data);
+        }
+
+        /// <summary>
+        /// Sends arbitrary data to a peer by id.
+        /// </summary>
+        /// <remarks>associated id of a peer must be in the same room</remarks>
+        /// <param name="peerId">id of a peer</param>
+        /// <param name="data">arbitrary byte array</param>
+        /// <returns>true if data was send or false</returns>
+        public bool SendMessage(ulong peerId, byte[] data)
+        {
+            return SendMessage(new ulong[] { peerId }, data);
+        }
+
+        /// <summary>
+        /// Sends arbitrary data to a list of target peers.
+        /// </summary>
+        /// <remarks>peers must be in the same room</remarks>
+        /// <param name="peerIdList">list of peers(<see cref="Peer.Peer"/>)</param>
+        /// <param name="data">arbitrary byte array</param>
+        /// <returns>true if data was send or false</returns>
+        public bool SendMessage(IEnumerable<Peer.Peer> peerList, byte[] data)
+        {
+            return SendMessage(peerList.Select(p => p.Id), data);
+        }
+
+        /// <summary>
+        /// Sends arbitrary data to a list of target peerIds.
+        /// </summary>
+        /// <remarks>associated ids of peers must be in the same room</remarks>
+        /// <param name="peerIdList">list of ids(<see cref="Peer.Peer.Id"/>)</param>
+        /// <param name="data">arbitrary byte array</param>
+        /// <returns>true if data was send or false</returns>
+        public bool SendMessage(IEnumerable<ulong> peerIdList, byte[] data)
+        {
+            return SendMessage(peerIdList.ToArray(), data);
+        }
+
+        /// <summary>
+        /// Sends arbitrary data to a array of target peerIds.
+        /// </summary>
+        /// <remarks>associated ids of peers must be in the same room</remarks>
+        /// <param name="peerIdList">array of ids(<see cref="Peer.Peer.Id"/>)</param>
+        /// <param name="data">arbitrary byte array</param>
+        /// <returns>true if data was send or false</returns>
+        public bool SendMessage(ulong[] peerIdList, byte[] data)
+        {
+            if (!IsJoined) return false;
+
+            return OdinLibrary.Api.RoomSendMessage(_Handle, peerIdList, (ulong)peerIdList.Length, data, (ulong)data.Length) == Utility.OK;
         }
 
         /// <summary>
@@ -220,8 +295,6 @@ namespace OdinNative.Odin.Room
 
         internal delegate void AkiEventHandler(object sender, OdinEvent e);
         internal static event AkiEventHandler OnEvent;
-        [Obsolete]
-        internal delegate void RoomEventHandler(object sender, RoomEventArgs e);
         /// <summary>
         /// Passthrough event that identified a new PeerJoined event by Event-Tag.
         /// </summary>
@@ -252,6 +325,12 @@ namespace OdinNative.Odin.Room
         /// <remarks>Default <see cref="Room"/> sender and <see cref="MediaRemovedEventArgs"/></remarks>
         public event RoomMediaRemovedEventHandler OnMediaRemoved;
         public delegate void RoomMediaRemovedEventHandler(object sender, MediaRemovedEventArgs e);
+        /// <summary>
+        /// Passthrough event that identified a new MessageReceived event by Event-Tag.
+        /// </summary>
+        /// <remarks>Default <see cref="Room"/> sender and <see cref="MessageReceivedEventArgs"/></remarks>
+        public event RoomMessageReceivedEventHandler OnMessageReceived;
+        public delegate void RoomMessageReceivedEventHandler(object sender, MessageReceivedEventArgs e);
 
         internal void RegisterEventCallback(OdinEventCallback eventCallback)
         {
@@ -267,30 +346,19 @@ namespace OdinNative.Odin.Room
         /// <param name="extraData">userdata pointer</param>
         internal void OnEventReceived(Room _, OdinEvent @event, IntPtr extraData)
         {
-            byte[] GetUserData(IntPtr data, ulong size)
-            {
-                byte[] buffer = new byte[0];
-                if (@event.peer_joined.user_data != IntPtr.Zero)
-                {
-                    buffer = new byte[@event.peer_joined.user_data_len];
-                    System.Runtime.InteropServices.Marshal.Copy(@event.peer_joined.user_data, buffer, 0, (int)@event.peer_joined.user_data_len);
-                }
-
-                return buffer;
-            }
-
             switch (@event.tag)
             {
                 case OdinEventTag.OdinEvent_PeerJoined:
+                    Utility.Assert(@event.peer_joined.user_data != IntPtr.Zero, $"{nameof(@event.peer_joined.user_data)} IntPtr is 0");
+                    Utility.Assert(@event.peer_joined.id > 0, $"{nameof(@event.peer_joined.id)} is invalid: " + @event.peer_updated.id);
+                    Utility.Assert(@event.peer_joined.user_data_len < Int32.MaxValue, $"{nameof(@event.peer_joined.user_data_len)} exceeded: " + @event.peer_joined.user_data_len);
+
                     // Create peer with userdata
-                    byte[] data = GetUserData(@event.peer_joined.user_data, @event.peer_joined.user_data_len);
-                    UserData userData = new UserData(data);
+                    UserData userData = new UserData();
+                    userData.CopyFrom(@event.peer_joined.user_data, @event.peer_joined.user_data_len);
                     var peer = new Peer.Peer(@event.peer_left.id, this.Config.Name, userData);
 
-                    if (OwnId == peer.Id)
-                        Self = peer;
-                    else
-                        RemotePeers.Add(peer);
+                    RemotePeers.Add(peer);
 
                     OnPeerJoined?.Invoke(this, new PeerJoinedEventArgs()
                     {
@@ -299,6 +367,8 @@ namespace OdinNative.Odin.Room
                     });
                     break;
                 case OdinEventTag.OdinEvent_PeerLeft:
+                    Utility.Assert(@event.peer_left.id > 0, $"{nameof(@event.peer_left.id)} is invalid: " + @event.peer_left.id);
+
                     //remove dangling medias
                     var leavingPeer = RemotePeers[@event.peer_left.id];
                     if (leavingPeer != null)
@@ -320,8 +390,13 @@ namespace OdinNative.Odin.Room
                     });
                     break;
                 case OdinEventTag.OdinEvent_PeerUpdated:
+                    Utility.Assert(@event.peer_updated.user_data != IntPtr.Zero, $"{nameof(@event.peer_updated.user_data)} IntPtr is 0");
+                    Utility.Assert(@event.peer_updated.id > 0, $"{nameof(@event.peer_updated.id)} is invalid: " + @event.peer_updated.id);
+                    Utility.Assert(@event.peer_updated.user_data_len < Int32.MaxValue, $"{nameof(@event.peer_updated.user_data_len)} exceeded: " + @event.peer_updated.user_data_len);
+
                     // Set new userdata to peer
-                    byte[] newData = GetUserData(@event.peer_updated.user_data, @event.peer_updated.user_data_len);
+                    UserData newData = new UserData();
+                    newData.CopyFrom(@event.peer_updated.user_data, @event.peer_updated.user_data_len);
                     RemotePeers[@event.peer_updated.id]?.SetUserData(newData);
 
                     OnPeerUpdated?.Invoke(this, new PeerUpdatedEventArgs()
@@ -331,6 +406,10 @@ namespace OdinNative.Odin.Room
                     });
                     break;
                 case OdinEventTag.OdinEvent_MediaAdded:
+                    Utility.Assert(@event.media_added.stream != IntPtr.Zero, $"{nameof(@event.media_added.stream)} IntPtr is 0");
+                    Utility.Assert(@event.media_added.peer_id > 0, $"{nameof(@event.media_added.peer_id)} is invalid: " + @event.media_added.peer_id);
+                    Utility.Assert(@event.media_added.media_id > 0, $"{nameof(@event.media_added.media_id)} is invalid: " + @event.media_added.media_id);
+
                     var playbackStream = new PlaybackStream(
                         @event.media_added.media_id,
                         Config.PlaybackMediaConfig,
@@ -357,7 +436,9 @@ namespace OdinNative.Odin.Room
                     });
                     break;
                 case OdinEventTag.OdinEvent_MediaRemoved:
-                    if(Self != null && Self.Medias.Any(m => m.Id == @event.media_removed.media_id))
+                    Utility.Assert(@event.media_removed.media_id > 0, $"{nameof(@event.media_removed.media_id)} is invalid: " + @event.media_removed.media_id);
+
+                    if (Self != null && Self.Medias.Any(m => m.Id == @event.media_removed.media_id))
                     {
                         Self?.RemoveMedia(@event.media_removed.media_id);
                         break;
@@ -372,6 +453,24 @@ namespace OdinNative.Odin.Room
                         MediaId = @event.media_removed.media_id,
                         Peer = peerWithMedia,
                         Media = peerWithMedia?.Medias[@event.media_removed.media_id]
+                    });
+                    break;
+                case OdinEventTag.OdinEvent_MessageReceived:
+                    Utility.Assert(@event.message_received.data != IntPtr.Zero, $"{nameof(@event.message_received.data)} IntPtr is 0");
+                    Utility.Assert(@event.message_received.data_len < Int32.MaxValue, $"{nameof(@event.message_received.data_len)} exceeded: " + @event.message_received.data_len);
+                    if (@event.message_received.data == IntPtr.Zero) break;
+
+                    /* Compatibility with Unity .NET prior to 4.5 (i.e 2.0) so we don't use Int32.MaxValue 0x7fffffff
+                     * MSDN: The maximum size in any single dimension is 2,147,483,591 (0x7FFFFFC7) for byte arrays 
+                     * and arrays of single-byte structures, and 2,146,435,071 (0X7FEFFFFF) for arrays containing other types. */
+                    ulong maxSize = Math.Min(@event.message_received.data_len, 0x7FFFFFC7);
+                    byte[] msgBuffer = new byte[maxSize];
+                    System.Runtime.InteropServices.Marshal.Copy(@event.message_received.data, msgBuffer, 0, msgBuffer.Length);
+
+                    OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs()
+                    {
+                        PeerId = @event.message_received.peer_id,
+                        Data = msgBuffer,
                     });
                     break;
                 case OdinEventTag.OdinEvent_None:

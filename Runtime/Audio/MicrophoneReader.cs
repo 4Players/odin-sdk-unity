@@ -16,7 +16,7 @@ using UnityEngine.Android;
 namespace OdinNative.Unity.Audio
 {
     /// <summary>
-    /// Handles the Microphone data and send input to ODIN.
+    /// Handles the Microphone data and sends input to ODIN.
     /// </summary>
     [DisallowMultipleComponent]
     public class MicrophoneReader : MonoBehaviour
@@ -105,7 +105,6 @@ namespace OdinNative.Unity.Audio
             SampleRate = OdinHandler.Config.DeviceSampleRate;
 
             Loopback = false;
-            MicPosition = 0;
             AutostartListen = true;
         }
 
@@ -241,18 +240,31 @@ namespace OdinNative.Unity.Audio
             IsStreaming = false;
         }
 
-#region Buffer
-        private int MicPosition = 0;
+        void OnDisable()
+        {
+            IsStreaming = false;
+            OnMicrophoneData -= PushAudio;
+            AudioSettings.OnAudioConfigurationChanged -= AudioSettings_OnAudioConfigurationChanged;
+        }
+
+        void OnDestroy()
+        {
+            StopListen();
+        }
+
+        #region Buffer
         public delegate void MicrophoneCallbackDelegate(float[] buffer, int position);
         /// <summary>
         /// Event is fired if raw Microphone data is available.
         /// </summary>
         public MicrophoneCallbackDelegate OnMicrophoneData;
 
-        private class MicrophoneBuffer
+        private class RBuffer
         {
-            public const int sizesMin = 10;      // 2^6 = 64
-            public const int sizesMax = 11;      // 2^10 = 1024
+            public static int MicPosition = 0;
+
+            public const int sizesMin = 10;
+            public const int sizesMax = 11;
 
             const int redundancy = 8; // times 8 ea buffer size to cycle
             int index = 0;
@@ -272,7 +284,7 @@ namespace OdinNative.Unity.Audio
                 index = (index + 1) % redundancy;
             }
 
-            public MicrophoneBuffer(int size)
+            public RBuffer(int size)
             {
                 for (int i = 0; i < redundancy; i++)
                 {
@@ -281,12 +293,12 @@ namespace OdinNative.Unity.Audio
             }
         }
 
-        MicrophoneBuffer[] MicBuffers = new MicrophoneBuffer[MicrophoneBuffer.sizesMax + 1];
+        RBuffer[] MicBuffers = new RBuffer[RBuffer.sizesMax + 1];
 
         void SetupBuffers()
         {
-            for (int i = MicrophoneBuffer.sizesMin; i <= MicrophoneBuffer.sizesMax; i++)
-                MicBuffers[i] = new MicrophoneBuffer(i);
+            for (int i = RBuffer.sizesMin; i <= RBuffer.sizesMax; i++)
+                MicBuffers[i] = new RBuffer(i);
         }
 
         void Flush()
@@ -301,22 +313,22 @@ namespace OdinNative.Unity.Audio
             if (IsStreaming == false || isActiveAndEnabled == false) return;
 
             int newPosition = Microphone.GetPosition(InputDevice);
-            if (MicPosition == newPosition || MicBuffers == null) return;
+            if (RBuffer.MicPosition == newPosition || MicBuffers == null) return;
 
             // give a sample on start ( S + 1 - 0 ) % S = 1 and give a sample at the end ( S + 0 - 99 ) % S = 1
-            int dataToRead = (InputClip.samples + newPosition - MicPosition) % InputClip.samples;
-            for (int i = MicrophoneBuffer.sizesMax; i >= MicrophoneBuffer.sizesMin; i--)
+            int dataToRead = (InputClip.samples + newPosition - RBuffer.MicPosition) % InputClip.samples;
+            for (int i = RBuffer.sizesMax; i >= RBuffer.sizesMin; i--)
             {
-                MicrophoneBuffer mic = MicBuffers[i];
+                RBuffer mic = MicBuffers[i];
                 int n = mic.buffer.Length; // 1 << i;
 
                 while (dataToRead >= n)
                 {
                     // If the read length from the offset is longer than the clip length,
                     // the read will wrap around and read the remaining samples from the start of the clip.
-                    InputClip.GetData(mic.buffer, MicPosition);
-                    MicPosition = (MicPosition + n) % InputClip.samples;
-                    OnMicrophoneData?.Invoke(mic.buffer, MicPosition);
+                    InputClip.GetData(mic.buffer, RBuffer.MicPosition);
+                    RBuffer.MicPosition = (RBuffer.MicPosition + n) % InputClip.samples;
+                    OnMicrophoneData?.Invoke(mic.buffer, RBuffer.MicPosition);
 
                     mic.Cycle();
                     dataToRead -= n;
@@ -325,19 +337,7 @@ namespace OdinNative.Unity.Audio
         }
 #endregion Buffer
 
-        void OnDisable()
-        {
-            IsStreaming = false;
-            OnMicrophoneData -= PushAudio;
-            AudioSettings.OnAudioConfigurationChanged -= AudioSettings_OnAudioConfigurationChanged;
-        }
-
-        void OnDestroy()
-        {
-            StopListen();
-        }
-
-#region Test
+        #region Test
         private void TestLoopback()
         {
             if (LoopSource == null && Loopback)
@@ -353,10 +353,7 @@ namespace OdinNative.Unity.Audio
                 return;
             }
             else if (LoopSource && LoopSource.isPlaying && IsStreaming)
-            {
-                LoopSource.timeSamples = MicPosition;
                 return;
-            }
 
             if (IsStreaming == false && StartListen() == false) return;
 
@@ -365,6 +362,6 @@ namespace OdinNative.Unity.Audio
             LoopSource.loop = ContinueRecording;
             LoopSource.Play();
         }
-#endregion Test
+        #endregion Test
     }
 }

@@ -138,7 +138,7 @@ namespace OdinNative.Odin.Media
         /// </summary>
         /// <remarks>if <see cref="IsMuted"/> NOP</remarks>
         /// <param name="buffer">buffer to write into</param>
-        /// <returns>count of written bytes</returns>
+        /// <returns>count of written bytes into buffer</returns>
         public virtual int AudioReadData(float[] buffer)
         {
             if (IsMuted) return 0;
@@ -152,7 +152,7 @@ namespace OdinNative.Odin.Media
         /// <remarks>if <see cref="IsMuted"/> NOP</remarks>
         /// <param name="buffer">buffer to write into</param>
         /// <param name="cancellationToken"></param>
-        /// <returns>count of written bytes</returns>
+        /// <returns>count of written bytes into buffer</returns>
         public virtual Task<int> AudioReadDataTask(float[] buffer, CancellationToken cancellationToken)
         {
             if (IsMuted) return Task.FromResult<int>(0);
@@ -166,12 +166,16 @@ namespace OdinNative.Odin.Media
         /// Read audio data and use custom <see cref="CancellationSource"/>
         /// </summary>
         /// <param name="buffer">buffer to write into</param>
-        /// <returns>count of written bytes</returns>
+        /// <returns>count of written bytes into buffer</returns>
         public virtual async Task<int> AudioReadDataAsync(float[] buffer)
         {
             return await AudioReadDataTask(buffer, CancellationSource.Token);
         }
 
+        /// <summary>
+        /// Get the number of available sample available in the audio buffer.
+        /// </summary>
+        /// <returns>floats available to read with <see cref="AudioReadData"/></returns>
         public virtual int AudioDataLength()
         {
             return OdinLibrary.Api.AudioDataLength(Handle);

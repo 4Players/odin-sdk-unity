@@ -59,4 +59,10 @@ namespace OdinNative.Odin.Room
         public Peer.Peer Peer;
         public MediaStream Media;
     }
+
+    public class MessageReceivedEventArgs : EventArgs
+    {
+        public ulong PeerId { get; internal set; }
+        public byte[] Data;
+    }
 }

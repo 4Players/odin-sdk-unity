@@ -31,7 +31,7 @@ namespace OdinNative.Core
             get { return ApmConfig.pre_amplifier; }
             set { ApmConfig.pre_amplifier = value; }
         }
-        public OdinNoiseSuppsressionLevel NoiseSuppsressionLevel
+        public OdinNoiseSuppressionLevel OdinNoiseSuppressionLevel
         {
             get { return ApmConfig.noise_suppression_level; }
             set { ApmConfig.noise_suppression_level = value; }
@@ -50,15 +50,15 @@ namespace OdinNative.Core
         private OdinApmConfig ApmConfig = new OdinApmConfig();
 
         private OdinRoomConfig(OdinApmConfig config) : this(config.vad_enable, config.echo_canceller, config.high_pass_filter, config.pre_amplifier, config.noise_suppression_level, config.transient_suppressor, true) { }
-        public OdinRoomConfig(bool vadEnable = false, bool echoCanceller = false, bool highPassFilter = false, bool preAmplifier = false, OdinNoiseSuppsressionLevel noiseSuppsressionLevel = OdinNoiseSuppsressionLevel.None, bool transientSuppressor = false)
-            : this(vadEnable, echoCanceller, highPassFilter, preAmplifier, noiseSuppsressionLevel, transientSuppressor, false) { }
-        internal OdinRoomConfig(bool vadEnable, bool echoCanceller, bool highPassFilter, bool preAmplifier, OdinNoiseSuppsressionLevel noiseSuppsressionLevel, bool transientSuppressor, bool remote = false)
+        public OdinRoomConfig(bool vadEnable = false, bool echoCanceller = false, bool highPassFilter = false, bool preAmplifier = false, OdinNoiseSuppressionLevel noiseSuppressionLevel = OdinNoiseSuppressionLevel.None, bool transientSuppressor = false)
+            : this(vadEnable, echoCanceller, highPassFilter, preAmplifier, noiseSuppressionLevel, transientSuppressor, false) { }
+        internal OdinRoomConfig(bool vadEnable, bool echoCanceller, bool highPassFilter, bool preAmplifier, OdinNoiseSuppressionLevel noiseSuppressionLevel, bool transientSuppressor, bool remote = false)
         {
             VadEnable = vadEnable;
             EchoCanceller = echoCanceller;
             HighPassFilter = highPassFilter;
             PreAmplifier = preAmplifier;
-            NoiseSuppsressionLevel = noiseSuppsressionLevel;
+            OdinNoiseSuppressionLevel = noiseSuppressionLevel;
             TransientSuppressor = transientSuppressor;
             RemoteConfig = remote;
         }

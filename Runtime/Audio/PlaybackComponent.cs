@@ -75,10 +75,9 @@ namespace OdinNative.Unity.Audio
         /// </summary>
         public bool AutoDestroyAudioSource = true;
         [Header("AudioClip Settings")]
-        private int ExpectedTimeSamples;
         private int AudioClipIndex;
         private const int MinAudioPackageSize = 960;
-        private const int CacheSize = 2880; // Playback request of > 2048 requested
+        private const int CacheSize = 3840; // Playback request of > 2048 requested
         private const int BufferSize = CacheSize * 4;
 
         /// <summary>
@@ -170,13 +169,13 @@ namespace OdinNative.Unity.Audio
             CreateClip();
         }
 
-        private void CreateClip(bool stream = true)
+        private void CreateClip()
         {
             if (OverrideChannels == false) Channels = OdinHandler.Config.RemoteChannels;
             if (OverrideSampleRate == false) SampleRate = OdinHandler.Config.RemoteSampleRate;
 
-            if (Channels != MediaChannels.Mono) Debug.LogWarning("Odin-Server assert Mono-Channel missmatch");
-            if (SampleRate != MediaSampleRate.Hz48000) Debug.LogWarning("Odin-Server assert 48k-SampleRate missmatch");
+            if (Channels != MediaChannels.Mono) Debug.LogWarning("Odin-Server assert Mono-Channel missmatch, continue anyway...");
+            if (SampleRate != MediaSampleRate.Hz48000) Debug.LogWarning("Odin-Server assert 48k-SampleRate missmatch, continue anyway...");
             PlaybackSource.clip = AudioClip.Create($"({PlaybackSource.gameObject.name}) {nameof(PlaybackComponent)}",
                 BufferSize,
                 (int)Channels,
@@ -206,7 +205,6 @@ namespace OdinNative.Unity.Audio
         void Start()
         {
             _IsPlaying = false;
-            ExpectedTimeSamples = 0;
             AudioClipIndex = 0;
         }
 
@@ -220,7 +218,7 @@ namespace OdinNative.Unity.Audio
                 UpdatePlayingStatus();
             }
             else
-            { 
+            {
                 if (CheckPlayingStatusAsInvoke && CheckPlayingStatusInvoke == false)
                 {
                     InvokeRepeating("UpdatePlayingStatus", PlayingStatusDelay, PlayingStatusRepeatingTime);
@@ -232,6 +230,32 @@ namespace OdinNative.Unity.Audio
                     CheckPlayingStatusInvoke = false;
                 }
             }
+
+            Flush();
+        }
+
+        private void Flush()
+        {
+            if (PlaybackMedia == null || PlaybackMedia.IsMuted) return;
+
+            int newIndex = PlaybackSource.timeSamples + CacheSize;
+            int requested = newIndex - AudioClipIndex;
+            if (requested < 0) requested += BufferSize;
+            if (requested > 0)
+            {
+                //Debug.Log($"{PlaybackSource.timeSamples} {AudioClipIndex} {requested}");
+                var n = Math.Min(MinAudioPackageSize, requested);
+                float[] buffer = new float[n];
+                PlaybackMedia.AudioReadData(buffer);
+                PlaybackSource.clip.SetData(buffer, AudioClipIndex % BufferSize);
+                if (n < requested)
+                {
+                    buffer = new float[requested - n];
+                    PlaybackMedia.AudioReadData(buffer);
+                    PlaybackSource.clip.SetData(buffer, (AudioClipIndex + n) % BufferSize);
+                }
+            }
+            AudioClipIndex = newIndex;
         }
 
         /// <summary>
@@ -244,31 +268,6 @@ namespace OdinNative.Unity.Audio
                 return PlayingStatus = false;
 
             return PlayingStatus = PlaybackMedia.AudioDataLength() > 0;
-        }
-
-        void FixedUpdate()
-        {
-            if (PlaybackMedia == null || PlaybackMedia.IsMuted) return;
-
-            int newIndex = PlaybackSource.timeSamples + CacheSize;
-            int requested = newIndex - AudioClipIndex;
-            if (requested < 0) requested += BufferSize;
-            if (requested > 0)
-            {
-                //Debug.Log($"{PlaybackSource.timeSamples} {AudioClipIndex} {requested} ");
-                var n = Math.Min(MinAudioPackageSize, requested);                
-                float[] buffer = new float[n];
-                PlaybackMedia.AudioReadData(buffer);
-                PlaybackSource.clip.SetData(buffer, AudioClipIndex % BufferSize);
-                if (n < requested)
-                {
-                    buffer = new float[requested - n];
-                    PlaybackMedia.AudioReadData(buffer);
-                    PlaybackSource.clip.SetData(buffer, (AudioClipIndex + n) % BufferSize);
-                }
-            }
-            ExpectedTimeSamples += requested;
-            AudioClipIndex = newIndex;
         }
 
         void OnDisable()

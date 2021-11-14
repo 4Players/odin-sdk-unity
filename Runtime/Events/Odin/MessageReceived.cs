@@ -5,7 +5,7 @@ using OdinNative.Odin.Room;
 namespace OdinNative.Unity.Events
 {
     [Serializable]
-    public class RoomJoinProxy : UnityEvent<RoomJoinEventArgs>
+    public class MessageReceivedProxy : UnityEvent<object, MessageReceivedEventArgs>
     {
     }
 }

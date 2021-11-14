@@ -49,6 +49,8 @@ namespace OdinNative.Core.Imports
         #endregion
 
         #region Room
+        public delegate void OdinEventCallback(IntPtr room, IntPtr odinEvent, IntPtr userData);
+
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate int OdinRoomConfigureApmDelegate(IntPtr room, NativeBindings.OdinApmConfig apmConfig);
         readonly OdinRoomConfigureApmDelegate _OdinRoomConfigureApm;
@@ -73,7 +75,6 @@ namespace OdinNative.Core.Imports
         internal delegate int OdinRoomUpdateUserDataDelegate(IntPtr room, byte[] userData, ulong userDataLength);
         readonly OdinRoomUpdateUserDataDelegate _OdinRoomUpdateUserData;
 
-        public delegate void OdinEventCallback(IntPtr room, IntPtr odinEvent, IntPtr userData);
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate int OdinRoomSetEventCallbackDelegate(IntPtr room, OdinEventCallback callback);
         readonly OdinRoomSetEventCallbackDelegate _OdinRoomSetEventCallback;
@@ -82,6 +83,10 @@ namespace OdinNative.Core.Imports
         internal delegate int OdinAudioProcessReverseDelegate(IntPtr room, [In] float[] buffer, [In] int bufferLength, [In, Out][MarshalAs(UnmanagedType.I4)] OdinChannelLayout channelLayout);
         readonly OdinAudioProcessReverseDelegate _OdinAudioProcessReverse;
         #endregion Room
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate int OdinRoomSendMessageDelegate(IntPtr room, [In] UInt64[] peerIdList, [In] ulong peerIdListSize, [In] byte[] data, [In] ulong dataLength);
+        readonly OdinRoomSendMessageDelegate _OdinRoomSendMessage;
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate int OdinAudioMixStreamsDelegate(IntPtr room, [In] IntPtr[] mediaStreams, [In] int streamsLength, [In, Out] float[] buffer, [In, Out] int bufferLength, [In, Out][MarshalAs(UnmanagedType.I4)] OdinChannelLayout channelLayout);
@@ -148,6 +153,7 @@ namespace OdinNative.Core.Imports
             handle.GetLibraryMethod("odin_room_add_media", out _OdinRoomAddMedia);
             handle.GetLibraryMethod("odin_room_update_user_data", out _OdinRoomUpdateUserData);
             handle.GetLibraryMethod("odin_room_set_event_callback", out _OdinRoomSetEventCallback);
+            handle.GetLibraryMethod("odin_room_send_message", out _OdinRoomSendMessage);
             handle.GetLibraryMethod("odin_video_stream_create", out _OdinVideoStreamCreate);
             handle.GetLibraryMethod("odin_audio_stream_create", out _OdinAudioStreamCreate);
             handle.GetLibraryMethod("odin_media_stream_destroy", out _OdinMediaStreamDestroy);
@@ -196,11 +202,9 @@ namespace OdinNative.Core.Imports
         private void CheckAndThrow(int error, string message = null)
         {
             if (Check(error))
-#if !UNITY_STANDALONE && !UNITY_EDITOR && !ENABLE_IL2CPP && !ENABLE_MONO
-                throw OdinLibrary.CreateException(error, message);
-#else
-                UnityEngine.Debug.LogException(OdinLibrary.CreateException(error, message));
-#endif
+#pragma warning disable CS0618 // Type or member is obsolete
+                Utility.Throw(OdinLibrary.CreateException(error, message));
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         private bool Check(int error)
@@ -401,6 +405,25 @@ namespace OdinNative.Core.Imports
             using (Lock)
             {
                 int error = _OdinRoomSetEventCallback(room, callback);
+                CheckAndThrow(error);
+                return error;
+            }
+        }
+
+        /// <summary>
+        /// Sends arbitrary data to a list of target peers over the ODIN server.
+        /// </summary>
+        /// <param name="room">*mut OdinRoom</param>
+        /// <param name="peerIdList">*const u64</param>
+        /// <param name="peerIdListSize">usize</param>
+        /// <param name="data">*const u8</param>
+        /// <param name="dataLength">usize</param>
+        /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
+        public int RoomSendMessage(RoomHandle room, ulong[] peerIdList, ulong peerIdListSize, byte[] data, ulong dataLength)
+        {
+            using (Lock)
+            {
+                int error = _OdinRoomSendMessage(room, peerIdList, peerIdListSize, data, dataLength);
                 CheckAndThrow(error);
                 return error;
             }

@@ -1,7 +1,10 @@
 ﻿using UnityEngine;
 
-[DisallowMultipleComponent, ExecuteInEditMode]
-public class OdinBanner : MonoBehaviour
+namespace OdinNative.Unity
 {
+    [DisallowMultipleComponent, ExecuteInEditMode]
+    public class OdinBanner : MonoBehaviour
+    {
 
+    }
 }

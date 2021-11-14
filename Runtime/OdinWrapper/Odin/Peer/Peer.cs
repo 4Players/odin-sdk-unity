@@ -51,6 +51,11 @@ namespace OdinNative.Odin.Peer
             UserData = new UserData(newData);
         }
 
+        internal void SetUserData(UserData userData)
+        {
+            UserData = userData;
+        }
+
         public override string ToString()
         {
             return Id.ToString();

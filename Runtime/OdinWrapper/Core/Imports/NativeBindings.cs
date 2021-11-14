@@ -10,7 +10,7 @@ namespace OdinNative.Core.Imports
 {
     public static class NativeBindings
     {
-        public enum OdinNoiseSuppsressionLevel
+        public enum OdinNoiseSuppressionLevel
         {
             None,
             Low,
@@ -25,7 +25,7 @@ namespace OdinNative.Core.Imports
             public bool echo_canceller;
             public bool high_pass_filter;
             public bool pre_amplifier;
-            public OdinNoiseSuppsressionLevel noise_suppression_level;
+            public OdinNoiseSuppressionLevel noise_suppression_level;
             public bool transient_suppressor;
         }
 
@@ -70,6 +70,9 @@ namespace OdinNative.Core.Imports
             public OdinEvent_MediaRemovedData media_removed;
             [FieldOffset(8)]
             [MarshalAs(UnmanagedType.Struct)]
+            public OdinEvent_MessageReceivedData message_received;
+            [FieldOffset(8)]
+            [MarshalAs(UnmanagedType.Struct)]
             public OdinEvent_ConnectionStateChanged StateChanged;
             #endregion OdinEvent union
         };
@@ -81,6 +84,7 @@ namespace OdinNative.Core.Imports
             OdinEvent_PeerUpdated,
             OdinEvent_MediaAdded,
             OdinEvent_MediaRemoved,
+            OdinEvent_MessageReceived,
             OdinEvent_ConnectionStateChanged,
             OdinEvent_None,
         }
@@ -142,6 +146,20 @@ namespace OdinNative.Core.Imports
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U2)]
             public ushort media_id;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct OdinEvent_MessageReceivedData
+        {
+            [FieldOffset(0)]
+            [MarshalAs(UnmanagedType.U8)]
+            public ulong peer_id;
+            [FieldOffset(8)]
+            [MarshalAs(UnmanagedType.U2)]
+            public IntPtr data;
+            [FieldOffset(16)]
+            [MarshalAs(UnmanagedType.U8)]
+            public ulong data_len;
         }
 
         [StructLayout(LayoutKind.Explicit)]

@@ -68,6 +68,10 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     /// <remarks>Invokes before <see cref="OnDeleteMediaObject"/></remarks>
     public MediaRemovedProxy OnMediaRemoved;
+    /// <summary>
+    /// Called on every Peer that received message from a peer by <see cref="Room.SendMessage(ulong, byte[])"/>
+    /// </summary>
+    public MessageReceivedProxy OnMessageReceived;
 
     /// <summary>
     /// Called if this OdinHandler created a MediaStream that was requested by the MediaQueue
@@ -140,16 +144,15 @@ public class OdinHandler : MonoBehaviour
     /// Enable 3D Audio via preset <see cref="UserData"/>
     /// </summary>
     /// <remarks>Currently no effect</remarks>
-    [Tooltip("Enable 3D Audio via preset UserData")]
     [SerializeField]
     public bool Use3DAudio = false;
     /// <summary>
     /// Creates <see cref="PlaybackComponent"/> on <see cref="Room_OnMediaAdded"/> events
     /// </summary>
-    [Tooltip("Creates PlaybackComponent on OnMediaAdded events")]
     [SerializeField]
     public bool CreatePlayback = false;
-    [Tooltip("Add a AudioMixerGroup to all added PlaybackSources. Ignored when empty.")]
+    [SerializeField]
+    public AudioMixer PlaybackAudioMixer;
     [SerializeField]
     public AudioMixerGroup PlaybackAudioMixerGroup;
 
@@ -163,8 +166,8 @@ public class OdinHandler : MonoBehaviour
         if (_persistent)
             DontDestroyOnLoad(gameObject);
 
-        ClientId = string.Join(".", Application.companyName, Application.productName);
         Identifier = SystemInfo.deviceUniqueIdentifier;
+        ClientId = string.Join(".", Application.companyName, Application.productName, Identifier);
 
         MediaAddedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaAddedEventArgs>>();
         MediaRemovedQueue = new ConcurrentQueue<KeyValuePair<Room, MediaRemovedEventArgs>>();
@@ -175,6 +178,7 @@ public class OdinHandler : MonoBehaviour
     void OnEnable()
     {
 #if UNITY_EDITOR
+        UnityEditor.EditorApplication.playModeStateChanged += EditorApplication_playModeStateChanged;
         UnityEditor.EditorApplication.quitting += OnEditorApplicationQuitting;
 
         UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
@@ -188,8 +192,6 @@ public class OdinHandler : MonoBehaviour
             Config.ClientId = ClientId;
 
         UserData userData = new UserData(Config.UserDataText);
-        if (userData.IsEmpty())
-            userData = new OdinUserData().ToUserData();
 
         try
         {
@@ -239,11 +241,13 @@ public class OdinHandler : MonoBehaviour
         if (customProxy) OnMediaAdded.AddListener(new UnityEngine.Events.UnityAction<object, MediaAddedEventArgs>(Room_OnMediaAdded));
         if (OnMediaRemoved == null) OnMediaRemoved = new MediaRemovedProxy();
         if (customProxy) OnMediaRemoved.AddListener(new UnityEngine.Events.UnityAction<object, MediaRemovedEventArgs>(Room_OnMediaRemoved));
+        if (OnMessageReceived == null) OnMessageReceived = new MessageReceivedProxy();
+        if (customProxy) OnMessageReceived.AddListener(new UnityEngine.Events.UnityAction<object, MessageReceivedEventArgs>(Room_OnMessageReceived));
     }
 
-    public OdinUserData GetUserData()
+    public UserData GetUserData()
     {
-        return OdinUserData.FromUserData(Client.UserData);
+        return Client.UserData;
     }
 
     /// <summary>
@@ -268,11 +272,7 @@ public class OdinHandler : MonoBehaviour
         }
 
         if (userData == null)
-        {
             userData = new UserData(Config.UserDataText);
-            if (userData.IsEmpty())
-                userData = new OdinUserData().ToUserData();
-        }
         
         if (setup == null)
             setup = (r) =>
@@ -290,7 +290,7 @@ public class OdinHandler : MonoBehaviour
                     EchoCanceller = cfg.EchoCanceller,
                     HighPassFilter = cfg.HighPassFilter,
                     PreAmplifier = cfg.PreAmplifier,
-                    NoiseSuppsressionLevel = cfg.NoiseSuppressionLevel,
+                    OdinNoiseSuppressionLevel = cfg.NoiseSuppressionLevel,
                     TransientSuppressor = cfg.TransientSuppressor,
                 });
 
@@ -308,12 +308,12 @@ public class OdinHandler : MonoBehaviour
         }
         Debug.Log($"Odin {Config.ClientId}: Room {room.Config.Name} joined.");
 
+        if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
+            Debug.Log($"MicrophoneStream added to room {roomName}.");
+
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
             this, 
             new RoomJoinedEventArgs() { Room = room }));
-
-        if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
-            Debug.Log($"MicrophoneStream added to room {roomName}.");
     }
 
     /// <summary>
@@ -359,14 +359,7 @@ public class OdinHandler : MonoBehaviour
     protected virtual void Room_OnPeerJoined(object sender, PeerJoinedEventArgs e)
     {
         if (Config.Verbose)
-        {
-            Debug.Log("Room: " + (sender as Room).Config.Name);
-            Debug.Log(string.Format("User added {0} with {1}", e.Peer, e.Peer.UserData));
-        }
-        Room room = sender as Room;
-        if (room.Self == null)
-            if (e.Peer.UserData.Contains(Identifier))
-                room.Self = e.Peer;
+            Debug.Log($"Odin Room \"{(sender as Room).Config.Name}\": User added {e.Peer} with {e.Peer.UserData}");
 
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
@@ -379,10 +372,7 @@ public class OdinHandler : MonoBehaviour
     protected virtual void Room_OnPeerLeft(object sender, PeerLeftEventArgs e)
     {
         if (Config.Verbose)
-        {
-            Debug.Log("Room: " + (sender as Room).Config.Name);
-            Debug.Log(string.Format("User left {0}", e.PeerId));
-        }
+            Debug.Log($"Odin Room \"{(sender as Room).Config.Name}\": User left {e.PeerId}");
 
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
@@ -395,10 +385,7 @@ public class OdinHandler : MonoBehaviour
     protected virtual void Room_OnPeerUpdated(object sender, PeerUpdatedEventArgs e)
     {
         if (Config.Verbose)
-        {
-            Debug.Log("Room: " + (sender as Room).Config.Name);
-            Debug.Log(string.Format("User {0} updated {1}", e.PeerId, e.UserData));
-        }
+            Debug.Log($"Odin Room \"{(sender as Room).Config.Name}\": User {e.PeerId} updated {e.UserData}");
 
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
@@ -412,10 +399,7 @@ public class OdinHandler : MonoBehaviour
     protected virtual void Room_OnMediaAdded(object sender, MediaAddedEventArgs e)
     {
         if (Config.Verbose)
-        {
-            Debug.Log("Room: " + (sender as Room).Config.Name);
-            Debug.Log(string.Format("add Media: {0} PlaybackId: {1} to Peer: {2}", e.Media, e.Media.Id, e.Peer));
-        }
+            Debug.Log($"Odin Room \"{(sender as Room).Config.Name}\": add Media: {e.Media} PlaybackId: {e.Media.Id} to Peer: {e.Peer}");
 
         // Push for unity thread
         MediaAddedQueue.Enqueue(new KeyValuePair<Room, MediaAddedEventArgs>(sender as Room, e));
@@ -431,17 +415,28 @@ public class OdinHandler : MonoBehaviour
     protected virtual void Room_OnMediaRemoved(object sender, MediaRemovedEventArgs e)
     {
         if (Config.Verbose)
-        {
-            Debug.Log("Room: " + (sender as Room).Config.Name);
-            Debug.Log(string.Format("removed Media: {0} from Peer: {1}", e.MediaId, e.Peer));
-        }
+            Debug.Log($"Odin Room \"{(sender as Room).Config.Name}\": removed Media: {e.MediaId} from Peer: {e.Peer}");
 
         // Push for unity thread
         MediaRemovedQueue.Enqueue(new KeyValuePair<Room, MediaRemovedEventArgs>(sender as Room, e));
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
 
-    private void FixedUpdate()
+    /// <summary>
+    /// Room audio/video stream is closed in the room.
+    /// </summary>
+    /// <remarks>Peer and Media in <see cref="MediaRemovedEventArgs"/> is null if the peer left before the owned Medias are removed</remarks>
+    /// <param name="sender"><see cref="Room"/> object</param>
+    /// <param name="e">MediaRemoved Args with MediaId</param>
+    protected virtual void Room_OnMessageReceived(object sender, MessageReceivedEventArgs e)
+    {
+        if (Config.Verbose)
+            Debug.Log($"Odin Room \"{(sender as Room).Config.Name}\": received message from Peer: {e.PeerId}");
+
+        EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
+    }
+
+    void FixedUpdate()
     {
         if (Corrupted) return;
 
@@ -474,8 +469,10 @@ public class OdinHandler : MonoBehaviour
                 OnMediaAdded?.Invoke(uEvent.Key, uEvent.Value as MediaAddedEventArgs);
             else if (uEvent.Value is MediaRemovedEventArgs)
                 OnMediaRemoved?.Invoke(uEvent.Key, uEvent.Value as MediaRemovedEventArgs);
+            else if (uEvent.Value is MessageReceivedEventArgs)
+                OnMessageReceived?.Invoke(uEvent.Key, uEvent.Value as MessageReceivedEventArgs);
             else
-                Debug.LogWarning($"Call to invoke unknown event skipped: {uEvent.Value.GetType()} from {nameof(uEvent.Key)} ({uEvent.Key.GetType()})");
+                Debug.LogError($"Call to invoke unknown event skipped: {uEvent.Value.GetType()} from {nameof(uEvent.Key)} ({uEvent.Key.GetType()})");
         }
     }
 
@@ -490,7 +487,7 @@ public class OdinHandler : MonoBehaviour
                     Debug.LogWarning("Create Playback and 3D Audio enabled at the same time has currently limit support and uses FindGameObjectsWithTag with UnityAudioSourceTag tagged gameobjects.");
                     AssignPlaybackComponent(UnityAudioSourceTag, addedEvent);
                 }
-                else
+                else if (addedEvent.Key.OwnId != addedEvent.Value.PeerId)
                     AssignPlaybackComponent(this.gameObject, addedEvent);
             else if (Config.Verbose)
                 Debug.LogWarning($"No available consumers for playback found.");
@@ -597,16 +594,14 @@ public class OdinHandler : MonoBehaviour
 
     public void OnBeforeAssemblyReload()
     {
-        Client.Close();
-        if (Client.IsInitialized)
-            Client.Shutdown();
-
         Client.ReloadLibrary(false);
         Debug.LogException(new System.NotSupportedException("Odin currently not supports reloading while in Playmode!"));
+        Corrupted = true;
     }
 
     public void OnAfterAssemblyReload()
     {
+        Corrupted = true;
         Awake();
         Start();
 
@@ -616,6 +611,7 @@ public class OdinHandler : MonoBehaviour
     void OnDisable()
     {
 #if UNITY_EDITOR
+        UnityEditor.EditorApplication.playModeStateChanged -= EditorApplication_playModeStateChanged;
         UnityEditor.EditorApplication.quitting -= OnEditorApplicationQuitting;
 
         UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
@@ -623,9 +619,14 @@ public class OdinHandler : MonoBehaviour
 #endif
     }
 
+    private void EditorApplication_playModeStateChanged(UnityEditor.PlayModeStateChange stateChange)
+    {
+        if (stateChange.HasFlag(UnityEditor.PlayModeStateChange.ExitingPlayMode))
+            Client.ReloadLibrary(false);
+    }
+
     private void OnEditorApplicationQuitting()
     {
-        Debug.LogWarning("After Assembly Reload");
         Client?.Shutdown();
     }
 

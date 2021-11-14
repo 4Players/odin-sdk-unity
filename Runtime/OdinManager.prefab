@@ -60,8 +60,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Verbose: 0
   AccessKey: 
+  ClientId: 
   Server: https://gateway.odin.4players.io
-  UserDataText: '{}'
+  UserDataText: 
   DeviceSampleRate: 1
   DeviceChannels: 1
   RemoteSampleRate: 48000
@@ -76,7 +77,7 @@ MonoBehaviour:
   EchoCanceller: 0
   HighPassFilter: 0
   PreAmplifier: 0
-  NoiseSuppressionLevel: 0
+  NoiseSuppressionLevel: 2
   TransientSuppressor: 0
 --- !u!114 &7715469215244056103
 MonoBehaviour:
@@ -91,6 +92,39 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Microphone: {fileID: 3711129780530095855}
+  OnRoomJoin:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRoomJoined:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRoomLeave:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRoomLeft:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPeerJoined:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPeerUpdated:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPeerLeft:
+    m_PersistentCalls:
+      m_Calls: []
+  OnMediaAdded:
+    m_PersistentCalls:
+      m_Calls: []
+  OnMediaRemoved:
+    m_PersistentCalls:
+      m_Calls: []
+  OnCreatedMediaObject:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDeleteMediaObject:
+    m_PersistentCalls:
+      m_Calls: []
   _persistent: 1
   Use3DAudio: 0
   CreatePlayback: 0

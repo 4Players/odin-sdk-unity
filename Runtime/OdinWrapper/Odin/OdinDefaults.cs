@@ -20,7 +20,7 @@ namespace OdinNative.Odin
 
         public static string AccessKey { get; set; } = "";
         public static string Server { get; set; } = "https://gateway.odin.4players.io";
-        public static string UserDataText { get; set; } = "{}";
+        public static string UserDataText { get; set; } = "";
 
         /// <summary>
         /// Microphone default Sample-Rate
@@ -55,7 +55,7 @@ namespace OdinNative.Odin
         public static bool EchoCanceller = false;
         public static bool HighPassFilter = false;
         public static bool PreAmplifier = false;
-        public static Core.Imports.NativeBindings.OdinNoiseSuppsressionLevel NoiseSuppressionLevel = Core.Imports.NativeBindings.OdinNoiseSuppsressionLevel.None;
+        public static Core.Imports.NativeBindings.OdinNoiseSuppressionLevel NoiseSuppressionLevel = Core.Imports.NativeBindings.OdinNoiseSuppressionLevel.None;
         public static bool TransientSuppressor = false;
         #endregion Apm
     }
