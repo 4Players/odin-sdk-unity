@@ -1,6 +1,6 @@
 {
   "name": "io.fourplayers.odin",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "displayName": "4Players ODIN",
   "description": "Our .NET (C#) SDK is available and can be used on client and server side implementing the CLR for .NET.",
   "unity": "2019.4",
@@ -29,24 +29,9 @@
   "hideInEditor": false,
   "samples": [
     {
-      "displayName": "Minimal Example",
-      "description": "Client for custom scripting to interact with 4Players ODIN.",
-      "path": "Samples/Base Client"
-    },
-    {
-      "displayName": "Simple Room Join Example",
-      "description": "Simple example to join a room in addition to the OdinClient.",
-      "path": "Samples/Room join example"
-    },
-    {
-      "displayName": "Push-to-talk example",
-      "description": "Simple example to join a room and use Push-to-talk (PTT) in addition to the OdinClient.",
-      "path": "Samples/Push-to-talk example"
-    },
-    {
-      "displayName": "Audio 3D example",
-      "description": "Example showcase for OdinClient Unity AudioSource with positional audio.",
-      "path": "Samples/Audio 3D"
+        "displayName": "Examples",
+        "description": "Example showcase of Simple Room Join, Push-to-talk, Audio 3D, ...",
+        "path": "Samples"
     }
   ]
 }
