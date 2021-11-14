@@ -11,10 +11,10 @@ namespace OdinNative.Core.Platform
 {
     internal static class PlatformSpecific
     {
-        private const string AssetPath = "Assets/" + FfiPath;
-        private const string PackagePath = "Packages/" + FfiPath;
+        private const string AssetPath = "Assets/" + BinaryPath;
+        private const string PackagePath = "Packages/" + BinaryPath;
+        private const string BinaryPath = PackageName + "/Plugins";
 
-        private const string FfiPath = PackageName + "/Plugins/ffi";
         private const string PackageName = "io.fourplayers.odin";
         private const string WindowsLibName = "odin.dll";
         private const string LinuxLibName = "libodin.so";
@@ -225,9 +225,9 @@ namespace OdinNative.Core.Platform
             {
                 case SupportedPlatform.MacOSX:
                     names = new string[] { MacLibName,
-                        string.Format("{0}/{1}/{2}", PackagePath, "macos-x86_64/sdk", MacLibName), // PkgManager
-                        string.Format("{0}/{1}/{2}", AssetPath, "macos-x86_64/sdk", MacLibName), // Editor
-                        string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/macos-x86_64/sdk", MacLibName) // PackageCache
+                        string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", MacLibName), // PkgManager
+                        string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", MacLibName), // Editor
+                        string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", MacLibName) // PackageCache
 #if UNITY_64
                         ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", MacLibName),string.Format("{0}/{1}", "Plugins", MacLibName) // Standalone appbundle
 #endif
@@ -236,35 +236,40 @@ namespace OdinNative.Core.Platform
                 case SupportedPlatform.Linux:
                     names = is64Bit
                         ? new string[] { LinuxLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "linux-x86_64/sdk", LinuxLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "linux-x86_64/sdk", LinuxLibName), // Editor
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/linux-x86_64/sdk", LinuxLibName) // PackageCache
+                            string.Format("{0}/{1}/{2}", PackagePath, "linux/x86_64", LinuxLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", AssetPath, "linux/x86_64", LinuxLibName), // Editor
+                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86_64", LinuxLibName) // PackageCache
 #if UNITY_64
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86_64", LinuxLibName) // Standalone
 #endif
                         }
                         : new string[] { LinuxLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "linux-x86/sdk", LinuxLibName),
-                            string.Format("{0}/{1}/{2}", AssetPath, "linux-x86/sdk", LinuxLibName) };
+                            string.Format("{0}/{1}/{2}", PackagePath, "linux/x86", LinuxLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", AssetPath, "linux/x86", LinuxLibName), // Editor
+                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86", LinuxLibName) // PackageCache
+#if UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
+                            ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86", LinuxLibName)  // Standalone
+#endif
+                        };
                     break;
                 case SupportedPlatform.Windows:
                     names = is64Bit
                         ? new string[] { WindowsLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "windows-x86_64/sdk", WindowsLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "windows-x86_64/sdk", WindowsLibName), // Editor
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/windows-x86_64/sdk", WindowsLibName) // PackageCache
+                            string.Format("{0}/{1}/{2}", PackagePath, "windows/x86_64", WindowsLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", AssetPath, "windows/x86_64", WindowsLibName), // Editor
+                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86_64", WindowsLibName) // PackageCache
 #if UNITY_64
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", WindowsLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86_64", WindowsLibName)  // Standalone
 #endif
-                            }
+                        }
                         : new string[] { WindowsLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "windows-x86/sdk", WindowsLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "windows-x86/sdk", WindowsLibName), // Editor
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/ffi/windows-x86/sdk", WindowsLibName) // PackageCache
+                            string.Format("{0}/{1}/{2}", PackagePath, "windows/x86", WindowsLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", AssetPath, "windows/x86", WindowsLibName), // Editor
+                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86", WindowsLibName) // PackageCache
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86", WindowsLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86", WindowsLibName)  // Standalone
 #endif
-                            };
+                        };
                     break;
                 default: throw new NotImplementedException();
             }
