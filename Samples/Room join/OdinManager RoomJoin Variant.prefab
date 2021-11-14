@@ -93,7 +93,12 @@ PrefabInstance:
     - target: {fileID: 5372910402810491490, guid: a421abe223e2dee45b89e686a84e5545,
         type: 3}
       propertyPath: Verbose
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5372910402810491490, guid: a421abe223e2dee45b89e686a84e5545,
+        type: 3}
+      propertyPath: ClientId
+      value: DefaultCompany.OdinUnity
       objectReference: {fileID: 0}
     - target: {fileID: 5372910402810491490, guid: a421abe223e2dee45b89e686a84e5545,
         type: 3}
