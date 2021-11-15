@@ -38,25 +38,9 @@ Click the + button in the upper left and select `Add package from tarball`. Next
 
 ## Samples
 
-We ship a set of samples with the Unity SDK. To Import them into your project, open the Package Manager and hit import on the example you want to try.
+We ship a sample package with the Unity SDK, which contains several examples and a demo scene. To import it into your project, open the Package Manager and hit import on the example you want to try.
 
 ![Package Manager](https://developers.4players.io/images/odin/unity_import.png)
-
-#### Minimal Example
-
-A very basic client for custom scripting to interact with 4Players ODIN.
-
-#### Simple Room Join Example
-
-A very basic client to automatically join a specified room for testing.
-
-#### Push-to-Talk Example
-
-Provides the same functionality as the simple room join, but with PTT support.
-
-#### Audio 3D Example
-
-Showcase for Unity AudioSource handing with positional audio.
 
 ## Troubleshooting
 
