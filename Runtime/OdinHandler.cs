@@ -619,11 +619,13 @@ public class OdinHandler : MonoBehaviour
 #endif
     }
 
+#if UNITY_EDITOR
     private void EditorApplication_playModeStateChanged(UnityEditor.PlayModeStateChange stateChange)
     {
         if (stateChange.HasFlag(UnityEditor.PlayModeStateChange.ExitingPlayMode))
             Client.ReloadLibrary(false);
     }
+#endif
 
     private void OnEditorApplicationQuitting()
     {
