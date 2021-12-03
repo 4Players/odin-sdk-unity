@@ -47,7 +47,7 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// true if the Odin library has been loaded and initialized; otherwise, false
+        /// true if the Odin library has been loaded and initialized or false
         /// </summary>
         public static bool IsInitialized
         {
@@ -73,8 +73,8 @@ namespace OdinNative.Core
         /// Creates a new <see cref="OdinLibrary"/>-Instance
         /// </summary>
         /// <param name="parameters">Information used to create the instance</param>
-        /// <exception cref="InvalidOperationException">a <see cref="OdinLibrary"/> is already created</exception>
-        /// <exception cref="NullReferenceException"><paramref name="OdinLibraryParameters"/> is null</exception>
+        /// <exception cref="System.InvalidOperationException">a <see cref="OdinLibrary"/> is already created</exception>
+        /// <exception cref="System.NullReferenceException"><paramref name="OdinLibraryParameters"/> is null</exception>
         public static void Initialize(OdinLibraryParameters parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));

@@ -6,6 +6,10 @@ using System.Collections.Generic;
 
 namespace OdinNative.Odin.Peer
 {
+    /// <summary>
+    /// Intern peer dictionary
+    /// </summary>
+    /// <remarks>Used by <see cref="OdinNative.Odin.Room.Room.RemotePeers"/></remarks>
     public class PeerCollection : IReadOnlyCollection<Peer>, IEqualityComparer<Peer>
     {
         private ConcurrentDictionary<ulong, Peer> _Peers;

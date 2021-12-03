@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Odin.Media
 {
+    /// <summary>
+    /// Intern media dictionary
+    /// </summary>
+    /// <remarks>Used by <see cref="OdinNative.Odin.Peer.Peer"/></remarks>
     public class MediaCollection : IReadOnlyCollection<MediaStream>, IEqualityComparer<MediaStream>
     {
         private volatile ConcurrentDictionary<int, MediaStream> _Medias;

@@ -10,32 +10,53 @@ namespace OdinNative.Core
     /// </summary>
     public class OdinRoomConfig
     {
+        /// <summary>
+        /// Enables or disables voice activity detection
+        /// </summary>
         public bool VadEnable
         {
             get { return ApmConfig.vad_enable; }
             set { ApmConfig.vad_enable = value; }
         }
 
+        /// <summary>
+        /// Enable or disable echo cancellation
+        /// </summary>
         public bool EchoCanceller
         {
             get { return ApmConfig.echo_canceller; }
             set { ApmConfig.echo_canceller = value; }
         }
+
+        /// <summary>
+        /// Enable or disable high pass filtering
+        /// </summary>
         public bool HighPassFilter
         {
             get { return ApmConfig.high_pass_filter; }
             set { ApmConfig.high_pass_filter = value; }
         }
+
+        /// <summary>
+        /// Enable or disable the pre amplifier
+        /// </summary>
         public bool PreAmplifier
         {
             get { return ApmConfig.pre_amplifier; }
             set { ApmConfig.pre_amplifier = value; }
         }
+
+        /// <summary>
+        /// Set the aggressiveness of the suppression
+        /// </summary>
         public OdinNoiseSuppressionLevel OdinNoiseSuppressionLevel
         {
             get { return ApmConfig.noise_suppression_level; }
             set { ApmConfig.noise_suppression_level = value; }
         }
+        /// <summary>
+        /// Enable or disable the transient suppressor
+        /// </summary>
         public bool TransientSuppressor
         {
             get { return ApmConfig.transient_suppressor; }
@@ -44,8 +65,7 @@ namespace OdinNative.Core
 
         internal bool RemoteConfig { get; private set; }
 
-        public static explicit operator OdinRoomConfig(OdinApmConfig config) => new OdinRoomConfig(config);
-        public static implicit operator OdinApmConfig(OdinRoomConfig config) => config.ApmConfig;
+        internal OdinApmConfig GetOdinApmConfig() => ApmConfig;
 
         private OdinApmConfig ApmConfig = new OdinApmConfig();
 

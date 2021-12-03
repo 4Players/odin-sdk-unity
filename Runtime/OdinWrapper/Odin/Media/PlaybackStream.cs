@@ -14,11 +14,11 @@ namespace OdinNative.Odin.Media
     /// </summary>
     public class PlaybackStream : MediaStream
     {
-        internal PlaybackStream(int id, OdinMediaConfig config, StreamHandle stream) 
+        internal PlaybackStream(ushort id, OdinMediaConfig config, StreamHandle stream) 
             : base(id, config, stream)
         { }
 
-        internal PlaybackStream(int id, StreamHandle stream)
+        internal PlaybackStream(ushort id, StreamHandle stream)
             : base(id, new OdinMediaConfig(OdinDefaults.RemoteSampleRate, OdinDefaults.RemoteChannels), stream) // Defaults match server config
         { }
 

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace OdinNative.Odin.Media
 {
     /// <summary>
-    /// Base audio only stream
+    /// Base stream
     /// </summary>
     /// <remarks>Video is currently not supported</remarks>
     public abstract class MediaStream : IVideoStream, IAudioStream, IDisposable
@@ -18,7 +18,7 @@ namespace OdinNative.Odin.Media
         /// <summary>
         /// Media id
         /// </summary>
-        public int Id { get; internal set; }
+        public ushort Id { get; internal set; }
         internal ulong PeerId => GetPeerId();
         /// <summary>
         /// Audio config
@@ -36,11 +36,11 @@ namespace OdinNative.Odin.Media
 
         private StreamHandle Handle;
 
-        public MediaStream(int id, OdinMediaConfig config)
+        public MediaStream(ushort id, OdinMediaConfig config)
             : this(id, config, OdinLibrary.Api.AudioStreamCreate(config))
         { }
 
-        internal MediaStream(int id, OdinMediaConfig config, StreamHandle handle)
+        internal MediaStream(ushort id, OdinMediaConfig config, StreamHandle handle)
         {
             Id = id;
             MediaConfig = config;
@@ -71,7 +71,7 @@ namespace OdinNative.Odin.Media
         /// <summary>
         /// Set <see cref="IsMuted"/>
         /// </summary>
-        /// <param name="mute">true to call ffi on read/write or false for NOP</param>
+        /// <param name="mute">true for NOP or false to call ffi on read/write</param>
         public void SetMute(bool mute)
         {
             IsMuted = mute;
@@ -111,6 +111,19 @@ namespace OdinNative.Odin.Media
         /// Sends data to the audio stream. The data has to be interleaved [-1, 1] float data.
         /// </summary>
         /// <remarks>if <see cref="IsMuted"/> NOP</remarks>
+        /// <param name="buffer">audio data</param>
+        /// <param name="length">bytes to write</param>
+        public virtual void AudioPushData(float[] buffer, int length)
+        {
+            if (IsMuted) return;
+
+            OdinLibrary.Api.AudioPushData(Handle, buffer, length);
+        }
+
+        /// <summary>
+        /// Sends data to the audio stream. The data has to be interleaved [-1, 1] float data.
+        /// </summary>
+        /// <remarks>if <see cref="IsMuted"/> NOP</remarks>
         /// <param name="buffer">interleaved audio data</param>
         /// <param name="cancellationToken"></param>
         public virtual Task AudioPushDataTask(float[] buffer, CancellationToken cancellationToken)
@@ -144,6 +157,20 @@ namespace OdinNative.Odin.Media
             if (IsMuted) return 0;
 
             return OdinLibrary.Api.AudioReadData(Handle, buffer, buffer.Length);
+        }
+
+        /// <summary>
+        /// Read audio data
+        /// </summary>
+        /// <remarks>if <see cref="IsMuted"/> NOP</remarks>
+        /// <param name="buffer">buffer to write into</param>
+        /// <param name="length">bytes to read</param>
+        /// <returns>count of written bytes into buffer</returns>
+        public virtual int AudioReadData(float[] buffer, int length)
+        {
+            if (IsMuted) return 0;
+
+            return OdinLibrary.Api.AudioReadData(Handle, buffer, length);
         }
 
         /// <summary>

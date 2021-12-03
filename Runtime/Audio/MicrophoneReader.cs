@@ -25,7 +25,7 @@ namespace OdinNative.Unity.Audio
         /// <summary>
         /// Check if the user has authorized use of the microphone
         /// </summary>
-        /// <remarks>Andriod 6+ with <see cref="Permission.Microphone"/></remarks>
+        /// <remarks>Andriod 6+ with <see cref="UnityEngine.Android.Permission.Microphone"/> <see href="https://docs.unity3d.com/ScriptReference/Android.Permission.Microphone.html">(Permission)</see></remarks>
         public bool HasPermission => Permission.HasUserAuthorizedPermission(Permission.Microphone);
 #else
         /// <summary>
@@ -54,9 +54,11 @@ namespace OdinNative.Unity.Audio
         [SerializeField]
         public bool OverrideSampleRate;
         /// <summary>
-        /// The recording <see cref="MediaSampleRate"/>
+        /// The recording <see cref="OdinNative.Core.MediaSampleRate"/>
         /// </summary>
-        /// <remarks>Set value by <see cref="OdinEditorConfig.DeviceSampleRate"/> on false. For <see cref="Microphone.Start"/> creation of <see cref="AudioClip"/> if <see cref="OverrideSampleRate"/></remarks>
+        /// <remarks>Set value by <see cref="OdinEditorConfig.DeviceSampleRate"/> on false. 
+        /// For <see cref="UnityEngine.Microphone.Start"/> <see href="https://docs.unity3d.com/ScriptReference/Microphone.Start.html">(Microphone.Start)</see>
+        /// creation of <see cref="UnityEngine.AudioClip"/> <see href="https://docs.unity3d.com/ScriptReference/AudioClip.html">(AudioClip)</see> if <see cref="OverrideSampleRate"/></remarks>
         [SerializeField]
         public MediaSampleRate SampleRate;
 
@@ -70,16 +72,17 @@ namespace OdinNative.Unity.Audio
         internal bool IsStreaming;
 
         /// <summary>
-        /// Use <see cref="Microphone.Start"/> in <see cref="Start"/>
+        /// Use <see cref="UnityEngine.Microphone.Start"/> <see href="https://docs.unity3d.com/ScriptReference/Microphone.Start.html">(Microphone.Start)</see> in <see cref="Start"/>
         /// </summary>
         [SerializeField]
         [Tooltip("Automatical microphone start on Start()")]
         public bool AutostartListen = true;
 
         /// <summary>
-        /// Create and play <see cref="AudioSource"/> with a Microphone <see cref="AudioClip"/> on loop.
+        /// Create and play <see cref="UnityEngine.AudioSource"/> <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">(AudioSource)</see>
+        /// with a Microphone <see cref="UnityEngine.AudioClip"/> <see href="https://docs.unity3d.com/ScriptReference/AudioClip.html">(AudioClip)</see> on loop.
         /// </summary>
-        /// <remarks>Needs <see cref="Permission.Microphone"/> to work.</remarks>
+        /// <remarks>Needs <see href="https://docs.unity3d.com/Manual/PlatformSpecific.html">Platform specific Permissions</see> i.e Microphone to work.</remarks>
         [Header("Microphone Test")]
         [Tooltip("Start/Stop Audio-Loopback")]
         [SerializeField]
@@ -90,7 +93,7 @@ namespace OdinNative.Unity.Audio
         {
             AudioSettings.OnAudioConfigurationChanged += AudioSettings_OnAudioConfigurationChanged;
             if (InputClip != null && Microphone.IsRecording(InputDevice)) IsStreaming = true;
-
+            
             OnMicrophoneData += PushAudio;
         }
 
@@ -201,7 +204,7 @@ namespace OdinNative.Unity.Audio
         }
 
         /// <summary>
-        /// Request <see cref="Room.SetMicrophoneMute"/> to mute by room 
+        /// Request <see cref="OdinNative.Odin.Room.Room.SetMicrophoneMute"/> to mute by room 
         /// </summary>
         /// <remarks>Always false if there is no microphone or the room was not joined</remarks>
         /// <param name="room"></param>

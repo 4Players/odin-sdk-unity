@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Odin.Room
 {
+    /// <summary>
+    /// Intern room dictionary
+    /// </summary>
+    /// <remarks>Used by <see cref="OdinNative.Odin.OdinClient.Rooms"/></remarks>
     public class RoomCollection : IReadOnlyCollection<Room>, IEqualityComparer<Room>
     {
         private volatile ConcurrentDictionary<string, Room> _Rooms;

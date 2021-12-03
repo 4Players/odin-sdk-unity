@@ -124,7 +124,7 @@ namespace OdinNative.Core.Platform
                     break;
                 default: throw new NotSupportedException();
             }
-            t = (T)(object)Marshal.GetDelegateForFunctionPointer(result, typeof(T));
+            t = Marshal.GetDelegateForFunctionPointer<T>(result);
         }
 
         public static void UnloadDynamicLibrary(SupportedPlatform platform, IntPtr handle)

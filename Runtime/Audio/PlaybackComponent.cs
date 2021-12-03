@@ -21,6 +21,16 @@ namespace OdinNative.Unity.Audio
         /// </summary>
         /// <remarks>Unity controls the playback device: no ConfigurationChanged event</remarks>
         public AudioSource PlaybackSource;
+        /// <summary>
+        /// The Unity AudioSource mute property
+        /// </summary>
+        /// <remarks>Sets volume to 0 or restore original volume</remarks>
+        public bool Mute { get { return PlaybackSource?.mute ?? true; } set { if (PlaybackSource == null) return; PlaybackSource.mute = value; } }
+        /// <summary>
+        /// The Odin PlaybackStream underlying media stream calls
+        /// </summary>
+        /// <remarks>on true ignores stream calls</remarks>
+        public bool MuteStream { get { return OdinMedia?.IsMuted ?? true; } set { OdinMedia?.SetMute(value); } }
         internal PlaybackStream OdinMedia => OdinHandler.Instance.Client
             .Rooms[RoomName]?
             .RemotePeers[PeerId]?
@@ -54,12 +64,12 @@ namespace OdinNative.Unity.Audio
                 PlaybackMedia = OdinMedia;
             }
         }
-        private int _MediaId;
+        private ushort _MediaId;
         /// <summary>
         /// Media id for this playback. Change this value to pick a PlaybackStream by media id from peers Medias.
         /// </summary>
         /// <remarks>Invalid values will cause errors.</remarks>
-        public int MediaId
+        public ushort MediaId
         {
             get { return _MediaId; }
             set
@@ -71,11 +81,21 @@ namespace OdinNative.Unity.Audio
         private PlaybackStream PlaybackMedia;
 
         /// <summary>
-        /// On true destroy the <see cref="PlaybackSource"/> in dispose to not leak <see cref="AudioSource"/> or false for manually manage sources
+        /// On true destroy the <see cref="PlaybackSource"/> in dispose to not leak 
+        /// <see cref="UnityEngine.AudioSource"/> <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">(AudioSource)</see>
+        /// or false for manually manage sources
         /// </summary>
         public bool AutoDestroyAudioSource = true;
+
+        internal bool RedirectPlaybackAudio = true;
+        //State of InvokeRepeating
+        private bool _RedirectingPlaybackAudio = false;
+        private const float RedirectPlaybackDelay = 0.5f;
+        private const float RedirectPlaybackInterval = 0.02f;
+
         [Header("AudioClip Settings")]
         private int AudioClipIndex;
+
         private const int MinAudioPackageSize = 960;
         private const int CacheSize = 3840; // Playback request of > 2048 requested
         private const int BufferSize = CacheSize * 4;
@@ -85,9 +105,11 @@ namespace OdinNative.Unity.Audio
         /// </summary>
         public bool OverrideChannels;
         /// <summary>
-        /// The playback <see cref="MediaChannels"/>
+        /// The playback <see cref="OdinNative.Core.MediaChannels"/>
         /// </summary>
-        /// <remarks>Set value is ignored on <see cref="AudioClip"/> creation if <see cref="OverrideChannels"/> is false</remarks>
+        /// <remarks>Set value is ignored on 
+        /// <see cref="UnityEngine.AudioClip"/> <see href="https://docs.unity3d.com/ScriptReference/AudioClip.html">(AudioClip)</see>
+        /// creation if <see cref="OverrideChannels"/> is false</remarks>
         public MediaChannels Channels;
 
         /// <summary>
@@ -95,21 +117,16 @@ namespace OdinNative.Unity.Audio
         /// </summary>
         public bool OverrideSampleRate;
         /// <summary>
-        /// The playback <see cref="MediaSampleRate"/>
+        /// The playback <see cref="OdinNative.Core.MediaSampleRate"/>
         /// </summary>
-        /// <remarks>Set value is ignored on <see cref="AudioClip"/> creation if <see cref="OverrideSampleRate"/> is false</remarks>
+        /// <remarks>Set value is ignored on 
+        /// <see cref="UnityEngine.AudioClip"/> <see href="https://docs.unity3d.com/ScriptReference/AudioClip.html">(AudioClip)</see>
+        /// creation if <see cref="OverrideSampleRate"/> is false</remarks>
         public MediaSampleRate SampleRate;
-
-        public delegate void AudioReadCallback(object sender, float[] buffer, int position);
-        /// <summary>
-        /// Manipulate buffer of <see cref="PlaybackStream"/> before it gets written into an <see cref="AudioClip"/>. If the <see cref="PlaybackStream"/> is muted this event will not be triggered.
-        /// </summary>
-        /// <remarks>Not asynchronous call from <see cref="AudioClip.PCMReaderCallback"/> (See Unity documentation) - avoid heavy calculations.</remarks>
-        public AudioReadCallback OnDataRead;
 
         private bool _IsPlaying;
         /// <summary>
-        /// True, if <see cref="MediaStream.AudioDataLength"/> reports available data otherwise false
+        /// True, if <see cref="OdinNative.Odin.Media.MediaStream.AudioDataLength"/> reports available data otherwise false
         /// </summary>
         /// <remarks>Sets _IsPlaying and invokes <see cref="OnPlaybackPlayingStatusChanged"/> only if the value is new</remarks>
         public bool PlayingStatus
@@ -129,19 +146,26 @@ namespace OdinNative.Unity.Audio
         }
         public delegate void IsPlayingCallback(PlaybackComponent component, bool isPlaying);
         /// <summary>
-        /// Triggered if <see cref="MediaStream.AudioDataLength"/> of Odin <see cref="PlaybackStream"/> has data to play or not.
+        /// Triggered if <see cref="OdinNative.Odin.Media.MediaStream.AudioDataLength"/> of Odin
+        /// <see cref="OdinNative.Odin.Media.PlaybackStream"/> has data to play or not.
         /// </summary>
         /// <remarks>Note: oneshot on status change and will not invoked multiple times for the same status!</remarks>
         public IsPlayingCallback OnPlaybackPlayingStatusChanged;
         /// <summary>
-        /// Updates <see cref="PlayingStatus"/> and invokes <see cref="OnPlaybackPlayingStatusChanged"/>. Using <see cref="Update"/> on true.
+        /// Updates <see cref="PlayingStatus"/> and invokes <see cref="OnPlaybackPlayingStatusChanged"/>.
+        /// Using <see cref="Update"/> on true.
         /// </summary>
-        /// <remarks>If true uses <see cref="MonoBehaviour.CancelInvoke"/> to stop <see cref="UpdatePlayingStatus"/> even if <see cref="CheckPlayingStatusAsInvoke"/> is true</remarks>
+        /// <remarks>If true uses <see href="https://docs.unity3d.com/ScriptReference/MonoBehaviour.CancelInvoke.html">MonoBehaviour.CancelInvoke</see>
+        /// to stop <see cref="UpdatePlayingStatus"/> even if <see cref="CheckPlayingStatusAsInvoke"/> is true</remarks>
         public bool CheckPlayingStatusInUpdate;
         /// <summary>
-        /// On true updates <see cref="PlayingStatus"/> and invokes <see cref="OnPlaybackPlayingStatusChanged"/> the <see cref="UpdatePlayingStatus"/> in time <see cref="PlayingStatusDelay"/> seconds, then repeatedly every <see cref="PlayingStatusRepeatingTime"/> seconds. Using <see cref="MonoBehaviour.InvokeRepeating"/>.
+        /// On true updates <see cref="PlayingStatus"/> and invokes <see cref="OnPlaybackPlayingStatusChanged"/>
+        /// the <see cref="UpdatePlayingStatus"/> in time <see cref="PlayingStatusDelay"/> seconds, then repeatedly every <see cref="PlayingStatusRepeatingTime"/> seconds.
+        /// Using <see href="https://docs.unity3d.com/ScriptReference/MonoBehaviour.InvokeRepeating.html">MonoBehaviour.InvokeRepeating</see>.
         /// </summary>
-        /// <remarks>This does not work if the <see cref="Time.timeScale"/> is set to 0 or <see cref="CheckPlayingStatusInUpdate"/> is true!</remarks>
+        /// <remarks>This does not work if the 
+        /// <see cref="UnityEngine.Time.timeScale"/> <see href="https://docs.unity3d.com/ScriptReference/Time-timeScale.html">(AudioClip)</see>
+        /// is set to 0 or <see cref="CheckPlayingStatusInUpdate"/> is true!</remarks>
         public bool CheckPlayingStatusAsInvoke;
         //State of InvokeRepeating
         private bool CheckPlayingStatusInvoke;
@@ -186,6 +210,8 @@ namespace OdinNative.Unity.Audio
         {
             if (PlaybackSource.isPlaying == false)
                 PlaybackSource.Play();
+
+            RedirectPlaybackAudio = true;
         }
 
         void Reset()
@@ -210,33 +236,60 @@ namespace OdinNative.Unity.Audio
 
         void Update()
         {
+            CheckRedirectAudio();
+
             if (CheckPlayingStatusInUpdate)
             {
                 if (CheckPlayingStatusInvoke)
                     CancelInvoke("UpdatePlayingStatus");
 
                 UpdatePlayingStatus();
+
+                return;
             }
             else
             {
-                if (CheckPlayingStatusAsInvoke && CheckPlayingStatusInvoke == false)
-                {
-                    InvokeRepeating("UpdatePlayingStatus", PlayingStatusDelay, PlayingStatusRepeatingTime);
-                    CheckPlayingStatusInvoke = true;
-                }
-                else if (CheckPlayingStatusAsInvoke == false && CheckPlayingStatusInvoke)
-                {
-                    CancelInvoke("UpdatePlayingStatus");
-                    CheckPlayingStatusInvoke = false;
-                }
+                CheckPlayingStatus();
             }
-
-            Flush();
         }
 
+        private void CheckRedirectAudio()
+        {
+            if (RedirectPlaybackAudio && _RedirectingPlaybackAudio == false)
+            {
+                InvokeRepeating("Flush", RedirectPlaybackDelay, RedirectPlaybackInterval);
+                _RedirectingPlaybackAudio = true;
+                if (PlaybackSource.isPlaying == false)
+                    PlaybackSource.Play();
+            }
+            else if (RedirectPlaybackAudio == false && _RedirectingPlaybackAudio)
+            {
+                CancelInvoke("Flush");
+                _RedirectingPlaybackAudio = false;
+                PlaybackSource.Stop();
+                PlaybackSource.clip.SetData(new float[BufferSize], 0);
+                AudioClipIndex = 0;
+            }
+        }
+
+        private void CheckPlayingStatus()
+        {
+            if (CheckPlayingStatusAsInvoke && CheckPlayingStatusInvoke == false)
+            {
+                InvokeRepeating("UpdatePlayingStatus", PlayingStatusDelay, PlayingStatusRepeatingTime);
+                CheckPlayingStatusInvoke = true;
+            }
+            else if (CheckPlayingStatusAsInvoke == false && CheckPlayingStatusInvoke)
+            {
+                CancelInvoke("UpdatePlayingStatus");
+                CheckPlayingStatusInvoke = false;
+            }
+        }
+
+        // TODO: Frame independent
         private void Flush()
         {
-            if (PlaybackMedia == null || PlaybackMedia.IsMuted) return;
+            if (PlaybackMedia == null || PlaybackMedia.IsMuted || _RedirectingPlaybackAudio == false) return;
 
             int newIndex = PlaybackSource.timeSamples + CacheSize;
             int requested = newIndex - AudioClipIndex;
@@ -264,7 +317,7 @@ namespace OdinNative.Unity.Audio
         /// <returns>true on data or false</returns>
         public bool UpdatePlayingStatus()
         {
-            if (PlaybackMedia == null || PlaybackMedia.IsMuted)
+            if (PlaybackMedia == null || PlaybackMedia.IsMuted || _RedirectingPlaybackAudio == false)
                 return PlayingStatus = false;
 
             return PlayingStatus = PlaybackMedia.AudioDataLength() > 0;
@@ -272,7 +325,10 @@ namespace OdinNative.Unity.Audio
 
         void OnDisable()
         {
+            CancelInvoke();
             PlaybackSource.Stop();
+            AudioClipIndex = 0;
+            RedirectPlaybackAudio = false;
         }
 
         private void OnDestroy()

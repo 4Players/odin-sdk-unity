@@ -8,8 +8,14 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Core.Imports
 {
+    /// <summary>
+    /// C# bindings for ODIN library
+    /// </summary>
     public static class NativeBindings
     {
+        /// <summary>
+        /// Noise suppression level for Room apm
+        /// </summary>
         public enum OdinNoiseSuppressionLevel
         {
             None,
@@ -19,7 +25,7 @@ namespace OdinNative.Core.Imports
             VeryHigh,
         }
 
-        public struct OdinApmConfig
+        internal struct OdinApmConfig
         {
             public bool vad_enable;
             public bool echo_canceller;
@@ -29,24 +35,23 @@ namespace OdinNative.Core.Imports
             public bool transient_suppressor;
         }
 
-        public enum OdinTokenAudience
+        internal enum OdinTokenAudience
         {
             None,
             Gateway,
             Sfu
         }
 
-        public struct OdinTokenOptions
+        internal struct OdinTokenOptions
         {
             public string customer;
             public OdinTokenAudience audience;
             public ulong lifetime;
         }   
 
-        #region Events
         #region EventStructs
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent
+        internal struct OdinEvent
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.I4)]
@@ -77,7 +82,7 @@ namespace OdinNative.Core.Imports
             #endregion OdinEvent union
         };
 
-        public enum OdinEventTag
+        internal enum OdinEventTag
         {
             OdinEvent_PeerJoined,
             OdinEvent_PeerLeft,
@@ -90,7 +95,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent_PeerJoinedData
+        internal struct OdinEvent_PeerJoinedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -103,7 +108,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent_PeerLeftData
+        internal struct OdinEvent_PeerLeftData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -111,7 +116,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent_PeerUpdatedData
+        internal struct OdinEvent_PeerUpdatedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -128,7 +133,7 @@ namespace OdinNative.Core.Imports
         /// (stream is read only! "OdinAudioReadData only")
         /// </summary>
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent_MediaAddedData
+        internal struct OdinEvent_MediaAddedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -141,7 +146,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent_MediaRemovedData
+        internal struct OdinEvent_MediaRemovedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U2)]
@@ -149,13 +154,12 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent_MessageReceivedData
+        internal struct OdinEvent_MessageReceivedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
             public ulong peer_id;
             [FieldOffset(8)]
-            [MarshalAs(UnmanagedType.U2)]
             public IntPtr data;
             [FieldOffset(16)]
             [MarshalAs(UnmanagedType.U8)]
@@ -163,79 +167,34 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct OdinEvent_ConnectionStateChanged
+        internal struct OdinEvent_ConnectionStateChanged
         {
             [FieldOffset(0)]
             public OdinConnectionState state;
         }
-        #endregion EventStructs
 
-        #region EventMap
+        /// <summary>
+        /// Odin library connection state
+        /// </summary>
         public enum OdinConnectionState
         {
             Connecting,
             Connected,
             Disconnected,
         }
+        #endregion EventStructs
 
-        [Obsolete]
-        public interface IPeerJoinedEvent
-        {
-            ulong PeerId { get; set; } // id
-            byte[] UserData { get; set; }
-        }
-
-        [Obsolete]
-        public interface IPeerLeftEvent
-        {
-            ulong PeerId { get; set; } // id
-        }
-
-        [Obsolete]
-        public interface IPeerUpdatedEvent
-        {
-            ulong PeerId { get; set; } // id
-            byte[] UserData { get; set; }
-        }
-
-        [Obsolete]
-        public interface IMediaAddedEvent
-        {
-            ulong PeerId { get; set; } // peer_id
-            ushort MediaId { get; set; }
-            PlaybackStream Stream { get; set; }
-        }
-
-        [Obsolete]
-        public interface IMediaRemovedEvent
-        {
-            ushort MediaId { get; set; }
-        }
-
-        [Obsolete]
-        public class RoomEventArgs : EventArgs, IPeerJoinedEvent, IPeerLeftEvent, IPeerUpdatedEvent, IMediaAddedEvent, IMediaRemovedEvent
-        {
-            public ulong PeerId { get; set; } // peer_id == id
-            public byte[] UserData { get; set; }
-            public ushort MediaId { get; set; }
-            public PlaybackStream Stream { get; set; }
-        }
-        #endregion EventMap
-        #endregion Events
-
-        #region Odin
         [StructLayout(LayoutKind.Sequential)]
-        public struct OdinAudioStreamConfig
+        internal struct OdinAudioStreamConfig
         {
             public uint sample_rate;
             public byte channel_count;
         }
 
-        public enum OdinChannelLayout
+        internal enum OdinChannelLayout
         {
             OdinChannelLayout_Mono,
             OdinChannelLayout_Stereo
         }
-        #endregion Odin
     }
 }

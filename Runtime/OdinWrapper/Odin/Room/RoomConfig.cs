@@ -27,7 +27,7 @@ namespace OdinNative.Odin.Room
         /// </summary>
         public string Server;
         /// <summary>
-        /// true if <see cref="RegisterEventCallback"/> where set and registered in ODIN ffi
+        /// true if <see cref="OdinNative.Odin.Room.Room.RegisterEventCallback"/> where set and registered in ODIN ffi
         /// </summary>
         public bool HasEventCallbacks;
         /// <summary>

@@ -8,7 +8,7 @@ using Random = System.Random;
 namespace OdinNative.Unity
 {
     /// <summary>
-    /// UnityEditor UI component for instance config of <see cref="OdinDefaults"/>
+    /// UnityEditor UI component for instance config of <see cref="OdinNative.Odin.OdinDefaults"/>
     /// </summary>
     [DisallowMultipleComponent, ExecuteInEditMode]
     public class OdinEditorConfig : MonoBehaviour

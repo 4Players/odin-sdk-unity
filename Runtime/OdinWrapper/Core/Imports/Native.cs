@@ -29,19 +29,4 @@ namespace OdinNative.Core.Imports
             return Encoding.GetString(bytes);
         }
     }
-
-    internal class UnmanagedPointer : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public UnmanagedPointer(IntPtr pointer)
-            : base(true)
-        {
-            SetHandle(pointer);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            Native.FreeUnmanaged(handle);
-            return true;
-        }
-    }
 }

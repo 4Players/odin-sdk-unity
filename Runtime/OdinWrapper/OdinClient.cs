@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace OdinNative.Odin
 {
     /// <summary>
-    /// Client Wrapper for ODIN ffi <see cref="OdinLibrary.NativeMethods"/>
+    /// Client Wrapper for ODIN ffi <see cref="OdinNative.Core.OdinLibrary.NativeMethods"/>
     /// </summary>
     public class OdinClient : IDisposable
     {
@@ -47,7 +47,7 @@ namespace OdinNative.Odin
         /// <summary>
         /// Creates a new instance for ODIN ffi C# Wrapper
         /// </summary>
-        /// <remarks><see cref="UserData.UserData"/> will be empty</remarks>
+        /// <remarks><see cref="OdinNative.Odin.UserData"/> will be empty</remarks>
         /// <param name="url"><see cref="EndPoint"/> Odin Server</param>
         /// <param name="accessKey">Odin access key</param>
         public OdinClient(string url, string accessKey)
@@ -58,7 +58,7 @@ namespace OdinNative.Odin
         /// <summary>
         /// Creates a new instance for ODIN ffi C# Wrapper
         /// </summary>
-        /// <remarks><see cref="UserData.UserData"/> will be empty</remarks>
+        /// <remarks><see cref="OdinNative.Odin.UserData"/> will be empty</remarks>
         /// <param name="server"><see cref="EndPoint"/> Odin Server</param>
         /// <param name="accessKey">Odin access key</param>
         public OdinClient(Uri server, string accessKey)
@@ -68,10 +68,10 @@ namespace OdinNative.Odin
         /// <summary>
         /// Creates a new instance for ODIN ffi C# Wrapper
         /// </summary>
-        /// <remarks><see cref="UserData.UserData"/> is optional</remarks>
+        /// <remarks><see cref="OdinNative.Odin.UserData"/> is optional</remarks>
         /// <param name="server"><see cref="EndPoint"/> Odin Server</param>
         /// <param name="accessKey">Odin access key</param>
-        /// <param name="userData"><see cref="UserData.UserData"/> to set</param>
+        /// <param name="userData"><see cref="UserData"/> to set</param>
         public OdinClient(Uri server, string accessKey, UserData userData = null)
         {
             EndPoint = server;
@@ -164,7 +164,7 @@ namespace OdinNative.Odin
         }
 
         /// <summary>
-        /// Join or create a <see cref="Room.Room"/> by token via a gateway (use <see cref="JoinRoom(string, string, string, UserData, Action{Room.Room})"/>)
+        /// Join or create a <see cref="Room.Room"/> by token via a gateway
         /// </summary>
         /// <remarks>Initialize ODIN if <see cref="IsInitialized"/> is false and uses the token as name</remarks>
         /// <param name="token">Room token</param>
@@ -196,7 +196,7 @@ namespace OdinNative.Odin
         /// <summary>
         /// Updates the <see cref="UserData"/> for all <see cref="Rooms"/>
         /// </summary>
-        /// <param name="userData"></param>
+        /// <param name="userData"><see cref="OdinNative.Odin.UserData"/></param>
         public async void UpdateUserData(UserData userData)
         {
             if (userData == null) throw new OdinWrapperException("UserData can not be null!", new ArgumentNullException());
@@ -255,8 +255,10 @@ namespace OdinNative.Odin
                     sender.OnEventReceived(sender, @event, extraData);
                 }
             }
-            catch
-            { /* NOP */ }
+            catch(Exception e)
+#pragma warning disable CS0618 // Type or member is obsolete
+            { Utility.Throw(e); }
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         /// <summary>

@@ -18,12 +18,12 @@ using static OdinNative.Core.Imports.NativeBindings;
 public class OdinHandler : MonoBehaviour
 {
     /// <summary>
-    /// True if any <see cref="Room"/> is joined
+    /// True if any <see cref="OdinNative.Odin.Room.Room"/> is joined
     /// </summary>
     public bool HasConnections => Client.Rooms.Any(r => r.IsJoined);
 
     /// <summary>
-    /// Unity Component that handles one Microphone where data gets routed through (n) <see cref="MediaStream"/>
+    /// Unity Component that handles one Microphone where data gets routed through (n) <see cref="OdinNative.Odin.Media.MediaStream"/>
     /// </summary>
     public MicrophoneReader Microphone;
 
@@ -69,7 +69,7 @@ public class OdinHandler : MonoBehaviour
     /// <remarks>Invokes before <see cref="OnDeleteMediaObject"/></remarks>
     public MediaRemovedProxy OnMediaRemoved;
     /// <summary>
-    /// Called on every Peer that received message from a peer by <see cref="Room.SendMessage(ulong, byte[])"/>
+    /// Called on every Peer that received message from a peer by <see cref="OdinNative.Odin.Room.Room.SendMessage(ulong, byte[])"/>
     /// </summary>
     public MessageReceivedProxy OnMessageReceived;
 
@@ -100,9 +100,9 @@ public class OdinHandler : MonoBehaviour
     internal string ClientId { get; private set; }
     internal string Identifier { get; private set; }
     /// <summary>
-    /// Static reference to Global <see cref="OdinEditorConfig"/>
+    /// Static reference to Global <see cref="OdinNative.Unity.OdinEditorConfig"/>
     /// </summary>
-    /// <remarks>Is a <see cref="RequireComponent"/></remarks>
+    /// <remarks>Is a <see cref="UnityEngine.RequireComponent"/> <see href="https://docs.unity3d.com/ScriptReference/RequireComponent.html">(RequireComponent attribute)</see></remarks>
     public static OdinEditorConfig Config
     {
         get
@@ -134,20 +134,20 @@ public class OdinHandler : MonoBehaviour
     [SerializeField]
     private bool _persistent = true;
     /// <summary>
-    /// Identify <see cref="GameObject"/> by Unity-Tag to attach a <see cref="PlaybackComponent"/>
+    /// Identify <see cref="UnityEngine.GameObject"/> by Unity-Tag to attach a <see cref="OdinNative.Unity.Audio.PlaybackComponent"/>
     /// </summary>
     /// <remarks>Currently no effect</remarks>
     [Tooltip("Identify GameObject by Unity-Tag to attach a PlaybackComponent")]
     [SerializeField]
     public readonly string UnityAudioSourceTag = "Peer";
     /// <summary>
-    /// Enable 3D Audio via preset <see cref="UserData"/>
+    /// Enable 3D Audio via preset <see cref="OdinNative.Odin.UserData"/>
     /// </summary>
     /// <remarks>Currently no effect</remarks>
     [SerializeField]
     public bool Use3DAudio = false;
     /// <summary>
-    /// Creates <see cref="PlaybackComponent"/> on <see cref="Room_OnMediaAdded"/> events
+    /// Creates <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> on <see cref="Room_OnMediaAdded"/> events
     /// </summary>
     [SerializeField]
     public bool CreatePlayback = false;
@@ -251,7 +251,7 @@ public class OdinHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// Join or create a room by name and attach a <see cref="MicrophoneStream"/>
+    /// Join or create a room by name and attach a <see cref="OdinNative.Odin.Media.MicrophoneStream"/>
     /// </summary>
     /// <remarks>Configure Room-Apm i.e VadEnable, ... or Odin-Event-Listeners i.e PeerJoinedEvent, ... with <see cref="Config"/></remarks>
     /// <param name="roomName">Room name</param>
@@ -356,7 +356,7 @@ public class OdinHandler : MonoBehaviour
     /// <summary>
     /// Peer joins the room.
     /// </summary>
-    /// <param name="sender"><see cref="Room"/> object</param>
+    /// <param name="sender"><see cref="OdinNative.Odin.Room.Room"/> object</param>
     /// <param name="e">PeerJoined Args</param>
     protected virtual void Room_OnPeerJoined(object sender, PeerJoinedEventArgs e)
     {
@@ -369,7 +369,7 @@ public class OdinHandler : MonoBehaviour
     /// <summary>
     /// Peer left the room.
     /// </summary>
-    /// <param name="sender"><see cref="Room"/> object</param>
+    /// <param name="sender"><see cref="OdinNative.Odin.Room.Room"/> object</param>
     /// <param name="e">PeerLeft Args</param>
     protected virtual void Room_OnPeerLeft(object sender, PeerLeftEventArgs e)
     {
@@ -382,7 +382,7 @@ public class OdinHandler : MonoBehaviour
     /// <summary>
     /// Peer updated userdata.
     /// </summary>
-    /// <param name="sender"><see cref="Room"/> object</param>
+    /// <param name="sender"><see cref="OdinNative.Odin.Room.Room"/> object</param>
     /// <param name="e">PeerUpdated Args</param>
     protected virtual void Room_OnPeerUpdated(object sender, PeerUpdatedEventArgs e)
     {
@@ -395,8 +395,8 @@ public class OdinHandler : MonoBehaviour
     /// <summary>
     /// Audio/Video stream added in the room.
     /// </summary>
-    /// <remarks>The remote <see cref="MediaStream"/> is always a <see cref="PlaybackStream"/> and readonly.</remarks>
-    /// <param name="sender"><see cref="Room"/> object</param>
+    /// <remarks>The remote <see cref="OdinNative.Odin.Media.MediaStream"/> is always a <see cref="OdinNative.Odin.Media.PlaybackStream"/> and readonly.</remarks>
+    /// <param name="sender"><see cref="OdinNative.Odin.Room.Room"/> object</param>
     /// <param name="e">MediaAdded Args</param>
     protected virtual void Room_OnMediaAdded(object sender, MediaAddedEventArgs e)
     {
@@ -411,8 +411,8 @@ public class OdinHandler : MonoBehaviour
     /// <summary>
     /// Room audio/video stream is closed in the room.
     /// </summary>
-    /// <remarks>Peer and Media in <see cref="MediaRemovedEventArgs"/> is null if the peer left before the owned Medias are removed</remarks>
-    /// <param name="sender"><see cref="Room"/> object</param>
+    /// <remarks>Peer and Media in <see cref="OdinNative.Odin.Room.MediaRemovedEventArgs"/> is null if the peer left before the owned Medias are removed</remarks>
+    /// <param name="sender"><see cref="OdinNative.Odin.Room.Room"/> object</param>
     /// <param name="e">MediaRemoved Args with MediaId</param>
     protected virtual void Room_OnMediaRemoved(object sender, MediaRemovedEventArgs e)
     {
@@ -427,8 +427,8 @@ public class OdinHandler : MonoBehaviour
     /// <summary>
     /// Room audio/video stream is closed in the room.
     /// </summary>
-    /// <remarks>Peer and Media in <see cref="MediaRemovedEventArgs"/> is null if the peer left before the owned Medias are removed</remarks>
-    /// <param name="sender"><see cref="Room"/> object</param>
+    /// <remarks>Peer and Media in <see cref="OdinNative.Odin.Room.MediaRemovedEventArgs"/> is null if the peer left before the owned Medias are removed</remarks>
+    /// <param name="sender"><see cref="OdinNative.Odin.Room.Room"/> object</param>
     /// <param name="e">MediaRemoved Args with MediaId</param>
     protected virtual void Room_OnMessageReceived(object sender, MessageReceivedEventArgs e)
     {
@@ -514,7 +514,16 @@ public class OdinHandler : MonoBehaviour
             addedEvent.Value.Media.Id);
     }
 
-    public PlaybackComponent AssignPlaybackComponent(string gameObjectTag, string roomName, ulong peerId, int mediaId, bool autoDestroySource = true)
+    /// <summary>
+    /// Try and get a gameobject by tag to assign the PlaybackComponent
+    /// </summary>
+    /// <param name="gameObjectTag">Tag string to find with <see href="https://docs.unity3d.com/ScriptReference/GameObject.FindGameObjectsWithTag.html">FindGameObjectsWithTag</see></param>
+    /// <param name="roomName">PlaybackComponent room</param>
+    /// <param name="peerId">PlaybackComponent peer</param>
+    /// <param name="mediaId">PlaybackComponent media</param>
+    /// <param name="autoDestroySource">optionally enable or disable on destroy of PlaybackComponent the destroy of the linked AudioSource</param>
+    /// <returns>ScriptReference of <see cref="PlaybackComponent"/> from the GameObject or null</returns>
+    public PlaybackComponent AssignPlaybackComponent(string gameObjectTag, string roomName, ulong peerId, ushort mediaId, bool autoDestroySource = true)
     {
         return AssignPlaybackComponent(GetPeerContainer(gameObjectTag),
             roomName,
@@ -535,7 +544,16 @@ public class OdinHandler : MonoBehaviour
         return free.FirstOrDefault();
     }
 
-    public PlaybackComponent AssignPlaybackComponent(GameObject peerContainer, string roomName, ulong peerId, int mediaId, bool autoDestroySource = true)
+    /// <summary>
+    /// Assign a new PlaybackComponent to the GameObject
+    /// </summary>
+    /// <param name="peerContainer">GameObject to attach to</param>
+    /// <param name="roomName">PlaybackComponent room</param>
+    /// <param name="peerId">PlaybackComponent peer</param>
+    /// <param name="mediaId">PlaybackComponent media</param>
+    /// <param name="autoDestroySource">optionally enable or disable on destroy of PlaybackComponent the destroy of the linked AudioSource</param>
+    /// <returns>ScriptReference of <see cref="PlaybackComponent"/> from the GameObject or null</returns>
+    public PlaybackComponent AssignPlaybackComponent(GameObject peerContainer, string roomName, ulong peerId, ushort mediaId, bool autoDestroySource = true)
     {
         if (peerContainer == null)
         {
@@ -577,11 +595,11 @@ public class OdinHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// The attached <see cref="MicrophoneStream"/> used by <see cref="MicrophoneReader"/>
+    /// The attached <see cref="OdinNative.Odin.Media.MicrophoneStream"/> used by <see cref="OdinNative.Unity.Audio.MicrophoneReader"/>
     /// </summary>
     /// <param name="roomName">Room name</param>
-    /// <param name="config"><see cref="MicrophoneStream"/> config</param>
-    /// <returns><see cref="MicrophoneStream"/> or null if there is no room</returns>
+    /// <param name="config"><see cref="OdinNative.Odin.Media.MicrophoneStream"/> config</param>
+    /// <returns><see cref="OdinNative.Odin.Media.MicrophoneStream"/> or null if there is no room</returns>
     internal MicrophoneStream GetOrCreateMicrophoneStream(string roomName, OdinNative.Core.OdinMediaConfig config = null)
     {
         if (string.IsNullOrEmpty(roomName)) return null;
@@ -594,14 +612,14 @@ public class OdinHandler : MonoBehaviour
             return room.MicrophoneMedia;
     }
 
-    public void OnBeforeAssemblyReload()
+    private void OnBeforeAssemblyReload()
     {
         Client.ReloadLibrary(false);
         Debug.LogException(new System.NotSupportedException("Odin currently not supports reloading while in Playmode!"));
         Corrupted = true;
     }
 
-    public void OnAfterAssemblyReload()
+    private void OnAfterAssemblyReload()
     {
         Corrupted = true;
         Awake();

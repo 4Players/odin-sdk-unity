@@ -40,7 +40,7 @@ namespace OdinNative.Unity.Samples
             return Instantiate(prefab, new Vector3(0, 0.5f, 6), Quaternion.identity);
         }
 
-        private void Instance_OnCreatedMediaObject(string roomName, ulong peerId, int mediaId)
+        private void Instance_OnCreatedMediaObject(string roomName, ulong peerId, ushort mediaId)
         {
             Room room = OdinHandler.Instance.Rooms[roomName];
             if (room == null || room.Self == null || room.Self.Id == peerId) return;

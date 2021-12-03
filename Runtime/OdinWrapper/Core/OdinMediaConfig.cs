@@ -12,12 +12,18 @@ namespace OdinNative.Core
     /// </summary>
     public class OdinMediaConfig
     {
+        /// <summary>
+        /// Audio Sample-Rate
+        /// </summary>
         public MediaSampleRate SampleRate
         {
             get { return (MediaSampleRate)sampleRate; }
             set { sampleRate = (uint)value; }
         }
 
+        /// <summary>
+        /// Audio Channel
+        /// </summary>
         public MediaChannels Channels
         {
             get { return (MediaChannels)channelCount; }
@@ -38,8 +44,7 @@ namespace OdinNative.Core
 
         internal bool RemoteConfig { get; private set; }
 
-        public static explicit operator OdinMediaConfig(OdinAudioStreamConfig config) => new OdinMediaConfig(config);
-        public static implicit operator OdinAudioStreamConfig(OdinMediaConfig config) => config.AudioStreamConfig;
+        internal OdinAudioStreamConfig GetOdinAudioStreamConfig() => AudioStreamConfig;
 
         private OdinAudioStreamConfig AudioStreamConfig = new OdinAudioStreamConfig();
 
