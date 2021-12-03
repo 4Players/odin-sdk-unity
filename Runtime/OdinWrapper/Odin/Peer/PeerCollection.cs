@@ -42,6 +42,7 @@ namespace OdinNative.Odin.Peer
 
         public void Clear()
         {
+            FreeAll();
             _Peers.Clear();
         }
 

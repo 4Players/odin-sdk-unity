@@ -57,6 +57,7 @@ namespace OdinNative.Odin.Room
 
         public void Clear()
         {
+            FreeAll();
             _Rooms.Clear();
         }
 

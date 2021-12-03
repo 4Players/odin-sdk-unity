@@ -44,6 +44,7 @@ namespace OdinNative.Odin.Media
 
         public void Clear()
         {
+            FreeAll();
             _Medias.Clear();
         }
 
