@@ -311,13 +311,15 @@ public class OdinHandler : MonoBehaviour
         if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
             Debug.Log($"MicrophoneStream added to room {roomName}.");
 
+        await System.Threading.Tasks.Task.Yield();
+
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
             this, 
             new RoomJoinedEventArgs() { Room = room }));
     }
 
     /// <summary>
-    /// Leave and free the <see cref="Room"/> by name
+    /// Leave and free the <see cref="OdinNative.Odin.Room.Room"/> by name
     /// </summary>
     /// <param name="roomName">Room name</param>
     public async void LeaveRoom(string roomName)
