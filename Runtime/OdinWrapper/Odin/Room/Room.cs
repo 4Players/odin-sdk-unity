@@ -264,6 +264,17 @@ namespace OdinNative.Odin.Room
         }
 
         /// <summary>
+        /// Sends arbitrary data to a all remote peers in this room.
+        /// </summary>
+        /// <param name="data">arbitrary byte array</param>
+        /// <returns>true if data was send or false</returns>
+        public bool BroadcastMessage(byte[] data, bool includeSelf = false)
+        {
+            IEnumerable<ulong> peerIds = includeSelf ? RemotePeers.Select(p => p.Id) : RemotePeers.Where(p => p.Id != OwnId).Select(p => p.Id);
+            return SendMessage(peerIds, data);
+        }
+
+        /// <summary>
         /// Will set the room <see cref="MicrophoneMedia"/> to mute
         /// </summary>
         /// <remarks>Always false if there is no <see cref="MicrophoneMedia"/> or the room was not joined</remarks>

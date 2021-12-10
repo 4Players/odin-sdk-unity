@@ -487,10 +487,10 @@ public class OdinHandler : MonoBehaviour
                 if (Use3DAudio)
                 {
                     Debug.LogWarning("Create Playback and 3D Audio enabled at the same time has currently limit support and uses FindGameObjectsWithTag with UnityAudioSourceTag tagged gameobjects.");
-                    AssignPlaybackComponent(UnityAudioSourceTag, addedEvent);
+                    AddPlaybackComponent(UnityAudioSourceTag, addedEvent);
                 }
                 else if (addedEvent.Key.OwnId != addedEvent.Value.PeerId)
-                    AssignPlaybackComponent(this.gameObject, addedEvent);
+                    AddPlaybackComponent(this.gameObject, addedEvent);
             else if (Config.Verbose)
                 Debug.LogWarning($"No available consumers for playback found.");
 
@@ -498,17 +498,17 @@ public class OdinHandler : MonoBehaviour
         }
     }
 
-    private PlaybackComponent AssignPlaybackComponent(string gameObjectTag, KeyValuePair<Room, MediaAddedEventArgs> addedEvent)
+    private PlaybackComponent AddPlaybackComponent(string gameObjectTag, KeyValuePair<Room, MediaAddedEventArgs> addedEvent)
     {
-        return AssignPlaybackComponent(GetPeerContainer(gameObjectTag),
+        return AddPlaybackComponent(FindPeerContainer(gameObjectTag),
             addedEvent.Key.Config.Name,
             addedEvent.Value.Peer.Id,
             addedEvent.Value.Media.Id);
     }
 
-    private PlaybackComponent AssignPlaybackComponent(GameObject peerContainer, KeyValuePair<Room, MediaAddedEventArgs> addedEvent)
+    private PlaybackComponent AddPlaybackComponent(GameObject peerContainer, KeyValuePair<Room, MediaAddedEventArgs> addedEvent)
     {
-        return AssignPlaybackComponent(peerContainer,
+        return AddPlaybackComponent(peerContainer,
             addedEvent.Key.Config.Name,
             addedEvent.Value.Peer.Id,
             addedEvent.Value.Media.Id);
@@ -523,29 +523,29 @@ public class OdinHandler : MonoBehaviour
     /// <param name="mediaId">PlaybackComponent media</param>
     /// <param name="autoDestroySource">optionally enable or disable on destroy of PlaybackComponent the destroy of the linked AudioSource</param>
     /// <returns>ScriptReference of <see cref="PlaybackComponent"/> from the GameObject or null</returns>
-    public PlaybackComponent AssignPlaybackComponent(string gameObjectTag, string roomName, ulong peerId, ushort mediaId, bool autoDestroySource = true)
+    public PlaybackComponent AddPlaybackComponent(string gameObjectTag, string roomName, ulong peerId, ushort mediaId, bool autoDestroySource = true)
     {
-        return AssignPlaybackComponent(GetPeerContainer(gameObjectTag),
+        return AddPlaybackComponent(FindPeerContainer(gameObjectTag),
             roomName,
             peerId,
             mediaId,
             autoDestroySource);
     }
 
-    private GameObject GetPeerContainer(string gameObjectTag)
+    private GameObject FindPeerContainer(string gameObjectTag)
     {
         GameObject[] gameObjects = GameObject.FindGameObjectsWithTag(gameObjectTag);
         if (gameObjects.Length == 0)
             Debug.LogWarning($"No game objects are tagged with '{gameObjectTag}'");
-        var free = gameObjects.Where(g => g.GetComponent<PlaybackComponent>() == null);
-        if (free.Count() == 0)
-            Debug.LogWarning($"No game objects are free with '{gameObjectTag}' tag ({free.Count()}/{gameObjects.Length})");
+        var available = gameObjects.Where(g => g.GetComponent<PlaybackComponent>() == null);
+        if (available.Count() == 0)
+            Debug.LogWarning($"No game objects are free with '{gameObjectTag}' tag ({available.Count()}/{gameObjects.Length})");
 
-        return free.FirstOrDefault();
+        return available.FirstOrDefault();
     }
 
     /// <summary>
-    /// Assign a new PlaybackComponent to the GameObject
+    /// Add a new PlaybackComponent to the GameObject
     /// </summary>
     /// <param name="peerContainer">GameObject to attach to</param>
     /// <param name="roomName">PlaybackComponent room</param>
@@ -553,7 +553,7 @@ public class OdinHandler : MonoBehaviour
     /// <param name="mediaId">PlaybackComponent media</param>
     /// <param name="autoDestroySource">optionally enable or disable on destroy of PlaybackComponent the destroy of the linked AudioSource</param>
     /// <returns>ScriptReference of <see cref="PlaybackComponent"/> from the GameObject or null</returns>
-    public PlaybackComponent AssignPlaybackComponent(GameObject peerContainer, string roomName, ulong peerId, ushort mediaId, bool autoDestroySource = true)
+    public PlaybackComponent AddPlaybackComponent(GameObject peerContainer, string roomName, ulong peerId, ushort mediaId, bool autoDestroySource = true)
     {
         if (peerContainer == null)
         {
@@ -600,17 +600,216 @@ public class OdinHandler : MonoBehaviour
     /// <param name="roomName">Room name</param>
     /// <param name="config"><see cref="OdinNative.Odin.Media.MicrophoneStream"/> config</param>
     /// <returns><see cref="OdinNative.Odin.Media.MicrophoneStream"/> or null if there is no room</returns>
-    internal MicrophoneStream GetOrCreateMicrophoneStream(string roomName, OdinNative.Core.OdinMediaConfig config = null)
+    public MicrophoneStream GetOrCreateMicrophoneStream(string roomName, OdinNative.Core.OdinMediaConfig config = null)
     {
         if (string.IsNullOrEmpty(roomName)) return null;
         var room = Client.Rooms[roomName];
         if (room == null) return null;
 
         if (room.MicrophoneMedia == null)
-            return room.MicrophoneMedia = new MicrophoneStream(config ?? new OdinNative.Core.OdinMediaConfig(Config.DeviceSampleRate, Config.DeviceChannels));
-        else
-            return room.MicrophoneMedia;
+            room.CreateMicrophoneMedia(config ?? new OdinNative.Core.OdinMediaConfig(Config.DeviceSampleRate, Config.DeviceChannels));
+
+        return room.MicrophoneMedia;
     }
+
+    #region convenience
+    /// <summary>
+    /// Get the room object from <see cref="OdinNative.Odin.OdinClient"/>
+    /// </summary>
+    /// <param name="id">Room identifier e.g name or token</param>
+    /// <returns>Room or null</returns>
+    public Room GetRoom(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+        {
+            Debug.LogError("id can not be empty!");
+            return null;
+        }
+        var room = Client.Rooms[id];
+        if (room == null)
+        {
+            Debug.LogWarning($"Room \"{id}\" not found!");
+            return null;
+        }
+        return room;
+    }
+
+    /// <summary>
+    /// Get the peer from a room
+    /// </summary>
+    /// <remarks>Local seen Peers only, not </remarks>
+    /// <param name="roomId">Room identifier e.g name or token</param>
+    /// <param name="peerId">peer ID</param>
+    /// <returns>Peer or null</returns>
+    public OdinNative.Odin.Peer.Peer GetPeer(string roomId, ulong peerId)
+    {
+        Room room = GetRoom(roomId);
+        if (room == null) return null;
+
+        return room.RemotePeers.FirstOrDefault(p => p.Id == peerId);
+    }
+
+    /// <summary>
+    /// Get the PlaybackStream of a peer in the room.
+    /// </summary>
+    /// <param name="roomId">Room identifier e.g name or token</param>
+    /// <param name="mediaId">media ID</param>
+    /// <returns>PlaybackStream or null</returns>
+    public PlaybackStream GetMedia(string roomId, ushort mediaId)
+    {
+        Room room = GetRoom(roomId);
+        if (room == null) return null;
+
+        return room.PlaybackMedias
+            .SelectMany(c => c)
+            .FirstOrDefault(m => m.Id == mediaId)
+            as PlaybackStream;
+    }
+
+    /// <summary>
+    /// Get all remote peers of a room
+    /// </summary>
+    /// <param name="roomId">Room identifier e.g name or token</param>
+    /// <param name="includeSelf">optionally include Self in peers result</param>
+    /// <returns>IEnumerable of RemotePeers</returns>
+    public IEnumerable<OdinNative.Odin.Peer.Peer> GetPeers(string roomId, bool includeSelf = false)
+    {
+        Room room = GetRoom(roomId);
+        if (room == null) return default;
+
+        if (includeSelf)
+            return room.RemotePeers
+                .AsEnumerable();
+
+        return room.RemotePeers
+            .Where(p => p.Id != room.OwnId);
+    }
+
+    /// <summary>
+    /// Sends arbitrary data to a all remote peers in all rooms.
+    /// </summary>
+    /// <param name="data">arbitrary byte array</param>
+    public void BroadcastMessage(byte[] data)
+    {
+        foreach (Room room in Rooms)
+            room.BroadcastMessage(data);
+    }
+
+    /// <summary>
+    /// Get all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> across all rooms
+    /// </summary>
+    /// <remarks>Simply uses <see href="https://docs.unity3d.com/ScriptReference/Object.FindObjectsOfType.html">FindObjectsOfType PlaybackComponent</see>
+    /// A PlaybackComponent always have RoomName, PeerId and MediaId properties.</remarks>
+    /// <returns>The array of objects found matching the type PlaybackComponent.</returns>
+    public PlaybackComponent[] GetPlaybackComponents()
+    {
+        return FindObjectsOfType<PlaybackComponent>();
+    }
+
+    /// <summary>
+    /// Get all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> filtered by room
+    /// </summary>
+    /// <remarks>A PlaybackComponent always have RoomName, PeerId and MediaId properties.</remarks>
+    /// <param name="roomId">Room identifier e.g name or token</param>
+    /// <returns>The filtered array of objects found matching the type PlaybackComponent.</returns>
+    public PlaybackComponent[] GetPlaybackComponents(string roomId)
+    {
+        return GetPlaybackComponents()
+            .Where(c => c.RoomName == roomId)
+            .ToArray();
+    }
+
+    /// <summary>
+    /// Get all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> across rooms filtered by peer
+    /// </summary>
+    /// <remarks>A PlaybackComponent always have RoomName, PeerId and MediaId properties.</remarks>
+    /// <param name="peerId">peer ID</param>
+    /// <returns>The filtered array of objects found matching the type PlaybackComponent.</returns>
+    public PlaybackComponent[] GetPlaybackComponents(ulong peerId)
+    {
+        return GetPlaybackComponents()
+            .Where(c => c.PeerId == peerId)
+            .ToArray();
+    }
+
+    /// <summary>
+    /// Get all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> across rooms filtered by media
+    /// </summary>
+    /// <remarks>A PlaybackComponent always have RoomName, PeerId and MediaId properties.</remarks>
+    /// <param name="mediaId">media ID</param>
+    /// <returns>The filtered array of objects found matching the type PlaybackComponent.</returns>
+    public PlaybackComponent[] GetPlaybackComponents(ushort mediaId)
+    {
+        return GetPlaybackComponents()
+            .Where(c => c.MediaId == mediaId)
+            .ToArray();
+    }
+
+    /// <summary>
+    /// Get a <see cref="OdinNative.Unity.Audio.PlaybackComponent"/>
+    /// </summary>
+    /// <remarks>A PlaybackComponent always have RoomName, PeerId and MediaId properties.</remarks>
+    /// <param name="roomId">Room identifier e.g name or token</param>
+    /// <param name="peerId">peer ID</param>
+    /// <param name="mediaId">media ID</param>
+    /// <returns>PlaybackComponent or null</returns>
+    public PlaybackComponent GetPlaybackComponent(string roomId, ulong peerId, ushort mediaId)
+    {
+        return GetPlaybackComponents()
+            .FirstOrDefault(c => c.RoomName == roomId && c.PeerId == peerId && c.MediaId == mediaId);
+    }
+
+    /// <summary>
+    /// Destroy all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/>
+    /// </summary>
+    /// <remarks>This will free all medias with a PlaybackComponent and
+    /// removes the associated <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">AudioSource</see>,
+    /// If <see cref="OdinNative.Unity.Audio.PlaybackComponent.AutoDestroyAudioSource"/> in <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> is set!</remarks>
+    public void DestroyPlaybackComponents()
+    {
+        foreach (PlaybackComponent component in GetPlaybackComponents())
+            Destroy(component);
+    }
+
+    /// <summary>
+    /// Destroy all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> filtered by room
+    /// </summary>
+    /// <remarks>This will free all medias with a PlaybackComponent by room and
+    /// removes the associated <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">AudioSource</see>,
+    /// If <see cref="OdinNative.Unity.Audio.PlaybackComponent.AutoDestroyAudioSource"/> in <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> is set!</remarks>
+    /// <param name="roomId">Room identifier e.g name or token</param>
+    public void DestroyPlaybackComponents(string roomId)
+    {
+        foreach (PlaybackComponent component in GetPlaybackComponents(roomId))
+            Destroy(component);
+    }
+
+    /// <summary>
+    /// Destroy all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> filtered by peer
+    /// </summary>
+    /// <remarks>This will free all medias with a PlaybackComponent from a peer and 
+    /// removes the associated <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">AudioSource</see>,
+    /// If <see cref="OdinNative.Unity.Audio.PlaybackComponent.AutoDestroyAudioSource"/> in <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> is set!</remarks>
+    /// <param name="peerId">peer ID</param>
+    public void DestroyPlaybackComponents(ulong peerId)
+    {
+        foreach (PlaybackComponent component in GetPlaybackComponents(peerId))
+            Destroy(component);
+    }
+
+    /// <summary>
+    /// Destroy all <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> filtered by media
+    /// </summary>
+    /// <remarks>This will free the media with a PlaybackComponent and
+    /// removes the associated <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">AudioSource</see>,
+    /// If <see cref="OdinNative.Unity.Audio.PlaybackComponent.AutoDestroyAudioSource"/> in <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> is set!</remarks>
+    /// <param name="mediaId">media ID</param>
+    public void DestroyPlaybackComponents(ushort mediaId)
+    {
+        foreach (PlaybackComponent component in GetPlaybackComponents(mediaId))
+            Destroy(component);
+    }
+    #endregion convenience 
 
     private void OnBeforeAssemblyReload()
     {
@@ -622,10 +821,7 @@ public class OdinHandler : MonoBehaviour
     private void OnAfterAssemblyReload()
     {
         Corrupted = true;
-        Awake();
-        Start();
-
-        Debug.LogWarning("Odin instance lost! Please, restart the application.");
+        Debug.LogError("Odin instance lost! Please, restart the application.");
     }
 
     void OnDisable()

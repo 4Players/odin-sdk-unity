@@ -229,7 +229,7 @@ namespace OdinNative.Core.Platform
                         string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", MacLibName), // Editor
                         string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", MacLibName) // PackageCache
 #if UNITY_64
-                        ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", MacLibName),string.Format("{0}/{1}", "Plugins", MacLibName) // Standalone appbundle
+                        ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", MacLibName), string.Format("{0}/{1}", "Plugins", MacLibName) // Standalone appbundle
 #endif
                     };
                     break;
@@ -240,6 +240,7 @@ namespace OdinNative.Core.Platform
                             string.Format("{0}/{1}/{2}", AssetPath, "linux/x86_64", LinuxLibName), // Editor
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86_64", LinuxLibName) // PackageCache
 #if UNITY_64
+                            ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86_64", LinuxLibName) // Standalone
 #endif
                         }
@@ -248,6 +249,7 @@ namespace OdinNative.Core.Platform
                             string.Format("{0}/{1}/{2}", AssetPath, "linux/x86", LinuxLibName), // Editor
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86", LinuxLibName) // PackageCache
 #if UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
+                            ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86", LinuxLibName)  // Standalone
 #endif
                         };
@@ -259,6 +261,7 @@ namespace OdinNative.Core.Platform
                             string.Format("{0}/{1}/{2}", AssetPath, "windows/x86_64", WindowsLibName), // Editor
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86_64", WindowsLibName) // PackageCache
 #if UNITY_64
+                            ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", WindowsLibName)
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", WindowsLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86_64", WindowsLibName)  // Standalone
 #endif
                         }
@@ -267,6 +270,7 @@ namespace OdinNative.Core.Platform
                             string.Format("{0}/{1}/{2}", AssetPath, "windows/x86", WindowsLibName), // Editor
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86", WindowsLibName) // PackageCache
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+                            ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", WindowsLibName)
                             ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86", WindowsLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86", WindowsLibName)  // Standalone
 #endif
                         };

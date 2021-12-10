@@ -48,7 +48,7 @@ namespace OdinNative.Unity.Samples
             var peerContainer = CreateObject();
 
             //Add PlaybackComponent to new dummy PeerCube
-            PlaybackComponent playback = OdinHandler.Instance.AssignPlaybackComponent(peerContainer, room.Config.Name, peerId, mediaId);
+            PlaybackComponent playback = OdinHandler.Instance.AddPlaybackComponent(peerContainer, room.Config.Name, peerId, mediaId);
             playback.OnPlaybackPlayingStatusChanged += TalkIndicator; // set function for talking indication by status
 
             //Update Example
