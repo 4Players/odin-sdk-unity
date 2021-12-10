@@ -1,6 +1,6 @@
 {
   "name": "io.fourplayers.odin",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "displayName": "4Players ODIN",
   "description": "Our .NET (C#) SDK is available and can be used on client and server side implementing the CLR for .NET.",
   "unity": "2019.4",
