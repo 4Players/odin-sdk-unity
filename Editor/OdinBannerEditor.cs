@@ -19,7 +19,7 @@ namespace OdinNative.Unity.UIEditor
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Admin Panel"))
                 OpenAdminPanel();
-            if (GUILayout.Button("Documentation"))
+            if (GUILayout.Button("Web Documentation"))
                 OpenDocumentation();
             GUILayout.EndHorizontal();
         }
