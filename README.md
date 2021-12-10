@@ -42,6 +42,10 @@ We ship a sample package with the Unity SDK, which contains several examples and
 
 ![Package Manager](https://developers.4players.io/images/odin/unity_import.png)
 
+### Usage
+
+The base Prefab Asset is available at `Packages/io.fourplayers.odin/Runtime/OdinManager.prefab` and Script accessibility with the `OdinHandler` class.
+
 ## Troubleshooting
 
 Contact us through the listed methods below to receive answers to your questions and learn more about ODIN.
