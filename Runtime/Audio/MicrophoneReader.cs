@@ -16,7 +16,7 @@ using UnityEngine.Android;
 namespace OdinNative.Unity.Audio
 {
     /// <summary>
-    /// Handles the Microphone data and sends input to ODIN.
+    /// Handles microphone input data and sends input to ODIN
     /// </summary>
     [DisallowMultipleComponent]
     public class MicrophoneReader : MonoBehaviour
@@ -155,7 +155,7 @@ namespace OdinNative.Unity.Audio
         }
 
         /// <summary>
-        /// Start Unity Microphone capture.
+        /// Start Unity microphone capture
         /// </summary>
         /// <remarks>if "Autostart Listen" in Editor component is true, the capture will be called in Unity-Start(void).</remarks>
         public bool StartListen()
@@ -232,7 +232,7 @@ namespace OdinNative.Unity.Audio
         }
 
         /// <summary>
-        /// Stop Unity Microphone capture if this AudioSender created the recording.
+        /// Stop Unity Microphone capture if this AudioSender created the recording
         /// </summary>
         public void StopListen()
         {
@@ -258,7 +258,7 @@ namespace OdinNative.Unity.Audio
         #region Buffer
         public delegate void MicrophoneCallbackDelegate(float[] buffer, int position);
         /// <summary>
-        /// Event is fired if raw Microphone data is available.
+        /// Event is fired if raw microphone data is available
         /// </summary>
         public MicrophoneCallbackDelegate OnMicrophoneData;
 

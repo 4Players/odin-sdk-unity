@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace OdinNative.Core
 {
     /// <summary>
-    /// Exception type for ODIN ffi libary
+    /// Exception type for the native ODIN runtime
     /// </summary>
     public class OdinException : Exception
     {

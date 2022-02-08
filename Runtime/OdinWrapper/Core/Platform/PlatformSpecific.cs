@@ -7,15 +7,35 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
+/**
+ * This class file helps covering the platform specific requirements of the ODIN package as install locations 
+ * will vary based on how it is installed.
+ *
+ * 1) Installing from git:
+ *    <PROJECT_PATH>/Library/PackageCache/io.fourplayers.odin@<COMMIT_HASH>
+ *
+ * 2) Installing from Unity asset store:
+ *    <PROJECT_PATH>/Assets/4Players/ODIN
+ *
+ * 3) Installing from tarball:
+ *    <PROJECT_PATH>/Assets/io.fourplayers.odin
+ *
+ * 4) Installing from Unity package bundle:
+ *    <PROJECT_PATH>/Packages/io.fourplayers.odin
+ */
+
 namespace OdinNative.Core.Platform
 {
     internal static class PlatformSpecific
     {
-        private const string AssetPath = "Assets/" + BinaryPath;
-        private const string PackagePath = "Packages/" + BinaryPath;
-        private const string BinaryPath = PackageName + "/Plugins";
-
         private const string PackageName = "io.fourplayers.odin";
+        private const string PackageVendor = "4Players";
+        private const string PackageShortName = "ODIN";
+
+        private const string AssetPath = "Assets/" + PackageName + "/Plugins";
+        private const string AssetStorePath = "Assets/" + PackageVendor + "/" + PackageShortName + "/Plugins";
+        private const string PackagePath = "Packages/" + PackageName + "/Plugins";
+        
         private const string WindowsLibName = "odin.dll";
         private const string LinuxLibName = "libodin.so";
         private const string MacLibName = "libodin.dylib";
@@ -181,7 +201,7 @@ namespace OdinNative.Core.Platform
         }
 
         /// <summary>
-        /// Returns the name of the native sdk binary that fits the current environment
+        /// Returns the name of the native SDK binary that fits the current environment
         /// </summary>
         /// <param name="names">possible names of the native sdk binary</param>
         /// <param name="platform">detected platform</param>
@@ -227,6 +247,7 @@ namespace OdinNative.Core.Platform
                     names = new string[] { MacLibName,
                         string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", MacLibName), // PkgManager
                         string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", MacLibName), // Editor
+                        string.Format("{0}/{1}/{2}", AssetStorePath, "macos/universal", MacLibName), // Asset Store
                         string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", MacLibName) // PackageCache
 #if UNITY_64
                         ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", MacLibName), string.Format("{0}/{1}", "Plugins", MacLibName) // Standalone appbundle
@@ -238,6 +259,7 @@ namespace OdinNative.Core.Platform
                         ? new string[] { LinuxLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "linux/x86_64", LinuxLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "linux/x86_64", LinuxLibName), // Editor
+                            string.Format("{0}/{1}/{2}", AssetStorePath, "linux/x86_64", LinuxLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86_64", LinuxLibName) // PackageCache
 #if UNITY_64
                             ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
@@ -247,6 +269,7 @@ namespace OdinNative.Core.Platform
                         : new string[] { LinuxLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "linux/x86", LinuxLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "linux/x86", LinuxLibName), // Editor
+                            string.Format("{0}/{1}/{2}", AssetStorePath, "linux/x86", LinuxLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86", LinuxLibName) // PackageCache
 #if UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
                             ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
@@ -259,6 +282,7 @@ namespace OdinNative.Core.Platform
                         ? new string[] { WindowsLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "windows/x86_64", WindowsLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "windows/x86_64", WindowsLibName), // Editor
+                            string.Format("{0}/{1}/{2}", AssetStorePath, "windows/x86_64", WindowsLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86_64", WindowsLibName) // PackageCache
 #if UNITY_64
                             ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", WindowsLibName)
@@ -268,6 +292,7 @@ namespace OdinNative.Core.Platform
                         : new string[] { WindowsLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "windows/x86", WindowsLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "windows/x86", WindowsLibName), // Editor
+                            string.Format("{0}/{1}/{2}", AssetStorePath, "windows/x86", WindowsLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86", WindowsLibName) // PackageCache
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
                             ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", WindowsLibName)

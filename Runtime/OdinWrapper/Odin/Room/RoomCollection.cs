@@ -56,7 +56,10 @@ namespace OdinNative.Odin.Room
 
         public bool Add(Room item)
         {
-            return _Rooms.TryAdd(item.Config.Name, item);
+            if(string.IsNullOrEmpty(item.Config.Name))
+                return _Rooms.TryAdd(item.Config.Token, item);
+            else
+                return _Rooms.TryAdd(item.Config.Name, item);
         }
 
         public void Clear()
@@ -65,9 +68,9 @@ namespace OdinNative.Odin.Room
             _Rooms.Clear();
         }
 
-        public bool Contains(string name)
+        public bool Contains(string key)
         {
-            return _Rooms.ContainsKey(name);
+            return _Rooms.ContainsKey(key);
         }
 
         public bool Contains(Room item)
@@ -95,19 +98,22 @@ namespace OdinNative.Odin.Room
             return obj.GetHashCode();
         }
 
-        public bool Remove(string name)
+        public bool Remove(string key)
         {
-            return _Rooms.TryRemove(name, out _);
+            return _Rooms.TryRemove(key, out _);
         }
 
         public bool Remove(Room item)
         {
-           return Remove(item.Config.Name);
+            if (string.IsNullOrEmpty(item.Config.Name))
+                return Remove(item.Config.Token);
+            else
+                return Remove(item.Config.Name);
         }
 
-        internal bool Free(string name)
+        internal bool Free(string key)
         {
-            bool result = _Rooms.TryRemove(name, out Room room);
+            bool result = _Rooms.TryRemove(key, out Room room);
             if (result) room.Dispose();
             return result;
         }

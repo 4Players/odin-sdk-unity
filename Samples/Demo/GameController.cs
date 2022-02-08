@@ -80,8 +80,6 @@ namespace OdinNative.Unity.Samples
             var peerContainer = Instantiate(PeerPrefab, new Vector3(0, 1, 6), Quaternion.identity);
             PlaybackComponent playback = OdinHandler.Instance.AddPlaybackComponent(peerContainer, room.Config.Name, args.PeerId, args.Media.Id);
 
-            // enable OnPlaybackPlayingStatusChanged event on PlaybackComponent as default
-            playback.CheckPlayingStatusAsInvoke = true;
             // setup the AudioSource attached to the PlaybackComponent for Linear-3D-Rolloff as default
             playback.PlaybackSource.spatialBlend = 1.0f;
             playback.PlaybackSource.rolloffMode = AudioRolloffMode.Linear;

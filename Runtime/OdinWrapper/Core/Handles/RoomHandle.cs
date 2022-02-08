@@ -12,32 +12,28 @@ namespace OdinNative.Core.Handles
     {
         public static implicit operator IntPtr(RoomHandle handle) => handle?.DangerousGetHandle() ?? IntPtr.Zero;
         internal NativeMethods.OdinRoomDestroyDelegate Free;
-        private bool OwnsHandle;
 
         /// <summary>
-        /// Create room handle
+        /// Creates a new ODIN room handle
         /// </summary>
         /// <remarks>On <see cref="ReleaseHandle"/> the handle calls <see cref="NativeMethods.OdinRoomDestroyDelegate"/></remarks>
         /// <param name="handle">Room handle pointer from <see cref="NativeMethods.OdinRoomCreateDelegate"/></param>
         /// <param name="roomDestroyDelegate">Will be called on <see cref="ReleaseHandle"/></param>
-        /// <param name="ownsHandle">true to reliably release the handle during the finalization phase; false to prevent reliable release (not recommended).</param>
-        internal RoomHandle(IntPtr handle, NativeMethods.OdinRoomDestroyDelegate roomDestroyDelegate, bool ownsHandle = true)
-            : base(ownsHandle)
+        internal RoomHandle(IntPtr handle, NativeMethods.OdinRoomDestroyDelegate roomDestroyDelegate)
+            : base(true)
         {
             Free = roomDestroyDelegate;
             SetHandle(handle);
-            OwnsHandle = ownsHandle;
         }
 
         /// <summary>
-        /// Create room handle that is not owned and will not be freed
+        /// Creates a new ODIN room handle that is not owned and will not be freed
         /// </summary>
         /// <remarks>On <see cref="ReleaseHandle"/> the handle is set to invalid (<see cref="System.Runtime.InteropServices.SafeHandle.SetHandleAsInvalid"/>)</remarks>
         /// <param name="handle">remote handle</param>
         internal RoomHandle(IntPtr handle)
             : base(false)
         {
-            OwnsHandle = false;
             SetHandle(handle);
         }
 
@@ -46,10 +42,10 @@ namespace OdinNative.Core.Handles
             bool result = true;
             try
             {
-                if (OwnsHandle)
+                if(OdinLibrary.IsInitialized)
                     Free(handle);
-                else
-                    SetHandleAsInvalid();
+
+                SetHandleAsInvalid();
             }
             catch
             {

@@ -20,7 +20,7 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Local check if the error code is in range of errors.
+        /// Determines if the specified error code identifies an actual error.
         /// </summary>
         /// <param name="error">error code</param>
         /// <returns>true if error</returns>
@@ -54,6 +54,39 @@ namespace OdinNative.Core
 #pragma warning disable CS0618 // Type or member is obsolete
             Utility.Throw(new Odin.OdinWrapperException(message), true);
 #pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        public class RollingAverage
+        {
+            private readonly int pow;
+            private readonly float?[] values;
+            private int nextIndex = -1;
+
+            public RollingAverage(int maxFactor = 16, float defaultValue = 0)
+            {
+                pow = maxFactor - 1;
+                if (maxFactor == 0 || (maxFactor & pow) != 0)
+                {
+                    throw new ArgumentException("Must be power of two", nameof(maxFactor));
+                }
+                values = new float?[maxFactor];
+                for(int i = 0; i < maxFactor; i++)
+                    values[i] = defaultValue;
+            }
+
+            public void Update(float newValue)
+            {
+                var index = System.Threading.Interlocked.Increment(ref nextIndex) & pow;
+                values[index] = newValue;
+            }
+
+            public double GetAverage()
+            {
+                return values.TakeWhile(x => x.HasValue)
+                    .Select(x => x ?? 0)
+                    .DefaultIfEmpty(0)
+                    .Average();
+            }
         }
     }
 }

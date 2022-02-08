@@ -21,15 +21,6 @@ namespace OdinNative.Unity.Samples
 			Playback = gameObject.GetComponent<PlaybackComponent>();
 			// Example set the AudioSource Rolloff to the HearingDistance of this Container
 			Playback.PlaybackSource.maxDistance = HearingDistance;
-			// TalkIndicator
-			// Setup Playback status as InvokeRepeating
-			Playback.CheckPlayingStatusAsInvoke = true;
-			Playback.PlayingStatusDelay = 1.0f; // check start (default 0f)
-			Playback.PlayingStatusRepeatingTime = 0.3f; // check interval (default 0.2f)
-			// set function for talking indication by status
-			Playback.OnPlaybackPlayingStatusChanged += TalkIndicator;
-
-
 			#region Demo
 			Icon = gameObject.GetComponentInChildren<UnityEngine.UI.RawImage>();
 			Player = GameObject.FindGameObjectWithTag("Player");
@@ -73,6 +64,7 @@ namespace OdinNative.Unity.Samples
 			#endregion Demo
 
 			if (Playback == null) return;
+			CheckTalkIndicator();
 
 			/* 
 			 * This is just an example how to access the PlaybackComponent or AudioSource,
@@ -109,11 +101,10 @@ namespace OdinNative.Unity.Samples
 			}
 		}
 
-		// Invoked by OnPlaybackPlayingStatusChanged
-		private void TalkIndicator(PlaybackComponent playback, bool status)
+		private void CheckTalkIndicator()
 		{
-			Material cubeMaterial = playback.GetComponentInParent<Renderer>().material;
-			if (status)
+			Material cubeMaterial = Playback.GetComponentInParent<Renderer>().material;
+			if (Playback.HasActivity)
 			{
 				lastCubeColor = cubeMaterial.color;
 				cubeMaterial.color = Color.green;

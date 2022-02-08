@@ -8,29 +8,31 @@ namespace OdinNative.Unity.Samples
     [Serializable]
     class CustomUserDataJsonFormat : IUserData
     {
-        public string name;
+        public string id;
         public string seed;
+        public string name;
         public string status;
-        public int muted;
-        public string user;
+        public int inputMuted;
+        public int outputMuted;
         public string renderer;
-        public string platform;
         public string revision;
         public string version;
+        public string platform;
         public string buildno;
 
         public CustomUserDataJsonFormat() : this("Unity Player", "online") { }
         public CustomUserDataJsonFormat(string name, string status)
         {
-            this.name = name;
+            this.id = SystemInfo.deviceUniqueIdentifier;
             this.seed = SystemInfo.deviceUniqueIdentifier;
+            this.name = name;
             this.status = status;
-            this.muted = 0;
-            this.user = string.Format("{0}.{1}", Application.companyName, Application.productName);
+            this.inputMuted = 0;
+            this.outputMuted = 0;
             this.renderer = Application.unityVersion;
-            this.platform = string.Format("{0}/{1}", Application.platform, Application.unityVersion);
             this.revision = "0";
             this.version = Application.version;
+            this.platform = string.Format("{0}/{1}", Application.platform, Application.unityVersion);
             this.buildno = Application.buildGUID;
         }
 
@@ -41,7 +43,10 @@ namespace OdinNative.Unity.Samples
 
         public static CustomUserDataJsonFormat FromUserData(UserData userData)
         {
-            return JsonUtility.FromJson<CustomUserDataJsonFormat>(userData.ToString());
+            try
+            {
+                return JsonUtility.FromJson<CustomUserDataJsonFormat>(userData.ToString());
+            } catch { return null; }
         }
 
         public static bool FromUserData(UserData userData, out CustomUserDataJsonFormat customUserData)

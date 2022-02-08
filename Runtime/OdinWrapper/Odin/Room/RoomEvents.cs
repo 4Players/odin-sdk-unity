@@ -45,8 +45,10 @@ namespace OdinNative.Odin.Room
     public class PeerJoinedEventArgs : EventArgs
     {
         public ulong PeerId { get; internal set; }
+        public string UserId { get; internal set; }
         public Peer.Peer Peer;
     }
+    public delegate void RoomPeerJoinedEventHandler(object sender, PeerJoinedEventArgs e);
 
     /// <summary>
     /// Peer left arguments
@@ -55,15 +57,17 @@ namespace OdinNative.Odin.Room
     {
         public ulong PeerId { get; internal set; }
     }
-
+    public delegate void RoomPeerLeftEventHandler(object sender, PeerLeftEventArgs e);
     /// <summary>
     /// Peer updated arguments with arbitrary data
     /// </summary>
-    public class PeerUpdatedEventArgs : EventArgs
+    public class PeerUserDataChangedEventArgs : EventArgs
     {
         public ulong PeerId { get; internal set; }
-        public byte[] UserData;
+        public Peer.Peer Peer;
+        public UserData UserData;
     }
+    public delegate void RoomPeerUserDataChangedEventHandler(object sender, PeerUserDataChangedEventArgs e);
 
     /// <summary>
     /// Media added arguments in the current room
@@ -74,6 +78,7 @@ namespace OdinNative.Odin.Room
         public Peer.Peer Peer;
         public PlaybackStream Media;
     }
+    public delegate void RoomMediaAddedEventHandler(object sender, MediaAddedEventArgs e);
 
     /// <summary>
     /// Media removed arguments in the current room
@@ -84,6 +89,28 @@ namespace OdinNative.Odin.Room
         public Peer.Peer Peer;
         public MediaStream Media;
     }
+    public delegate void RoomMediaRemovedEventHandler(object sender, MediaRemovedEventArgs e);
+
+    /// <summary>
+    /// Media activity changed arguments
+    /// </summary>
+    public class MediaActiveStateChangedEventArgs : EventArgs
+    {
+        public ushort MediaId { get; internal set; }
+        public ulong PeerId { get; internal set; }
+        public bool Active { get; internal set; }
+    }
+    public delegate void MediaActiveStateChangedEventHandler(object sender, MediaActiveStateChangedEventArgs e);
+
+    /// <summary>
+    /// RoomUserData changed arguments in the current room
+    /// </summary>
+    public class RoomUserDataChangedEventArgs : EventArgs
+    {
+        public string RoomName { get; internal set; }
+        public UserData Data;
+    }
+    public delegate void RoomUserDataChangedEventHandler(object sender, RoomUserDataChangedEventArgs e);
 
     /// <summary>
     /// Message received arguments in the current room
@@ -93,4 +120,5 @@ namespace OdinNative.Odin.Room
         public ulong PeerId { get; internal set; }
         public byte[] Data;
     }
+    public delegate void RoomMessageReceivedEventHandler(object sender, MessageReceivedEventArgs e);
 }

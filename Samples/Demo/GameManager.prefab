@@ -43,6 +43,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f730a138426314fbeb86e151d34fbf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PeerPrefab: {fileID: 4490303690203571153, guid: c6ff63fe1b78ee2419b8af1525875421,
+  PeerPrefab: {fileID: 320424598624187342, guid: c6ff63fe1b78ee2419b8af1525875421,
     type: 3}
   PeersObjects: []

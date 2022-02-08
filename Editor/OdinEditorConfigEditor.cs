@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using OdinNative.Unity;
 using UnityEngine;
 using UnityEditor;
@@ -104,6 +104,7 @@ namespace OdinNative.Unity.UIEditor
             if (toggleAuthSettings)
             {
                 EditorGUILayout.PropertyField(AccessKey, new GUIContent("Access Key", "Used to create room tokens for accessing the ODIN network.\n\nNote that all of your clients must use tokens generated from either the same access key or another key from the same project. While you can create an infinite number of access keys for your projects, we strongly recommend that you never put an access key in your client code."));
+                EditorGUILayout.PropertyField(Server, new GUIContent("Gateway URL", "The URL of the ODIN gateway to authenticate against. Unless you're hosting your own fleet of ODIN servers, always use gateway running at 'https://gateway.odin.4players.io'."));
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Manage Access"))
                 {

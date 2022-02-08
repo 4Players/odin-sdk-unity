@@ -6,12 +6,12 @@ using static OdinNative.Core.Imports.NativeBindings;
 namespace OdinNative.Core
 {
     /// <summary>
-    /// Odin Room Apm configuration
+    /// Audio processing configuration of an ODIN room
     /// </summary>
     public class OdinRoomConfig
     {
         /// <summary>
-        /// Enables or disables voice activity detection
+        /// Enables or disables RNN-based voice activity detection
         /// </summary>
         public bool VadEnable
         {

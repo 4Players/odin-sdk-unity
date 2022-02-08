@@ -33,6 +33,10 @@ namespace OdinNative.Odin.Media
         /// </summary>
         /// <remarks> if true no function call to ODIN ffi at all</remarks>
         public bool IsMuted { get; set; }
+        /// <summary>
+        /// Determine if this media is currently active and is playing
+        /// </summary>
+        public bool IsActive { get; internal set; }
 
         private StreamHandle Handle;
 
@@ -237,10 +241,10 @@ namespace OdinNative.Odin.Media
                 {
                     CancellationSource.Dispose();
                     MediaConfig = null;
+                    Handle.Close();
+                    Handle = null;
                 }
 
-                Handle.Close();
-                Handle = null;
                 disposedValue = true;
             }
         }

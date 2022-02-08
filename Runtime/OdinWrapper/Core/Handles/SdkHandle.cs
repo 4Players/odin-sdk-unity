@@ -29,6 +29,10 @@ namespace OdinNative.Core.Handles
             SetHandle(handle);
             Platform = platform;
             Location = location;
+
+            NativeMethods.OdinStartupDelegate startupClientLib;
+            GetLibraryMethod("odin_startup", out startupClientLib);
+            startupClientLib(OdinNative.Core.Imports.NativeBindings.OdinVersion);
         }
 
         public void GetLibraryMethod<T>(string name, out T t)

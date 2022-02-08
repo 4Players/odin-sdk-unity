@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace OdinNative.Core.Platform
 {
     /// <summary>
-    /// Platforms the SDK can run on
+    /// Platforms supported by the native ODIN runtime
     /// </summary>
     public enum SupportedPlatform
     {

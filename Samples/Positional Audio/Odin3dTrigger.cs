@@ -23,9 +23,16 @@ namespace OdinNative.Unity.Samples
         {
             OdinHandler.Instance.OnCreatedMediaObject.AddListener(Instance_OnCreatedMediaObject);
             OdinHandler.Instance.OnDeleteMediaObject.AddListener(Instance_OnDeleteMediaObject);
+            OdinHandler.Instance.OnMediaActiveStateChanged.AddListener(Instance_OnMediaActiveStateChanged);
             OdinHandler.Instance.OnRoomLeft.AddListener(Instance_OnRoomLeft);
 
             var SelfData = OdinHandler.Instance.GetUserData();
+            if (SelfData.IsEmpty())
+            {
+                SelfData = new CustomUserDataJsonFormat().ToUserData();
+                OdinHandler.Instance.UpdateUserData(SelfData);
+            }
+
             //Set Player
             GameObject player = GameObject.FindGameObjectsWithTag("Player").FirstOrDefault();
             if (player != null)
@@ -49,14 +56,6 @@ namespace OdinNative.Unity.Samples
 
             //Add PlaybackComponent to new dummy PeerCube
             PlaybackComponent playback = OdinHandler.Instance.AddPlaybackComponent(peerContainer, room.Config.Name, peerId, mediaId);
-            playback.OnPlaybackPlayingStatusChanged += TalkIndicator; // set function for talking indication by status
-
-            //Update Example
-            //playback.CheckPlayingStatusInUpdate = true; // set checking status per frame active
-            //InvokeRepeating Example
-            playback.CheckPlayingStatusAsInvoke = true; // set checking status as MonoBehaviour.InvokeRepeating active
-            playback.PlayingStatusDelay = 1.0f; // (default 0f)
-            playback.PlayingStatusRepeatingTime = 0.3f; // (default 0.2f)
 
             //Some AudioSource test settings
             playback.PlaybackSource.spatialBlend = 1.0f;
@@ -73,10 +72,15 @@ namespace OdinNative.Unity.Samples
             PeersObjects.Add(playback.gameObject);
         }
 
-        private void TalkIndicator(PlaybackComponent playback, bool status)
+        private void Instance_OnMediaActiveStateChanged(object sender, MediaActiveStateChangedEventArgs args)
         {
+            PlaybackComponent playback = PeersObjects
+                .Select(obj => obj.GetComponent<PlaybackComponent>())
+                .FirstOrDefault(p => p.MediaId == args.MediaId);
+            if(playback == null) return;
+
             Material cubeMaterial = playback.GetComponentInParent<Renderer>().material;
-            if (status)
+            if (playback.HasActivity)
             {
                 LastCubeColor = cubeMaterial.color;
                 cubeMaterial.color = Color.green;

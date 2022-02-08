@@ -22,9 +22,9 @@ namespace OdinNative.Odin
         private byte[] _buffer;
 
         public static explicit operator UserData(string text) => new UserData(text);
-        public static implicit operator string(UserData userdata) => userdata.ToString();
+        public static implicit operator string(UserData userdata) => userdata?.ToString() ?? string.Empty;
         public static explicit operator UserData(byte[] data) => new UserData(data);
-        public static implicit operator byte[](UserData userdata) => userdata.ToBytes();
+        public static implicit operator byte[](UserData userdata) => userdata?.ToBytes() ?? new byte[0];
 
         internal UserData() : this(new byte[0]) { }
         public UserData(string text) : this(text, Encoding.UTF8) { }

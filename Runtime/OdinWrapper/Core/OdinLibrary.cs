@@ -47,22 +47,22 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// true if the Odin library has been loaded and initialized or false
+        /// Indicates whether or not the native ODIN runtime has been loaded and initialized
         /// </summary>
         public static bool IsInitialized
         {
             get
             {
                 OdinHandle handle = Handle;
-                return handle != null && handle.IsClosed == false;
+                return handle != null && handle.IsClosed == false && handle.IsInvalid == false;
             }
         }
 
         /// <summary>
-        /// Initializes the Odin clientlib
+        /// Initializes the native ODIN runtime
         /// </summary>
         /// <remarks>
-        /// Explicitly loads the Odin clientlib. Will be automatically invoked by the SDK when required.
+        /// This function explicitly loads the ODIN library. It will be invoked automatically by the SDK when required.
         /// </remarks>
         public static void Initialize()
         {
@@ -106,7 +106,7 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Releases the unmanaged resources used by the <see cref="OdinLibrary"/>
+        /// Releases the unmanaged resources used by the <see cref="OdinLibrary"/>-Instance
         /// </summary>
         public static void Release()
         {
@@ -123,7 +123,7 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Location to the Odin library binary.
+        /// Location of the native ODIN runtime binary
         /// </summary>
         public static string NativeBinary { get; private set; }
 
@@ -131,13 +131,14 @@ namespace OdinNative.Core
         /// Platform the library is running on
         /// </summary>
         /// <remarks>
-        /// Used to determine how the native library will loaded and unloaded.
+        /// This value is used to determine how the native ODIN runtime library will loaded and unloaded.
         /// </remarks>
         public static SupportedPlatform Platform { get; private set; }
 
         private static void ProcessExit(object sender, EventArgs e)
         {
-            Release();
+            if(IsInitialized)
+                Release();
         }
 
         internal static Exception CreateException(int error, string extraMessage = null)

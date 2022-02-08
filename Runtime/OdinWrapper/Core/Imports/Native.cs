@@ -14,12 +14,7 @@ namespace OdinNative.Core.Imports
         public static readonly Encoding Encoding = Encoding.UTF8;
         public static readonly int SizeOfPointer = Marshal.SizeOf(typeof(IntPtr));
 
-        public static void FreeUnmanaged(IntPtr pointer)
-        {
-            Marshal.FreeHGlobal(pointer);
-        }
-
-        public static string ReadString(IntPtr pointer)
+        public static string ReadByteString(IntPtr pointer)
         {
             if (pointer == IntPtr.Zero) return null;
             int length = 0;
@@ -27,6 +22,13 @@ namespace OdinNative.Core.Imports
             byte[] bytes = new byte[length];
             Marshal.Copy(pointer, bytes, 0, length);
             return Encoding.GetString(bytes);
+        }
+
+        public static string ReadByteString(IntPtr pointer, int size)
+        {
+            byte[] buffer = new byte[size];
+            Marshal.Copy(pointer, buffer, 0, buffer.Length);
+            return Native.Encoding.GetString(buffer);
         }
     }
 }

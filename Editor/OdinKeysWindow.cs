@@ -87,6 +87,7 @@ namespace OdinNative.Unity.UIEditor
         {
             config.GenerateUIAccessKey();
             accessKeyTextElement.text = config.AccessKey;
+            EditorUtility.SetDirty(config);
         }
     }
 }

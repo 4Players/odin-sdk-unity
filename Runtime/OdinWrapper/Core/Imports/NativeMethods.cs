@@ -25,7 +25,9 @@ namespace OdinNative.Core.Imports
             handle.GetLibraryMethod("odin_room_join", out _OdinRoomJoin);
             handle.GetLibraryMethod("odin_room_add_media", out _OdinRoomAddMedia);
             handle.GetLibraryMethod("odin_room_update_user_data", out _OdinRoomUpdateUserData);
+            handle.GetLibraryMethod("odin_room_update_position", out _OdinRoomUpdatePosition);
             handle.GetLibraryMethod("odin_room_set_event_callback", out _OdinRoomSetEventCallback);
+            handle.GetLibraryMethod("odin_room_set_position_scale", out _OdinRoomSetPositionScale);
             handle.GetLibraryMethod("odin_room_send_message", out _OdinRoomSendMessage);
             handle.GetLibraryMethod("odin_video_stream_create", out _OdinVideoStreamCreate);
             handle.GetLibraryMethod("odin_audio_stream_create", out _OdinAudioStreamCreate);
@@ -101,7 +103,7 @@ namespace OdinNative.Core.Imports
         }
 
         /// <summary>
-        /// Provides a readable representation from the error code of ErrorFormat
+        /// Internal function to convert a specified error code into a human-readable error message
         /// </summary>
         /// <param name="error">string buffer</param>
         /// <param name="bufferSize">max string buffer size</param>
@@ -120,7 +122,7 @@ namespace OdinNative.Core.Imports
         }
 
         /// <summary>
-        /// Local check if the error code is in range of errors.
+        /// Internal function to determines if the specified error code identifies an actual error
         /// </summary>
         /// <param name="error">error code</param>
         /// <returns>true if error</returns>

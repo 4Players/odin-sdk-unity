@@ -8,12 +8,12 @@ using static OdinNative.Core.Imports.NativeBindings;
 namespace OdinNative.Core
 {
     /// <summary>
-    /// Odin Audio stream configuration
+    /// ODIN audio stream configuration
     /// </summary>
     public class OdinMediaConfig
     {
         /// <summary>
-        /// Audio Sample-Rate
+        /// The number audio samples carried per second in Hz
         /// </summary>
         public MediaSampleRate SampleRate
         {
@@ -22,7 +22,7 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Audio Channel
+        /// The number of audio channels
         /// </summary>
         public MediaChannels Channels
         {
@@ -59,7 +59,7 @@ namespace OdinNative.Core
     }
 
     /// <summary>
-    /// Supported Audio Sample-Rate
+    /// Supported audio sample rate values
     /// </summary>
     public enum MediaSampleRate : uint
     {
@@ -81,12 +81,12 @@ namespace OdinNative.Core
     }
 
     /// <summary>
-    /// Supported Audio Channel
+    /// Supported values for audio channel count
     /// </summary>
     public enum MediaChannels : byte
     {
         Mono = 1,          // Defines a single (monaural) channel
-        Stereo = 2,         // Defines two (stereo) channels
+        Stereo = 2,        // Defines two (stereo) channels
         //DolbySurround = 3,  // Defines three channels
         //DolbyProLogic = 4,  // Defines four channels
         //DolbyDigital = 6,   // Defines six channels

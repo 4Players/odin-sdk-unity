@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 namespace OdinNative.Core
 {
     /// <summary>
-    /// A set of values that are used when initializing the client library  
+    /// A set of values that are used when initializing the native ODIN runtime
     /// </summary>
     public class OdinLibraryParameters
     {
         /// <summary>
-        /// Returns the name of the native sdk binary that fits the current environment
+        /// Returns the name of the native ODIN runtime binary that fits the current environment
         /// </summary>
         /// <param name="names">possible names of the native sdk binary</param>
         /// <param name="platform">detected platform</param>
@@ -26,12 +26,12 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Possible locations to the Odin library binary.
+        /// Possible install location of the native ODIN runtime binary
         /// </summary>
         public string[] PossibleNativeBinaryLocations { get; set; }
 
         /// <summary>
-        /// Determines which platform specific code will be executed.
+        /// Determines which platform specific code needs to be executed
         /// </summary>
         public SupportedPlatform Platform { get; set; }
 

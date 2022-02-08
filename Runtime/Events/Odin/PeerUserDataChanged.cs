@@ -5,7 +5,7 @@ using OdinNative.Odin.Room;
 namespace OdinNative.Unity.Events
 {
     [Serializable]
-    public class PeerUpdatedProxy : UnityEvent<object, PeerUpdatedEventArgs>
+    public class PeerUserDataChangedProxy : UnityEvent<object, PeerUserDataChangedEventArgs>
     {
     }
 }

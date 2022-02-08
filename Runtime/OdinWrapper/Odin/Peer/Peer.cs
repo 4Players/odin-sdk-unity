@@ -20,6 +20,10 @@ namespace OdinNative.Odin.Peer
         /// </summary>
         public string RoomName { get; private set; }
         /// <summary>
+        /// Peers user id
+        /// </summary>
+        public string UserId { get; internal set; }
+        /// <summary>
         /// Peer userdata
         /// </summary>
         public UserData UserData { get; private set; }
@@ -68,10 +72,10 @@ namespace OdinNative.Odin.Peer
             {
                 if (disposing)
                 {
+                    Medias.FreeAll();
                     UserData = null;
                 }
 
-                Medias.FreeAll();
                 disposedValue = true;
             }
         }

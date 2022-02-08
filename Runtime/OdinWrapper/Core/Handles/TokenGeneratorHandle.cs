@@ -14,10 +14,10 @@ namespace OdinNative.Core.Handles
         internal NativeMethods.OdinTokenGeneratorDestroyDelegate Free;
 
         /// <summary>
-        /// Create TokenGenerator handle
+        /// Creates a new ODIN token generator handle
         /// </summary>
         /// <remarks>On <see cref="ReleaseHandle"/> the handle calls <see cref="NativeMethods.OdinTokenGeneratorDestroyDelegate"/></remarks>
-        /// <param name="handle">Token Generator handle pointer from <see cref="NativeMethods.OdinTokenGeneratorCreateDelegate"/></param>
+        /// <param name="handle">Token generator handle pointer from <see cref="NativeMethods.OdinTokenGeneratorCreateDelegate"/></param>
         /// <param name="tokenGeneratorDestroyDelegate">Will be called on <see cref="ReleaseHandle"/></param>
         internal TokenGeneratorHandle(IntPtr handle, NativeMethods.OdinTokenGeneratorDestroyDelegate tokenGeneratorDestroyDelegate)
             : base(true)
@@ -31,7 +31,9 @@ namespace OdinNative.Core.Handles
             bool result = true;
             try
             {
-                Free(handle);
+                if (OdinLibrary.IsInitialized)
+                    Free(handle);
+
                 SetHandleAsInvalid();
             }
             catch

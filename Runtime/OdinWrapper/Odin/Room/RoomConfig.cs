@@ -23,6 +23,10 @@ namespace OdinNative.Odin.Room
         /// </summary>
         public string Name;
         /// <summary>
+        /// Room token
+        /// </summary>
+        public string Token;
+        /// <summary>
         /// Room associated endpoint 
         /// </summary>
         public string Server;

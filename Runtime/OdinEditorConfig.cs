@@ -60,6 +60,9 @@ namespace OdinNative.Unity
         public bool PeerUpdatedEvent = OdinDefaults.PeerUpdatedEvent;
         public bool MediaAddedEvent = OdinDefaults.MediaAddedEvent;
         public bool MediaRemovedEvent = OdinDefaults.MediaRemovedEvent;
+        public bool RoomUpdatedEvent = OdinDefaults.RoomUpdatedEvent;
+        public bool MediaActiveStateChangedEvent = OdinDefaults.MediaActiveStateChangedEvent;
+        public bool MessageReceivedEvent = OdinDefaults.MessageReceivedEvent;
         #endregion Events
 
         /// <summary>

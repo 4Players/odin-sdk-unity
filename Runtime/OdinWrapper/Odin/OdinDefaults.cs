@@ -46,6 +46,9 @@ namespace OdinNative.Odin
         public static bool PeerUpdatedEvent = true;
         public static bool MediaAddedEvent = true;
         public static bool MediaRemovedEvent = true;
+        public static bool RoomUpdatedEvent = true;
+        public static bool MediaActiveStateChangedEvent = true;
+        public static bool MessageReceivedEvent = true;
         #endregion Events
 
         public static ulong TokenLifetime { get; set; } = 300;
