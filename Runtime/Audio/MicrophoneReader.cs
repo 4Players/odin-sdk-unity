@@ -79,6 +79,11 @@ namespace OdinNative.Unity.Audio
         [Tooltip("Automatical microphone start on Start()")]
         public bool AutostartListen = true;
 
+        public bool CustomMicVolumeScale = false;
+        [SerializeField]
+        [Tooltip("Automatical microphone volume boost")]
+        public float MicVolumeScale = 1f;
+
         /// <summary>
         /// Create and play <see cref="UnityEngine.AudioSource"/> <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">(AudioSource)</see>
         /// with a Microphone <see cref="UnityEngine.AudioClip"/> <see href="https://docs.unity3d.com/ScriptReference/AudioClip.html">(AudioClip)</see> on loop.
@@ -107,6 +112,9 @@ namespace OdinNative.Unity.Audio
 
             OverrideSampleRate = false;
             SampleRate = OdinHandler.Config.DeviceSampleRate;
+
+            CustomMicVolumeScale = false;
+            MicVolumeScale = 1f;
 
             Loopback = false;
             AutostartListen = true;
@@ -184,6 +192,12 @@ namespace OdinNative.Unity.Audio
         {
             if (RedirectCapturedAudio == false) return;
 
+            if (CustomMicVolumeScale)
+            {
+                float bufferScale = GetVolumeScale(MicVolumeScale);
+                SetVolume(ref buffer, bufferScale);
+            }
+
             foreach (Room room in OdinHandler.Instance.Client.Rooms)
             {
                 if (room.MicrophoneMedia != null)
@@ -191,6 +205,27 @@ namespace OdinNative.Unity.Audio
                 else if (room.IsJoined && OdinHandler.Config.Verbose)
                     Debug.LogWarning($"Room {room.Config.Name} is missing a microphone stream. See Room.CreateMicrophoneMedia");
             }
+        }
+
+        float GetVolumeScale(float value)
+        {
+            return Mathf.Pow(value, 3);
+        }
+
+        void SetVolume(ref float[] buffer, float scale)
+        {
+            for(int i = 0; i < buffer.Length; i++)
+                buffer[i] *= scale;
+        }
+
+        float GetAveragedVolume(float[] buffer)
+        {
+            float avg = 0;
+            foreach (float s in buffer)
+            {
+                avg += Mathf.Abs(s);
+            }
+            return avg / buffer.Length * 100f;
         }
 
         void Update()
