@@ -175,7 +175,7 @@ namespace OdinNative.Unity.Audio
 
         void OnAudioFilterRead(float[] data, int channels)
         {
-            if (_isDestroying || PlaybackMedia == null || PlaybackMedia.HasErrors || PlaybackMedia.IsMuted || RedirectPlaybackAudio == false) return;
+            if (_isDestroying || PlaybackMedia == null || PlaybackMedia.HasErrors || PlaybackMedia.IsPaused || RedirectPlaybackAudio == false) return;
 
             if (!UseResampler && ReadBuffer == null)
                 ReadBuffer = new float[data.Length / channels];
