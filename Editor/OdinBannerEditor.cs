@@ -27,7 +27,7 @@ namespace OdinNative.Unity.UIEditor
         [MenuItem("Window/4Players ODIN/Admin Panel", false, 90)]
         static void OpenAdminPanel()
         {
-            Application.OpenURL("https://admin.scill.4players.io");
+            Application.OpenURL("https://app.netplay-config.4players.de/");
         }
 
         [MenuItem("Window/4Players ODIN/Documentation", false, 91)]
