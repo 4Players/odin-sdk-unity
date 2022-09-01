@@ -576,8 +576,13 @@ namespace OdinNative.Odin.Room
         {
             var peer = RemotePeers[@event.peer_id];
             long streamId = @event.media_handle.ToInt64();
-            MediaStream media = peer?.Medias[streamId];
-            if(media != null) media.IsActive = @event.active;
+            if (MicrophoneMedia?.Id == streamId)
+                MicrophoneMedia.IsActive = @event.active;
+            else
+            {
+                MediaStream media = peer?.Medias[streamId];
+                if (media != null) media.IsActive = @event.active;
+            }
 
             OnMediaActiveStateChanged?.Invoke(this, new MediaActiveStateChangedEventArgs()
             {
