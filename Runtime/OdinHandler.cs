@@ -79,7 +79,7 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     public RoomUserDataChangedProxy OnRoomUserDataChanged;
     /// <summary>
-    /// Called on every Peer that received message from a peer by <see cref="OdinNative.Odin.Room.Room.SendMessage(ulong, byte[])"/>
+    /// Called on every Peer that received message from a peer by <see cref="OdinNative.Odin.Room.Room.SendMessage(ulong[], byte[])"/>
     /// </summary>
     public MessageReceivedProxy OnMessageReceived;
     /// <summary>
@@ -669,7 +669,7 @@ public class OdinHandler : MonoBehaviour
     /// <param name="peerId">PlaybackComponent peer</param>
     /// <param name="mediaStreamId">PlaybackComponent media</param>
     /// <param name="autoDestroySource">optionally enable or disable on destroy of PlaybackComponent the destroy of the linked AudioSource</param>
-    /// <returns>ScriptReference of <see cref="PlaybackComponent"/> from the GameObject or null</returns>
+    /// <returns>ScriptReference of <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> from the GameObject or null</returns>
     public PlaybackComponent AddPlaybackComponent(string gameObjectTag, string roomName, ulong peerId, long mediaStreamId, bool autoDestroySource = true)
     {
         return AddPlaybackComponent(FindPeerContainer(gameObjectTag),
@@ -699,7 +699,7 @@ public class OdinHandler : MonoBehaviour
     /// <param name="peerId">PlaybackComponent peer</param>
     /// <param name="mediaStreamId">PlaybackComponent media</param>
     /// <param name="autoDestroySource">optionally enable or disable on destroy of PlaybackComponent the destroy of the linked AudioSource</param>
-    /// <returns>ScriptReference of <see cref="PlaybackComponent"/> from the GameObject or null</returns>
+    /// <returns>ScriptReference of <see cref="OdinNative.Unity.Audio.PlaybackComponent"/> from the GameObject or null</returns>
     public PlaybackComponent AddPlaybackComponent(GameObject peerContainer, string roomName, ulong peerId, long mediaStreamId, bool autoDestroySource = true)
     {
         if (peerContainer == null)
@@ -772,7 +772,7 @@ public class OdinHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// Updates the <see cref="UserData"/> for all <see cref="Rooms"/>
+    /// Updates the <see cref="OdinNative.Odin.UserData"/> for all <see cref="Rooms"/>
     /// </summary>
     /// <param name="userData"><see cref="OdinNative.Odin.IUserData"/></param>
     public void UpdateUserData(IUserData userData)
@@ -976,13 +976,13 @@ public class OdinHandler : MonoBehaviour
         foreach (PlaybackComponent component in GetPlaybackComponents(mediaStreamId))
             Destroy(component);
     }
-    #endregion convenience 
+    #endregion convenience
 
     void OnEnable()
     {
 #if UNITY_EDITOR
         UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-#endif 
+#endif
     }
 
     void OnDisable()

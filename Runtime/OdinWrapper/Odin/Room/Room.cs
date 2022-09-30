@@ -43,6 +43,9 @@ namespace OdinNative.Odin.Room
         public Peer.Peer Self { get; private set; }
         private ulong _JoinedId;
         internal ref readonly ulong OwnId => ref _JoinedId;
+        /// <summary>
+        /// Odin UserData helper for marshal byte arrays on Room level
+        /// </summary>
         public UserData RoomUserData { get; private set; }
         private UserData PeerUserData;
 

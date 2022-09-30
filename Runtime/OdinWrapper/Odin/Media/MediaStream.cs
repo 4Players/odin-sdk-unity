@@ -46,8 +46,13 @@ namespace OdinNative.Odin.Media
         /// Indicates wether or not the media stream is active and sending/receiving data
         /// </summary>
         public bool IsActive { get; internal set; }
-
+        /// <summary>
+        /// Indicates wether or not the last media stream api call result is an error code
+        /// </summary>
         public bool HasErrors { get; private set; }
+        /// <summary>
+        /// Indicates wether or not the media stream handle is invalid or closed
+        /// </summary>
         public bool IsInvalid { get { return Handle == null || Handle.IsInvalid || Handle.IsClosed; } }
         private StreamHandle Handle;
         private ResamplerHandle ResamplerHandle;
