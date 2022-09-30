@@ -16,7 +16,7 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// ODIN_VERSION
         /// </summary>
-        public const string OdinVersion = "1.0.0";
+        public const string OdinVersion = "1.1.1";
 
         /// <summary>
         /// Valid levels for aggressiveness of the noise suppression
@@ -76,6 +76,7 @@ namespace OdinNative.Core.Imports
             public bool pre_amplifier;
             public OdinNoiseSuppressionLevel noise_suppression_level;
             public bool transient_suppressor;
+            public bool gain_controller;
         }
 
         internal enum OdinTokenAudience
