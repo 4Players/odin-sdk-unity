@@ -65,7 +65,7 @@ namespace OdinNative.Core
             }
             if (odinBinaryFolder == null || Path.IsPathRooted(odinBinaryFolder) == false)
             {
-#if UNITY_ANDROID || UNITY_IOS || UNITY_WEBGL
+#if UNITY_ANDROID || UNITY_WEBGL
                 string root = "lib";
 #elif ENABLE_IL2CPP
                 string path = typeof(OdinHandle).Assembly.Location;

@@ -13,7 +13,7 @@ namespace OdinNative.Core.Platform
     {
 #pragma warning disable 1591
         Android,
-        //iOS,
+        iOS,
         MacOSX,
         Linux,
         Windows,

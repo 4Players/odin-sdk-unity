@@ -37,7 +37,7 @@ namespace OdinNative.Core.Platform
         
         private const string WindowsLibName = "odin.dll";
         private const string LinuxLibName = "libodin.so";
-        private const string MacLibName = "libodin.dylib";
+        private const string AppleLibName = "libodin.dylib";
 
         private static class NativeWindowsMethods
         {
@@ -85,6 +85,8 @@ namespace OdinNative.Core.Platform
             {
                 case SupportedPlatform.Windows:
                     throw new DllNotFoundException(message, GetLastWindowsError());
+                case SupportedPlatform.Android:
+                case SupportedPlatform.iOS:
                 case SupportedPlatform.Linux:
                 case SupportedPlatform.MacOSX:
                     throw new DllNotFoundException(message, GetLastErrorUnix());
@@ -102,6 +104,8 @@ namespace OdinNative.Core.Platform
                         goto default;
                     location = GetLocationWindows(handle) ?? name;
                     return true;
+                case SupportedPlatform.Android:
+                case SupportedPlatform.iOS:
                 case SupportedPlatform.Linux:
                 case SupportedPlatform.MacOSX:
                     handle = NativeUnixMehods.dlopen(name, 2 /* RTLD_NOW */);
@@ -135,6 +139,8 @@ namespace OdinNative.Core.Platform
                     if (result == IntPtr.Zero)
                         throw new EntryPointNotFoundException(name, GetLastWindowsError());
                     break;
+                case SupportedPlatform.Android:
+                case SupportedPlatform.iOS:
                 case SupportedPlatform.Linux:
                 case SupportedPlatform.MacOSX:
                     result = NativeUnixMehods.dlsym(handle, name);
@@ -154,6 +160,8 @@ namespace OdinNative.Core.Platform
                     if (NativeWindowsMethods.FreeLibrary(handle) == false)
                         throw GetLastWindowsError();
                     break;
+                case SupportedPlatform.Android:
+                case SupportedPlatform.iOS:
                 case SupportedPlatform.Linux:
                 case SupportedPlatform.MacOSX:
                     if (NativeUnixMehods.dlclose(handle) != 0)
@@ -163,8 +171,11 @@ namespace OdinNative.Core.Platform
             }
         }
 
-        static bool IsRunningOnMac()
+        static SupportedPlatform GetUnixPlatform()
         {
+#if PLATFORM_IOS || UNITY_IOS
+            return SupportedPlatform.iOS;
+#else
             IntPtr buf = IntPtr.Zero;
             try
             {
@@ -173,7 +184,7 @@ namespace OdinNative.Core.Platform
                 {
                     string os = Marshal.PtrToStringAnsi(buf);
                     if (os == "Darwin")
-                        return true;
+                        return SupportedPlatform.MacOSX;
                 }
             }
             catch
@@ -184,7 +195,8 @@ namespace OdinNative.Core.Platform
                 if (buf != IntPtr.Zero)
                     Marshal.FreeHGlobal(buf);
             }
-            return false;
+            return SupportedPlatform.Linux;
+#endif
         }
 
         private static Exception GetLastWindowsError()
@@ -215,12 +227,13 @@ namespace OdinNative.Core.Platform
                 case 4: is64Bit = false; break;
                 default: names = null; platform = 0; return false;
             }
+
             // check if operating system is supported
             OperatingSystem operatingSystem = Environment.OSVersion;
             switch (operatingSystem.Platform)
             {
                 case PlatformID.MacOSX: platform = SupportedPlatform.MacOSX; break;
-                case PlatformID.Unix: platform = IsRunningOnMac() ? SupportedPlatform.MacOSX : SupportedPlatform.Linux; break;
+                case PlatformID.Unix: platform = GetUnixPlatform(); break;
                 case PlatformID.Win32NT:
                     if (operatingSystem.Version >= new Version(5, 1)) // if at least windows xp or newer
                     {
@@ -232,27 +245,38 @@ namespace OdinNative.Core.Platform
             }
 
             string LibraryCache = "Library/PackageCache";
-
             try
             {
-                LibraryCache = System.IO.Directory.GetDirectories(LibraryCache)
+                LibraryCache = System.IO.Directory
+                    .GetDirectories(LibraryCache)
                     .Where(dir => dir.Contains(PackageName))
                     .FirstOrDefault();
             } catch (System.IO.DirectoryNotFoundException) { /* nop */ }
 
             switch (platform)
             {
-                case SupportedPlatform.MacOSX:
-                    names = new string[] { MacLibName,
-                        string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", MacLibName), // PkgManager
-                        string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", MacLibName), // Editor
-                        string.Format("{0}/{1}/{2}", AssetStorePath, "macos/universal", MacLibName), // Asset Store
-                        string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", MacLibName) // PackageCache
+                case SupportedPlatform.iOS:
+                    names = new string[] { AppleLibName,
 #if UNITY_64
-                        ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", MacLibName), string.Format("{0}/{1}", "Plugins", MacLibName) // Standalone appbundle
+                        string.Format("{0}/{1}", UnityEngine.Application.dataPath, AppleLibName), // Data
+                        string.Format("{0}/../{1}/{2}", UnityEngine.Application.dataPath, "Frameworks", AppleLibName), // Frameworks
+                        string.Format("{0}/../{1}/{2}", UnityEngine.Application.dataPath, "PlugIns", AppleLibName), // PlugIns
+                        string.Format("{0}/../{1}/{2}", UnityEngine.Application.dataPath, "SharedSupport", AppleLibName) // SharedSupport
 #endif
                     };
                     break;
+                case SupportedPlatform.MacOSX:
+                    names = new string[] { AppleLibName,
+                        string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", AppleLibName), // PkgManager
+                        string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", AppleLibName), // Editor
+                        string.Format("{0}/{1}/{2}", AssetStorePath, "macos/universal", AppleLibName), // Asset Store
+                        string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", AppleLibName) // PackageCache
+#if UNITY_64
+                        ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", AppleLibName), string.Format("{0}/{1}", "Plugins", AppleLibName) // Standalone appbundle
+#endif
+                    };
+                    break;
+                case SupportedPlatform.Android:
                 case SupportedPlatform.Linux:
                     names = is64Bit
                         ? new string[] { LinuxLibName,
