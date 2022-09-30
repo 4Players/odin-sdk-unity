@@ -136,6 +136,7 @@ namespace OdinNative.Odin.Room
         /// <returns>room name</returns>
         public string GetRoomId()
         {
+            if (IsJoined == false) return Config.Name;
             OdinLibrary.Api.RoomGetId(_Handle, out string roomId);
             return roomId;
         }
