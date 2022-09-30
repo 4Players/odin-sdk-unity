@@ -205,7 +205,7 @@ namespace OdinNative.Unity.Audio
             {
                 if (room.MicrophoneMedia != null)
                     room.MicrophoneMedia.AudioPushDataAsync(buffer);
-                else if (room.IsJoined && OdinHandler.Config.Verbose)
+                else if (room.IsJoined && OdinHandler.Config.VerboseDebug)
                     Debug.LogWarning($"Room {room.Config.Name} is missing a microphone stream. See Room.CreateMicrophoneMedia");
             }
         }
@@ -217,7 +217,7 @@ namespace OdinNative.Unity.Audio
 
         void SetVolume(ref float[] buffer, float scale)
         {
-            for(int i = 0; i < buffer.Length; i++)
+            for (int i = 0; i < buffer.Length; i++)
                 buffer[i] *= scale;
         }
 
@@ -253,7 +253,7 @@ namespace OdinNative.Unity.Audio
             }
 
             Flush();
-            TestLoopback();
+            //TestLoopback();
         }
 
         /// <summary>
@@ -359,16 +359,20 @@ namespace OdinNative.Unity.Audio
 
         void Flush()
         {
+            // initialization failure
             if (MicBuffers == null || MicBuffers.All(b => b == null))
             {
                 Debug.LogError("Odin MicBuffer corrupted. Try restart!");
                 Start();
                 return;
             }
-
+            // no running devices or manually disabled
             if (IsStreaming == false || isActiveAndEnabled == false) return;
+            // on failure, Microphone.Start should return null not an AudioClip without samples
+            if (InputClip == null || InputClip.samples == 0) return;
 
             int newPosition = Microphone.GetPosition(InputDevice);
+            // device is not recording or buffer got collected
             if (RBuffer.MicPosition == newPosition || MicBuffers == null) return;
 
             // give a sample on start ( S + 1 - 0 ) % S = 1 and give a sample at the end ( S + 0 - 99 ) % S = 1
