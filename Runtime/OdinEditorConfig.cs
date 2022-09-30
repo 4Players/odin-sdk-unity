@@ -130,6 +130,11 @@ namespace OdinNative.Unity
         /// </summary>
         public bool TransientSuppressor = OdinDefaults.TransientSuppressor;
         bool IOdinApmConfig.TransientSuppressor { get => TransientSuppressor; set => TransientSuppressor = value; }
+        /// <summary>
+        /// Turns gain controller on and off
+        /// </summary>
+        public bool GainController = OdinDefaults.GainController;
+        bool IOdinApmConfig.GainController { get => GainController; set => GainController = value; }
         #endregion Apm
 
         internal string Identifier => SystemInfo.deviceUniqueIdentifier;

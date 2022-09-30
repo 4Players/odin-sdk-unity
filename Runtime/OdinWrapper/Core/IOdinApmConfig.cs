@@ -51,5 +51,9 @@ namespace OdinNative.Core
         /// Root mean square power (dBFS) when the volume gate should disengage after previously being engaged.
         /// </summary>
         float VolumeGateReleaseLoudness { get; set; }
+        /// <summary>
+        /// Enable or disable the gain controller
+        /// </summary>
+        bool GainController { get; set; }
     }
 }

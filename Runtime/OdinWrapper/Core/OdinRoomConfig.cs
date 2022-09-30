@@ -107,6 +107,14 @@ namespace OdinNative.Core
             get { return ApmConfig.transient_suppressor; }
             set { ApmConfig.transient_suppressor = value; }
         }
+        /// <summary>
+        /// Enable or disable the gain controller
+        /// </summary>
+        public bool GainController
+        {
+            get { return ApmConfig.gain_controller; }
+            set { ApmConfig.gain_controller = value; }
+        }
 
         internal bool RemoteConfig { get; private set; }
 
@@ -114,7 +122,7 @@ namespace OdinNative.Core
 
         private OdinApmConfig ApmConfig = new OdinApmConfig();
 
-        private OdinRoomConfig(OdinApmConfig config) : this(config.voice_activity_detection, config.voice_activity_detection_attack_probability, config.voice_activity_detection_release_probability, config.volume_gate, config.volume_gate_attack_loudness, config.volume_gate_release_loudness, config.echo_canceller, config.high_pass_filter, config.pre_amplifier, config.noise_suppression_level, config.transient_suppressor, true) { }
+        private OdinRoomConfig(OdinApmConfig config) : this(config.voice_activity_detection, config.voice_activity_detection_attack_probability, config.voice_activity_detection_release_probability, config.volume_gate, config.volume_gate_attack_loudness, config.volume_gate_release_loudness, config.echo_canceller, config.high_pass_filter, config.pre_amplifier, config.noise_suppression_level, config.transient_suppressor, config.gain_controller, true) { }
         /// <summary>
         /// Audio processing configuration of an ODIN room
         /// </summary>
@@ -129,6 +137,7 @@ namespace OdinNative.Core
         /// <param name="preAmplifier">Enable or disable the pre amplifier</param>
         /// <param name="noiseSuppressionLevel">Set the aggressiveness of the suppression</param>
         /// <param name="transientSuppressor">Enable or disable the transient suppressor</param>
+        /// <param name="gainController">Enable or disable the gain controller</param>
         public OdinRoomConfig(
             bool voiceActivityDetection = false,
             float voiceActivityDetectionAttackProbability = 0f,
@@ -140,11 +149,18 @@ namespace OdinNative.Core
             bool highPassFilter = false,
             bool preAmplifier = false,
             OdinNoiseSuppressionLevel noiseSuppressionLevel = OdinNoiseSuppressionLevel.None,
-            bool transientSuppressor = false)
-            : this(voiceActivityDetection, voiceActivityDetectionAttackProbability, voiceActivityDetectionReleaseProbability, volumeGate, volumeGateAttackLoudness, volumeGateReleaseLoudness, echoCanceller, highPassFilter, preAmplifier, noiseSuppressionLevel, transientSuppressor, false) { }
-        public OdinRoomConfig(IOdinApmConfig odinApm) : this(odinApm.VoiceActivityDetection, odinApm.VoiceActivityDetectionAttackProbability, odinApm.VoiceActivityDetectionReleaseProbability, odinApm.VolumeGate, odinApm.VolumeGateAttackLoudness, odinApm.VolumeGateReleaseLoudness, odinApm.EchoCanceller, odinApm.HighPassFilter, odinApm.PreAmplifier, odinApm.NoiseSuppressionLevel, odinApm.TransientSuppressor) { }
+            bool transientSuppressor = false,
+            bool gainController = false)
+            : this(voiceActivityDetection, voiceActivityDetectionAttackProbability, voiceActivityDetectionReleaseProbability, volumeGate, volumeGateAttackLoudness, volumeGateReleaseLoudness, echoCanceller, highPassFilter, preAmplifier, noiseSuppressionLevel, transientSuppressor, gainController, false)
+        {
+        }
+        /// <summary>
+        /// Audio processing configuration of an ODIN room
+        /// </summary>
+        /// <param name="odinApm">Interface for Audio processing configuration of an ODIN room</param>
+        public OdinRoomConfig(IOdinApmConfig odinApm) : this(odinApm.VoiceActivityDetection, odinApm.VoiceActivityDetectionAttackProbability, odinApm.VoiceActivityDetectionReleaseProbability, odinApm.VolumeGate, odinApm.VolumeGateAttackLoudness, odinApm.VolumeGateReleaseLoudness, odinApm.EchoCanceller, odinApm.HighPassFilter, odinApm.PreAmplifier, odinApm.NoiseSuppressionLevel, odinApm.TransientSuppressor, odinApm.GainController) { }
         internal OdinRoomConfig(bool voiceActivityDetection, float voiceActivityDetectionAttackProbability, float voiceActivityDetectionReleaseProbability, bool volumeGate, float volumeGateAttackLoudness,
-            float volumeGateReleaseLoudness, bool echoCanceller, bool highPassFilter, bool preAmplifier, OdinNoiseSuppressionLevel noiseSuppressionLevel, bool transientSuppressor, bool remote = false)
+            float volumeGateReleaseLoudness, bool echoCanceller, bool highPassFilter, bool preAmplifier, OdinNoiseSuppressionLevel noiseSuppressionLevel, bool transientSuppressor, bool gainController, bool remote = false)
         {
             VoiceActivityDetection = voiceActivityDetection;
             VoiceActivityDetectionAttackProbability = voiceActivityDetectionAttackProbability;
@@ -157,6 +173,7 @@ namespace OdinNative.Core
             PreAmplifier = preAmplifier;
             NoiseSuppressionLevel = noiseSuppressionLevel;
             TransientSuppressor = transientSuppressor;
+            GainController = gainController;
             RemoteConfig = remote;
         }
 
@@ -177,7 +194,8 @@ namespace OdinNative.Core
                 Odin.OdinDefaults.HighPassFilter,
                 Odin.OdinDefaults.PreAmplifier,
                 Odin.OdinDefaults.NoiseSuppressionLevel,
-                Odin.OdinDefaults.TransientSuppressor);
+                Odin.OdinDefaults.TransientSuppressor,
+                Odin.OdinDefaults.GainController);
         }
 
         /// <summary>
@@ -198,6 +216,7 @@ namespace OdinNative.Core
                 $", {nameof(PreAmplifier)} {PreAmplifier}" +
                 $", {nameof(NoiseSuppressionLevel)} {Enum.GetName(typeof(OdinNoiseSuppressionLevel), NoiseSuppressionLevel)}" +
                 $", {nameof(TransientSuppressor)} {TransientSuppressor}" +
+                $", {nameof(GainController)} {GainController}" +
                 $", {nameof(RemoteConfig)} {RemoteConfig}";
         }
     }

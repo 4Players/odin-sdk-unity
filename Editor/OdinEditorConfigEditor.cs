@@ -35,6 +35,7 @@ namespace OdinNative.Unity.UIEditor
         SerializedProperty PreAmplifier;
         SerializedProperty NoiseSuppressionLevel;
         SerializedProperty TransientSuppressor;
+        SerializedProperty GainController;
 
         private bool toggleAuthSettings;
         private bool toggleAudioSettings;
@@ -68,6 +69,7 @@ namespace OdinNative.Unity.UIEditor
             PreAmplifier = serializedObject.FindProperty("PreAmplifier");
             NoiseSuppressionLevel = serializedObject.FindProperty("NoiseSuppressionLevel");
             TransientSuppressor = serializedObject.FindProperty("TransientSuppressor");
+            GainController = serializedObject.FindProperty("GainController");
         }
 
         /// <summary>
@@ -185,6 +187,7 @@ namespace OdinNative.Unity.UIEditor
                 EditorGUILayout.PropertyField(PreAmplifier, new GUIContent("Input Amplifier", "Amplify the microphone input signal when needed."));
                 EditorGUILayout.PropertyField(NoiseSuppressionLevel, new GUIContent("Noise Suppression", "Remove background noise from the microphone input signal."));
                 EditorGUILayout.PropertyField(TransientSuppressor, new GUIContent("Transient Suppression", "Detect and reduce high amplitude noises such as typing sounds."));
+                EditorGUILayout.PropertyField(GainController, new GUIContent("Gain Controller", "Boost or reduce to an uniform audio level with the automatic gain controller."));
             }
         }
         #endregion

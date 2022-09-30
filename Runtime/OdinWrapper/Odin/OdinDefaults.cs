@@ -136,6 +136,10 @@ namespace OdinNative.Odin
         /// Idicates whether the ApmConfig setting is enabled by default
         /// </summary>
         public static bool TransientSuppressor = false;
+        /// <summary>
+        /// Idicates whether the ApmConfig setting is enabled by default
+        /// </summary>
+        public static bool GainController = false;
         #endregion Apm
     }
 }
