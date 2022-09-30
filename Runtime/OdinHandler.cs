@@ -190,6 +190,16 @@ public class OdinHandler : MonoBehaviour
 
     void Start()
     {
+#if UNITY_EDITOR && PLATFORM_ANDROID || UNITY_ANDROID
+        if(UnityEditor.PlayerSettings.Android.forceInternetPermission == false)
+        {
+            Debug.LogWarning($"UnityPlayerSettings InternetPermission is \"{(UnityEditor.PlayerSettings.Android.forceInternetPermission ? "Require" : "Auto")}\".");
+            if (Config.Verbose) Debug.Log("If the application does not use any Unity network api calls and/or is not set in the AndroidManifest.xml, it's possible that Odin is missing necessary permissions.");
+        }
+#endif
+        var reachability = Application.internetReachability;
+        if (Config.VerboseDebug) Debug.Log($"InternetReachability {reachability}");
+
         if (string.IsNullOrEmpty(Config.ClientId))
             Config.ClientId = ClientId;
 
