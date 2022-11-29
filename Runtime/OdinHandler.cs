@@ -1,4 +1,4 @@
-﻿using OdinNative.Odin;
+using OdinNative.Odin;
 using OdinNative.Odin.Media;
 using OdinNative.Odin.Room;
 using OdinNative.Unity;
@@ -190,7 +190,7 @@ public class OdinHandler : MonoBehaviour
 
     void Start()
     {
-#if UNITY_EDITOR && PLATFORM_ANDROID || UNITY_ANDROID
+#if UNITY_EDITOR && (PLATFORM_ANDROID || UNITY_ANDROID)
         if(UnityEditor.PlayerSettings.Android.forceInternetPermission == false)
         {
             Debug.LogWarning($"UnityPlayerSettings InternetPermission is \"{(UnityEditor.PlayerSettings.Android.forceInternetPermission ? "Require" : "Auto")}\".");
