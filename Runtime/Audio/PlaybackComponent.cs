@@ -230,6 +230,17 @@ namespace OdinNative.Unity.Audio
             }
         }
 
+        public Core.Imports.NativeBindings.OdinAudioStreamStats GetOdinAudioStreamStats()
+        {
+            if (PlaybackMedia.AudioStats(out Core.Imports.NativeBindings.OdinAudioStreamStats stats))
+                return stats;
+            else
+            {
+                Debug.LogError($"{nameof(PlaybackComponent)} \"{gameObject.name}\" Get stats for {MediaStreamId} of peer {PeerId} in room \"{RoomName}\" failed!");
+                return new Core.Imports.NativeBindings.OdinAudioStreamStats();
+            }
+        }
+
         void OnDisable()
         {
             PlaybackSource.Stop();
