@@ -2,7 +2,7 @@
 
 ODIN is a cross-platform software development kit (SDK) that enables developers to integrate real-time chat technology into multiplayer games, apps and websites.
 
-The ODIN SDK for Unity adds real-time VoIP communication to your Unity game, thus making it more social and interactive, while increasing the immersion of the experience for your players.
+The ODIN package for Unity adds real-time VoIP communication to your game, thus making it more social and interactive, while increasing the immersion of the experience for your players.
 
 [Online Documentation](https://www.4players.io/developers/)
 
@@ -12,7 +12,7 @@ The ODIN SDK for Unity adds real-time VoIP communication to your Unity game, thu
 
 This Unity version was chosen as it is Long Term Supported and provides compatibility with all targeted platforms.
 
-Note: webGL is currently not supported.
+**Note**: WebGL is not natively supported. To integrate ODIN with your WebGL builds, use our [JavaScript/TypeScript SDK](https://www.npmjs.com/package/@4players/odin).
 
 ## Installation
 
