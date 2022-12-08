@@ -211,7 +211,7 @@ namespace OdinNative.Unity.Audio
             foreach (Room room in OdinHandler.Instance.Client.Rooms)
             {
                 if (room.MicrophoneMedia != null)
-                    room.MicrophoneMedia.AudioPushDataAsync(buffer);
+                    room.MicrophoneMedia.AudioPushData(buffer);
                 else if (room.IsJoined && OdinHandler.Config.VerboseDebug)
                     Debug.LogWarning($"Room {room.Config.Name} is missing a microphone stream. See Room.CreateMicrophoneMedia");
             }

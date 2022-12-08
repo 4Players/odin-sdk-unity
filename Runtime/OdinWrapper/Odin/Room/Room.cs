@@ -390,7 +390,7 @@ namespace OdinNative.Odin.Room
         public bool SetMicrophoneMute(bool mute)
         {
             if (IsJoined == false || MicrophoneMedia == null) return false;
-            MicrophoneMedia.IsMuted = mute;
+            MicrophoneMedia.IsPaused = mute;
             return true;
         }
 
