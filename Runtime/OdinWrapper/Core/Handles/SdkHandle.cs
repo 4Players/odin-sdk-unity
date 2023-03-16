@@ -29,10 +29,10 @@ namespace OdinNative.Core.Handles
             SetHandle(handle);
             Platform = platform;
             Location = location;
-
-            NativeMethods.OdinStartupDelegate startupClientLib;
-            GetLibraryMethod("odin_startup", out startupClientLib);
-            startupClientLib(OdinNative.Core.Imports.NativeBindings.OdinVersion);
+            
+            NativeMethods.OdinStartupExDelegate startupClientLib;
+            GetLibraryMethod("odin_startup_ex", out startupClientLib);
+            startupClientLib(OdinNative.Core.Imports.NativeBindings.OdinVersion, OdinNative.Core.Imports.NativeBindings.FrameSAMPLERATE, OdinNative.Core.Imports.NativeBindings.OdinChannelLayout.OdinChannelLayout_Mono);
         }
 
         public void GetLibraryMethod<T>(string name, out T t)
