@@ -68,5 +68,10 @@ namespace OdinNative.Core.Handles
             catch (ObjectDisposedException) { /* nop */ }
             return result;
         }
+
+        public override string ToString()
+        {
+            return $"{nameof(OdinHandle)} {this.handle.ToString()} valid {!this.IsInvalid} closed {this.IsClosed}";
+        }
     }
 }
