@@ -136,23 +136,6 @@ namespace OdinNative.Unity.Audio
             }
         }
 
-        /// <summary>
-        ///     The Odin PlaybackStream underlying media stream calls
-        /// </summary>
-        /// <remarks>on true ignores stream calls</remarks>
-        [Obsolete("Mute functionality will be deprecated in future releases. Please use the SetPause functionality instead.")]
-        public bool MuteStream
-        {
-            get => OdinMedia?.IsMuted ?? true;
-            set => OdinMedia?.SetMute(value);
-        }
-        
-        public bool PauseStream
-        {
-            get => OdinMedia?.IsPaused ?? true;
-            set => OdinMedia?.SetPause(value);
-        }
-
         internal PlaybackStream OdinMedia => OdinHandler.Instance.Client
             .Rooms[RoomName]?
             .RemotePeers[PeerId]?
@@ -199,6 +182,7 @@ namespace OdinNative.Unity.Audio
                 PlaybackMedia = OdinMedia;
             }
         }
+        
 
         /// <summary>
         ///     Number of Samples in the <see cref="SpatialClip" /> used for playback.
