@@ -106,8 +106,17 @@ namespace OdinNative.Unity.Audio
         ///     The last time we read an ODIN audio frame into the output buffer.
         /// </summary>
         private float LastPlaybackUpdateTime;
-        
-        private PlaybackStream PlaybackMedia;
+
+        private PlaybackStream _playbackMedia;
+        private PlaybackStream PlaybackMedia
+        {
+            get => _playbackMedia;
+            set
+            {
+                _playbackMedia = value;
+                _playbackMedia?.AudioReset();
+            }
+        }
 
         internal bool RedirectPlaybackAudio = true;
 
