@@ -3,6 +3,7 @@ using OdinNative.Odin;
 using OdinNative.Odin.Media;
 using OdinNative.Odin.Room;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -88,7 +89,6 @@ namespace OdinNative.Unity.Audio
         /// <remarks>If you pass a null or empty string for the device name then the default microphone will be used. You can get a list of available microphone devices from the devices property. (see <see href="https://docs.unity3d.com/ScriptReference/Microphone-devices.html">Microphone.devices</see>)</remarks>
         public string InputDevice;
         private AudioClip InputClip;
-        private int InputPosition;
         private bool IsFirstStartGlobal;
         internal bool IsStreaming;
 
@@ -143,8 +143,16 @@ namespace OdinNative.Unity.Audio
 
         void Start()
         {
-            SetupBuffers();
+            SetupMicrophoneReader();
+        }
+
+        private void SetupMicrophoneReader()
+        {
+            IsStreaming = false;
             IsFirstStartGlobal = true;
+            InputClip = null;
+            IsInputDeviceConnected = false;
+            SetupBuffers();
             SetupMicrophone(InputDevice);
             if (Microphone.IsRecording(InputDevice)) IsFirstStartGlobal = false;
             if (HasPermission)
@@ -181,14 +189,10 @@ namespace OdinNative.Unity.Audio
 
             if (OverrideSampleRate == false)
             {
-                if (InputMinFreq == 0 /* any */ && InputMaxFreq == 0 /* any */)
-                    SampleRate = MediaSampleRate.Hz48000;
-                else if (OdinHandler.Config.DeviceSampleRate == MediaSampleRate.Device_Min)
-                    SampleRate = (MediaSampleRate)InputMinFreq;
-                else if (OdinHandler.Config.DeviceSampleRate == MediaSampleRate.Device_Max)
-                    SampleRate = (MediaSampleRate)InputMaxFreq;
-                else
-                    SampleRate = OdinHandler.Config.DeviceSampleRate;
+                // There is no real reason to switch sample rate based on device capability. The Sample Rate chosen here
+                // will be used for the sample rate of the AudioClip produced by the recording. If this is chosen
+                // to be the required sampling rate, we don't need to do resampling. It's done automatically by Unity then.
+                SampleRate = OdinHandler.Config.RemoteSampleRate;
             }
 
             return InputDevice;
@@ -206,6 +210,7 @@ namespace OdinNative.Unity.Audio
                 Debug.Log($"Microphone start \"{InputDevice}\", Loop:{ContinueRecording}, {AudioClipLength}s, {(int)SampleRate}Hz");
 
             InputClip = Microphone.Start(InputDevice, ContinueRecording, AudioClipLength, ((int)SampleRate));
+            RBuffer.MicPosition = Microphone.GetPosition(InputDevice);
             return IsStreaming = InputClip != null;
         }
 
@@ -295,17 +300,21 @@ namespace OdinNative.Unity.Audio
         {
             if (IsStreaming && Microphone.IsRecording(deviceName))
                 Microphone.End(deviceName);
-
-            if (Microphone.devices.Contains(InputDevice) == false && CustomInputDevice)
+            
+            foreach (Room room in OdinHandler.Instance.Rooms)
             {
-                Debug.LogWarning($"{nameof(MicrophoneReader)} reset \"{InputDevice}\" failed, using default device.");
-                InputDevice = string.Empty;
+                MicrophoneStream currentStream = room.MicrophoneMedia;
+                if (null != currentStream)
+                {
+                    OdinMediaConfig currentStreamMediaConfig = currentStream.MediaConfig;
+                    currentStream.Dispose();
+                    room.CreateMicrophoneMedia(currentStreamMediaConfig);
+                }
             }
-
-            SetupMicrophone(InputDevice);
-            if (AutostartListen)
-                StartListen();
+            
+            SetupMicrophoneReader();
         }
+        
 
         /// <summary>
         /// Stop Unity Microphone capture if this AudioSender created the recording
@@ -376,6 +385,8 @@ namespace OdinNative.Unity.Audio
 
         void SetupBuffers()
         {
+            RBuffer.MicPosition = 0;
+            MicBuffers = new RBuffer[RBuffer.sizesMax + 1];
             for (int i = RBuffer.sizesMin; i <= RBuffer.sizesMax; i++)
                 MicBuffers[i] = new RBuffer(i);
         }
@@ -386,7 +397,7 @@ namespace OdinNative.Unity.Audio
             if (MicBuffers == null || MicBuffers.All(b => b == null))
             {
                 Debug.LogError("Odin MicBuffer corrupted. Try restart!");
-                Start();
+                SetupMicrophoneReader();
                 return;
             }
             // no running devices or manually disabled

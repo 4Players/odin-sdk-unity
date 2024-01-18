@@ -16,7 +16,7 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// ODIN_VERSION
         /// </summary>
-        public const string OdinVersion = "1.5.7";
+        public const string OdinVersion = "1.6.4";
 
         /// <summary>
         /// Block_SAMPLE_RATE
@@ -51,21 +51,6 @@ namespace OdinNative.Core.Imports
             /// 21 dB
             /// </summary>
             VeryHigh,
-        }
-
-        /// <summary>
-        ///  Supported targets for user data updates.
-        /// </summary>
-        public enum OdinUserDataTarget
-        {
-            /// <summary>
-            /// Peer UserData
-            /// </summary>
-            OdinUserDataTarget_Peer,
-            /// <summary>
-            /// Room UserData
-            /// </summary>
-            OdinUserDataTarget_Room
         }
 
         internal struct OdinApmConfig

@@ -77,7 +77,7 @@ namespace OdinNative.Unity.Audio
         ///     <see href="https://docs.unity3d.com/ScriptReference/AudioClip.html">(AudioClip)</see>
         ///     creation if <see cref="OverrideSampleRate" /> is false
         /// </remarks>
-        public MediaSampleRate SampleRate;
+        public MediaSampleRate SampleRate = OdinDefaults.RemoteSampleRate;
 
         /// <summary>
         ///     Represents the audio clip buffer used for Unity Playback. The Spatial Clip Data is set to this data every frame.
@@ -333,7 +333,7 @@ namespace OdinNative.Unity.Audio
 
 
             int clipSamples = (int)(OutSampleRate * 3.0f * TargetBufferSize);
-            SpatialClip = AudioClip.Create("spatialClip", clipSamples, 1, AudioSettings.outputSampleRate, false);
+            SpatialClip = AudioClip.Create("spatialClip", clipSamples, 1, OutSampleRate, false);
             ResetAudioClip();
             PlaybackSource.clip = SpatialClip;
             PlaybackSource.loop = true;

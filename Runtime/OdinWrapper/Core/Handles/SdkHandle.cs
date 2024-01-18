@@ -33,9 +33,14 @@ namespace OdinNative.Core.Handles
             NativeMethods.OdinStartupExDelegate startupClientLib;
             GetLibraryMethod("odin_startup_ex", out startupClientLib);
             NativeBindings.OdinAudioStreamConfig defaultConfig = new NativeBindings.OdinAudioStreamConfig() 
-            { 
+            {
+#if UNITY_STANDALONE || UNITY_EDITOR || ENABLE_IL2CPP || ENABLE_MONO
+                sample_rate = (uint)UnityEngine.AudioSettings.outputSampleRate,
+                channel_count = (byte)OdinNative.Core.Imports.NativeBindings.OdinChannelLayout.OdinChannelLayout_Mono
+#else
                 sample_rate = OdinNative.Core.Imports.NativeBindings.BlockSamplerate, 
                 channel_count = (byte)OdinNative.Core.Imports.NativeBindings.OdinChannelLayout.OdinChannelLayout_Mono
+#endif
             };
             startupClientLib(OdinNative.Core.Imports.NativeBindings.OdinVersion, defaultConfig);
         }

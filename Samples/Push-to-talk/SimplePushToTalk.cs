@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using OdinNative.Unity.Audio;
+using OdinNative.Odin.Room;
 
 namespace OdinNative.Unity.Samples
 {
@@ -14,6 +15,7 @@ namespace OdinNative.Unity.Samples
         public KeyCode PushToTalkHotkey;
         public bool UsePushToTalk = true;
         public MicrophoneReader AudioSender;
+        private OdinNative.Odin.Media.MicrophoneStream MicStream;
 
         private void Reset()
         {
@@ -34,8 +36,14 @@ namespace OdinNative.Unity.Samples
         // Update is called once per frame
         void Update()
         {
-            if (AudioSender)
-                AudioSender.SilenceCapturedAudio = !(UsePushToTalk ? Input.GetKey(PushToTalkHotkey) : true);
+            // All MicrophoneStreams
+            //if (AudioSender)
+            //    AudioSender.SilenceCapturedAudio = !(UsePushToTalk ? Input.GetKey(PushToTalkHotkey) : true);
+            // Selected MicrophoneStream
+            if (MicStream == null)
+                MicStream = OdinHandler.Instance.Rooms[RoomName]?.MicrophoneMedia;
+            else
+                MicStream.MuteStream(!(UsePushToTalk ? Input.GetKey(PushToTalkHotkey) : true));
         }
     }
 }

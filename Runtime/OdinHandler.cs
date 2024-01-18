@@ -227,7 +227,9 @@ public class OdinHandler : MonoBehaviour
         }
 
         if (Microphone == null && Corrupted == false)
-            Microphone = gameObject.AddComponent<MicrophoneReader>();
+            Microphone = FindObjectOfType<MicrophoneReader>();
+        if(!Microphone)
+            Debug.LogWarning("MicrophoneReader not found, ODIN will not automatically create MicrophoneMediaStreams.");
     }
 
     private void SetupEventProxy(bool customProxy = false)
@@ -293,7 +295,7 @@ public class OdinHandler : MonoBehaviour
             userData = new UserData(Config.UserDataText);
 
         setup = CheckSetup(setup);
-        Client.UpdateUserData(userData);
+
         Room room = await Client.JoinRoom(roomName, Config.ClientId, userData, setup);
 
         if (room == null || room.IsJoined == false)
@@ -303,7 +305,7 @@ public class OdinHandler : MonoBehaviour
         }
         Debug.Log($"Odin {Config.ClientId}: Room {room.Config.Name} joined.");
 
-        if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
+        if (Microphone && room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
             Debug.Log($"MicrophoneStream added to room {roomName}.");
 
         await System.Threading.Tasks.Task.Yield();
@@ -339,7 +341,7 @@ public class OdinHandler : MonoBehaviour
             userData = new UserData(Config.UserDataText);
 
         setup = CheckSetup(setup);
-        Client.UpdateUserData(userData);
+
         Room room = await Client.JoinNamedRoom(roomAlias, token, userData, setup);
 
         if (room == null || room.IsJoined == false)
@@ -349,7 +351,7 @@ public class OdinHandler : MonoBehaviour
         }
         Debug.Log($"Odin {Config.ClientId}: Room {room.Config.Name} joined.");
 
-        if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
+        if (Microphone && room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
             Debug.Log($"MicrophoneStream added to room {roomAlias}.");
 
         await System.Threading.Tasks.Task.Yield();
@@ -566,7 +568,7 @@ public class OdinHandler : MonoBehaviour
         if (Config.VerboseDebug)
             Debug.Log($"EC for {room.Config.Name} audio process size {readBufferSize}");
         float[] buffer = new float[readBufferSize];
-        AudioListener.GetOutputData(buffer, (int)AudioSpeakerMode.Mono);
+        AudioListener.GetOutputData(buffer, 0); // only mono block
         return room.AudioProcessReverse(buffer);
     }
 
@@ -1022,7 +1024,8 @@ public class OdinHandler : MonoBehaviour
     {
         if (!HasConnections) return;
 
-        Destroy(Microphone);
+        if(Microphone)
+            Destroy(Microphone);
         DestroyPlaybackComponents();
         Rooms.Clear();
         Debug.LogException(new NotSupportedException("ODIN SDK ReloadEvent is not supported!"));
