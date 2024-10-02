@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace OdinNative.Unity.Samples
 {
+    /// <summary>
+    /// Moves a game object based on moused input.
+    /// </summary>
     public class DragObject : MonoBehaviour
     {
         private Vector3 MoveOffset;

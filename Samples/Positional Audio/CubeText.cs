@@ -4,17 +4,15 @@ using UnityEngine;
 
 namespace OdinNative.Unity.Samples
 {
+    /// <summary>
+    /// Will move the gameobject to look towards the camera.
+    /// </summary>
     [ExecuteInEditMode]
     public class CubeText : MonoBehaviour
     {
         void Start()
         {
             gameObject.transform.rotation = Camera.main.transform.rotation;
-        }
-
-        void Update()
-        {
-            //gameObject.transform.rotation = Quaternion.LookRotation(gameObject.transform.position - Camera.main.transform.position);
         }
     }
 }

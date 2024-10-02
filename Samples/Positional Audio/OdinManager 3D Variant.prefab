@@ -1,21 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &3859949489848917768
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6283423407077655610}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2a3b412c9ac70946921820498835203, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  RoomName: default
-  PushToTalkHotkey: 99
-  UsePushToTalk: 1
-  AudioSender: {fileID: 8485117087910422162}
 --- !u!1001 &5062509796656267389
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -90,6 +74,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5372910402810491490, guid: a421abe223e2dee45b89e686a84e5545,
         type: 3}
+      propertyPath: AccessKey
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5372910402810491490, guid: a421abe223e2dee45b89e686a84e5545,
+        type: 3}
       propertyPath: DeviceSampleRate
       value: 48000
       objectReference: {fileID: 0}
@@ -111,6 +100,22 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 5062509796656267389}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &3859949489848917768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6283423407077655610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a3b412c9ac70946921820498835203, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  RoomName: default
+  PushToTalkHotkey: 99
+  UsePushToTalk: 1
+  AudioSender: {fileID: 8485117087910422162}
 --- !u!114 &8485117087910422162 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3711129780530095855, guid: a421abe223e2dee45b89e686a84e5545,

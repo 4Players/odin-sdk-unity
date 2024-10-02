@@ -14,6 +14,12 @@ using UnityEngine;
 using UnityEngine.Audio;
 using static OdinNative.Core.Imports.NativeBindings;
 
+/// <summary>
+/// The OdinHandler class is the global ODIN manager within Unity. It’s built as a singleton. Create an empty game object in your scene and add this script to it. OdinHandler uses DontDestroyOnLoad to keep the singleton alive even if the scene changes.
+/// </summary>
+/// <remarks>
+/// You can access the global singleton instance with the Instance  property.
+/// </remarks>
 [AddComponentMenu("")]
 [RequireComponent(typeof(OdinEditorConfig))]
 [DisallowMultipleComponent, DefaultExecutionOrder(-100)]
@@ -128,7 +134,11 @@ public class OdinHandler : MonoBehaviour
                 if (_config != null)
                     return _config;
 
+                #if UNITY_6000_0_OR_NEWER
+                var config = FindFirstObjectByType<OdinEditorConfig>();
+                #else
                 var config = FindObjectsOfType<OdinEditorConfig>().FirstOrDefault();
+                #endif
                 if (config == null)
                     config = Instance.gameObject.AddComponent<OdinEditorConfig>();
 
@@ -209,9 +219,11 @@ public class OdinHandler : MonoBehaviour
         {
             if (string.IsNullOrEmpty(Config.AccessKey))
             {
+#if !UASOdin
                 Debug.LogError("Access-Key was not set!");
-                Config.AccessKey = OdinClient.CreateAccessKey();
                 Debug.LogWarning("Using a generated test key!");
+#endif
+                Config.AccessKey = OdinClient.CreateAccessKey();
             }
             Client = new OdinClient(new System.Uri(Config.Server), Config.AccessKey, userData);
             if (!OdinNative.Core.OdinLibrary.IsInitialized)
@@ -227,7 +239,13 @@ public class OdinHandler : MonoBehaviour
         }
 
         if (Microphone == null && Corrupted == false)
+        {
+            #if UNITY_6000_0_OR_NEWER
+            Microphone = FindFirstObjectByType<MicrophoneReader>();
+            #else
             Microphone = FindObjectOfType<MicrophoneReader>();
+            #endif
+        }
         if(!Microphone)
             Debug.LogWarning("MicrophoneReader not found, ODIN will not automatically create MicrophoneMediaStreams.");
     }
@@ -406,8 +424,13 @@ public class OdinHandler : MonoBehaviour
 
         if (CreatePlayback && Use3DAudio == false)
         {
+            #if UNITY_6000_0_OR_NEWER
+            var playbacks = FindObjectsByType<PlaybackComponent>(FindObjectsSortMode.None)
+                .Where(p => p.RoomName == roomName);
+            #else
             var playbacks = FindObjectsOfType<PlaybackComponent>()
                 .Where(p => p.RoomName == roomName);
+            #endif
 
             foreach (PlaybackComponent playback in playbacks)
                 DestroyImmediate(playback);
@@ -643,7 +666,7 @@ public class OdinHandler : MonoBehaviour
                 }
             }
             else if (Config.Verbose)
-                Debug.LogWarning($"No available consumers for playback found.");
+                Debug.Log($"No available consumers for playback found.");
 
             OnCreatedMediaObject?.Invoke(addedEvent.Key.Config.Name, addedEvent.Value.Peer.Id, addedEvent.Value.Media.Id);
         }
@@ -738,9 +761,8 @@ public class OdinHandler : MonoBehaviour
 
         var playback = peerContainer.AddComponent<PlaybackComponent>();
         playback.AutoDestroyAudioSource = autoDestroySource; // We create and destroy the audiosource
-        playback.RoomName = roomName;
-        playback.PeerId = peerId;
-        playback.MediaStreamId = mediaStreamId;
+        playback.SetMediaInfo(roomName, peerId, mediaStreamId);
+
         if (PlaybackAudioMixerGroup != null)
             playback.PlaybackSource.outputAudioMixerGroup = PlaybackAudioMixerGroup;
         Debug.Log($"Playback created on {peerContainer.name} for Room {playback.RoomName} Peer {playback.PeerId} Media {playback.MediaStreamId}");
@@ -898,7 +920,11 @@ public class OdinHandler : MonoBehaviour
     /// <returns>The array of objects found matching the type PlaybackComponent.</returns>
     public PlaybackComponent[] GetPlaybackComponents()
     {
+        #if UNITY_6000_0_OR_NEWER
+        return FindObjectsByType<PlaybackComponent>(FindObjectsSortMode.None);
+        #else
         return FindObjectsOfType<PlaybackComponent>();
+        #endif
     }
 
     /// <summary>

@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace OdinNative.Unity.Samples
 {
+    /// <summary>
+    /// Minimal room join sample
+    /// </summary>
     public class SimpleRoomJoin : MonoBehaviour
     {
         public string RoomName;
@@ -18,11 +21,6 @@ namespace OdinNative.Unity.Samples
         void Start()
         {
             OdinHandler.Instance.JoinRoom(RoomName);
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
         }
     }
 }

@@ -115,7 +115,6 @@ namespace OdinNative.Unity.Samples
             
             if (playback == null) return;
 
-            //Destroy(playback);
 
             /* 
              * Just in this Demo, we delete the GameObject for cleanup reasons. (Media removed)

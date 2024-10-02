@@ -140,10 +140,22 @@ namespace OdinNative.Unity.Audio
             Loopback = false;
             AutostartListen = true;
         }
+        
 
         void Start()
         {
             SetupMicrophoneReader();
+#if UNITY_IOS || (UNITY_STANDALONE_OSX && UNITY_6000_0_OR_NEWER)
+            if(!HasPermission)
+                StartCoroutine(RequestAuthorization());
+#endif
+        }
+
+        private IEnumerator RequestAuthorization()
+        {
+            yield return Application.RequestUserAuthorization(UserAuthorization.Microphone);
+            yield return null;
+            TryStartListen();
         }
 
         private void SetupMicrophoneReader()
@@ -155,9 +167,15 @@ namespace OdinNative.Unity.Audio
             SetupBuffers();
             SetupMicrophone(InputDevice);
             if (Microphone.IsRecording(InputDevice)) IsFirstStartGlobal = false;
+            InitialPermission = HasPermission; // Override because we should not need the check this lifetime anymore. 
+            TryStartListen();
+            
+        }
+
+        private void TryStartListen()
+        {
             if (HasPermission)
             {
-                InitialPermission = HasPermission; // Override because we should not need the check this lifetime anymore. 
                 if (AutostartListen) StartListen();
             }
         }
@@ -178,7 +196,7 @@ namespace OdinNative.Unity.Audio
             {
                 IsInputDeviceConnected = true;
                 if (string.IsNullOrEmpty(InputDevice))
-                    Debug.LogWarning($"{nameof(MicrophoneReader)} setup unknown system default device.");
+                    Debug.Log($"{nameof(MicrophoneReader)} setup unknown system default device.");
                 else
                     Debug.Log($"{nameof(MicrophoneReader)} setup device \"{InputDevice}\".");
             }
@@ -239,7 +257,7 @@ namespace OdinNative.Unity.Audio
             {
                 if (room?.MicrophoneMedia != null)
                     room.MicrophoneMedia.AudioPushData(buffer);
-                else if (room.IsJoined && OdinHandler.Config.VerboseDebug)
+                else if (null != room && room.IsJoined && OdinHandler.Config.Verbose && OdinHandler.Config.VerboseDebug)
                     Debug.LogWarning($"Room {room.Config.Name} is missing a microphone stream. See Room.CreateMicrophoneMedia");
             }
         }

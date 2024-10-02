@@ -10,8 +10,17 @@ namespace OdinNative.Unity.Samples
 	public class DemoPlayer : MonoBehaviour
 	{
 		#region Demo
+		/// <summary>
+		/// Movementspeed of character
+		/// </summary>
 		public float moveSpeed = 7;
+		/// <summary>
+		/// Time it takes for character to reach new target value
+		/// </summary>
 		public float smoothMoveTime = .1f;
+		/// <summary>
+		/// Speed with which the character looks into new movement direction
+		/// </summary>
 		public float turnSpeed = 8;
 
 		private float Angle;
@@ -26,6 +35,9 @@ namespace OdinNative.Unity.Samples
 			Body = GetComponent<Rigidbody>();
 		}
 
+		/// <summary>
+		/// Calculate new velocity based on input
+		/// </summary>
 		void Update()
 		{
 			Vector3 inputDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace OdinNative.Unity.Samples
 {
     /// <summary>
-    /// Demo Example where everything in #region Demo does not correlate with Odin
+    /// Rotates the current game object to point at the main camera.
     /// </summary>
     [ExecuteInEditMode]
     public class DemoPeerDisplay : MonoBehaviour

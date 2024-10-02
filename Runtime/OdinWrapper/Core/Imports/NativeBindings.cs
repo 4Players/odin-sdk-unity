@@ -16,7 +16,7 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// ODIN_VERSION
         /// </summary>
-        public const string OdinVersion = "1.6.4";
+        public const string OdinVersion = "1.6.7";
 
         /// <summary>
         /// Block_SAMPLE_RATE
@@ -94,6 +94,7 @@ namespace OdinNative.Core.Imports
             public OdinEventTag tag;
 
             #region OdinEvent union
+#pragma warning disable CS0618 // disable is obsolete ; until v2+
             [FieldOffset(8)]
             [MarshalAs(UnmanagedType.Struct)]
             public OdinEvent_JoinedData joined;
@@ -124,6 +125,7 @@ namespace OdinNative.Core.Imports
             [FieldOffset(8)]
             [MarshalAs(UnmanagedType.Struct)]
             public OdinEvent_MessageReceivedData message_received;
+#pragma warning restore CS0618 // disable is obsolete ; until v2+
             #endregion OdinEvent union
         };
 
