@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using OdinNative.Core;
-
-namespace OdinNative.Odin
+﻿namespace OdinNative.Wrapper
 {
     /// <summary>
     /// ODIN default configuration
@@ -14,9 +6,25 @@ namespace OdinNative.Odin
     public static class OdinDefaults
     {
         /// <summary>
+        /// PackageName
+        /// </summary>
+        public const string SDKID = "io.fourplayers.odin";
+        /// <summary>
+        /// Default Gateway
+        /// </summary>
+        public const string GATEWAY = "gateway.odin.4players.io";
+        /// <summary>
+        /// Default Samplerate
+        /// </summary>
+        public const int SampleRate = 48000;
+        /// <summary>
+        /// Default Stereo flag
+        /// </summary>
+        public const bool Stereo = false;
+        /// <summary>
         /// Enable additional logs
         /// </summary>
-        public static bool Verbose = false;
+        public static bool Verbose = true;
         /// <summary>
         /// Enable additional debug logs
         /// </summary>
@@ -28,64 +36,12 @@ namespace OdinNative.Odin
         /// <summary>
         /// Default server url
         /// </summary>
-        public static string Server { get; set; } = "https://gateway.odin.4players.io";
+        public static string Server { get; set; } = "https://" + GATEWAY;
         /// <summary>
         /// Default text representation of UserData
         /// </summary>
         public static string UserDataText { get; set; } = "";
 
-        /// <summary>
-        /// Microphone default Sample-Rate
-        /// </summary>
-        public static MediaSampleRate DeviceSampleRate { get; set; } = MediaSampleRate.Device_Max;
-        /// <summary>
-        /// Microphone default Channel
-        /// </summary>
-        public static MediaChannels DeviceChannels { get; set; } = MediaChannels.Mono;
-
-        /// <summary>
-        /// Playback default Sample-Rate
-        /// </summary>
-        public static MediaSampleRate RemoteSampleRate { get; set; } = MediaSampleRate.Hz48000;
-        /// <summary>
-        /// Playback default Channel
-        /// </summary>
-        public static MediaChannels RemoteChannels { get; set; } = MediaChannels.Mono;
-
-        #region Events
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool PeerJoinedEvent = true;
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool PeerLeftEvent = true;
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool PeerUpdatedEvent = true;
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool MediaAddedEvent = true;
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool MediaRemovedEvent = true;
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool RoomUpdatedEvent = true;
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool MediaActiveStateChangedEvent = true;
-        /// <summary>
-        /// Idicates whether the event is enabled by default
-        /// </summary>
-        public static bool MessageReceivedEvent = true;
-        #endregion Events
         /// <summary>
         /// JWT room token lifetime
         /// </summary>
@@ -111,11 +67,11 @@ namespace OdinNative.Odin
         /// <summary>
         /// Idicates the gate attack loudness ApmConfig setting by default
         /// </summary>
-        public static float VolumeGateAttackLoudness = -30;
+        public static float VolumeGateAttackLoudness = -30.0f;
         /// <summary>
         /// Idicates the gate release loudness ApmConfig setting by default
         /// </summary>
-        public static float VolumeGateReleaseLoudness = -40;
+        public static float VolumeGateReleaseLoudness = -40.0f;
         /// <summary>
         /// Idicates whether the ApmConfig setting is enabled by default
         /// </summary>
@@ -131,7 +87,7 @@ namespace OdinNative.Odin
         /// <summary>
         /// Idicates the level of noise suppression ApmConfig setting by default
         /// </summary>
-        public static Core.Imports.NativeBindings.OdinNoiseSuppressionLevel NoiseSuppressionLevel = Core.Imports.NativeBindings.OdinNoiseSuppressionLevel.None;
+        public static Core.Imports.NativeBindings.OdinNoiseSuppression NoiseSuppressionLevel = Core.Imports.NativeBindings.OdinNoiseSuppression.ODIN_NOISE_SUPPRESSION_NONE;
         /// <summary>
         /// Idicates whether the ApmConfig setting is enabled by default
         /// </summary>

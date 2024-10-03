@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using static OdinNative.Core.Imports.NativeBindings;
 
 namespace OdinNative.Core
 {
@@ -14,13 +11,13 @@ namespace OdinNative.Core
         /// <summary>
         /// OdinErrorCode
         /// </summary>
-        public uint ErrorCode;
+        public OdinError ErrorCode;
         /// <summary>
         /// OdinErrorCode container
         /// </summary>
-        /// <param name="error">OdinErrorCode</param>
+        /// <param name="error">OdinError enum</param>
         /// <param name="message">odin error message</param>
-        public OdinException(uint error, string message)
+        public OdinException(OdinError error, string message)
             : base(message)
         {
             ErrorCode = error;
@@ -29,10 +26,10 @@ namespace OdinNative.Core
         /// <summary>
         /// OdinErrorCode container
         /// </summary>
-        /// <param name="error">OdinErrorCode</param>
+        /// <param name="error">OdinError enum</param>
         /// <param name="message">odin error message</param>
         /// <param name="innerException">wrapper inner</param>
-        public OdinException(uint error, string message, Exception innerException)
+        public OdinException(OdinError error, string message, Exception innerException)
             : base(message, innerException)
         {
             ErrorCode = error;

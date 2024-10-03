@@ -1,10 +1,6 @@
-﻿using Microsoft.Win32.SafeHandles;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OdinNative.Core.Imports
 {
@@ -14,9 +10,41 @@ namespace OdinNative.Core.Imports
         public static readonly Encoding Encoding = Encoding.UTF8;
         public static readonly int SizeOfPointer = Marshal.SizeOf(typeof(IntPtr));
 
+        public const int TrueI1 = 0x01;
+        public const int FalseI1 = 0x00;
+
+        public static class Offsets
+        {
+            public static class Audio
+            {
+                public static readonly int SamplesIntPtrOffset = 0x00; // Field1 0
+                public static readonly int SamplesCountInt32Offset = 0x08; // Field2 8; SamplesIntPtrOffset + Marshal.SizeOf<IntPtr>();
+                public static readonly int IsSilentByteOffset = 0x0C; // Field3 12; SamplesCountInt32Offset + sizeof(Int32) +1;
+            }
+        }
+
+        public static string TryReadCString(IntPtr pointer)
+        {
+            try
+            {
+                return ReadByteString(pointer);
+            }
+            catch { return string.Empty; }
+        }
+
+        public static string TryReadCString(IntPtr pointer, int index, int length)
+        {
+            try
+            {
+                return ReadByteString(pointer)
+                    .Substring(index, length);
+            }
+            catch { return string.Empty; }
+        }
+
         public static string ReadByteString(IntPtr pointer)
         {
-            if (pointer == IntPtr.Zero) return null;
+            if (pointer == IntPtr.Zero) return string.Empty;
             int length = 0;
             while (Marshal.ReadByte(pointer, length) != 0) length += 1;
             byte[] bytes = new byte[length];
@@ -28,7 +56,23 @@ namespace OdinNative.Core.Imports
         {
             byte[] buffer = new byte[size];
             Marshal.Copy(pointer, buffer, 0, buffer.Length);
-            return Native.Encoding.GetString(buffer);
+            return Encoding.GetString(buffer);
+        }
+
+        public static string TryReadCString(IntPtr pointer, int size)
+        {
+            try
+            {
+                if (pointer == IntPtr.Zero)
+                    return string.Empty;
+
+                byte[] buffer = new byte[size];
+                Marshal.Copy(pointer, buffer, 0, buffer.Length);
+                string result = Native.Encoding.GetString(buffer);
+                result = result.Substring(0, result.IndexOf('\0'));
+                return result;
+            }
+            catch { return string.Empty; }
         }
     }
 }

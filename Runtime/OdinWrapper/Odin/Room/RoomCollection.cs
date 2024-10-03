@@ -1,56 +1,50 @@
-﻿using OdinNative.Core.Handles;
-using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace OdinNative.Odin.Room
+namespace OdinNative.Wrapper.Room
 {
     /// <summary>
     /// Intern room dictionary
     /// </summary>
-    /// <remarks>Used by <see cref="OdinNative.Odin.OdinClient.Rooms"/></remarks>
+    /// <remarks>Used by <see cref="OdinNative.Wrapper.OdinClient.Rooms"/></remarks>
     public class RoomCollection : IReadOnlyCollection<Room>, IEqualityComparer<Room>
     {
-        private volatile ConcurrentDictionary<string, Room> _Rooms;
+        private volatile ConcurrentDictionary<int, Room> _Rooms;
         /// <summary>
         /// Intern room dictionary
         /// </summary>
         public RoomCollection()
         {
-            _Rooms = new ConcurrentDictionary<string, Room>();
+            _Rooms = new ConcurrentDictionary<int, Room>();
         }
 
         /// <summary>
         /// Try to get room by name
         /// </summary>
-        /// <param name="key">Room name</param>
+        /// <param name="key">Room <see cref="Room.Name">name</see></param>
         /// <returns>Room or null</returns>
         public Room this[string key]
         {
             get
             {
                 if (string.IsNullOrEmpty(key)) return null;
-
-                if (_Rooms != null && _Rooms.TryGetValue(key, out Room room))
-                    return room;
-
-                return null;
+                return _Rooms?.FirstOrDefault(kvp => kvp.Value.Name.Equals(key)).Value;
             }
         }
-
-        internal Room this[IntPtr handle]
-        {
-            get
-            {
-                if (IntPtr.Zero == handle || _Rooms == null) return null;
-
-                return _Rooms.Values.FirstOrDefault(r => r.Handle == handle);
-            }
-        }
+        /// <summary>
+        /// Get room by Id
+        /// </summary>
+        /// <param name="id">room id <see cref="Room.GetRoomId"/></param>
+        /// <returns>Room</returns>
+        public Room this[ulong id] => _Rooms?.Values.FirstOrDefault(room => room?.Id == id);
+        /// <summary>
+        /// Get room by hashcode
+        /// </summary>
+        /// <param name="hashCode">Room object hashcode <see cref="object.GetHashCode">Room.GetHashCode</see></param>
+        /// <returns>Room</returns>
+        internal Room this[int hashCode] => _Rooms?.Values.FirstOrDefault(room => room?.GetHashCode() == hashCode);
 
         /// <summary>
         /// Count of rooms in the collection
@@ -71,15 +65,7 @@ namespace OdinNative.Odin.Room
         public bool Add(Room item)
         {
             if(IsRemoveOnly) return false;
-            return InternalAdd(item);
-        }
-
-        internal bool InternalAdd(Room item)
-        {
-            if (string.IsNullOrEmpty(item.Config.Name))
-                return _Rooms.TryAdd(item.Config.Token, item);
-            else
-                return _Rooms.TryAdd(item.Config.Name, item);
+            return _Rooms.TryAdd(item.GetHashCode(), item);
         }
 
         /// <summary>
@@ -89,16 +75,6 @@ namespace OdinNative.Odin.Room
         {
             FreeAll();
             _Rooms.Clear();
-        }
-
-        /// <summary>
-        /// Determines whether the room by name/token is in the collection
-        /// </summary>
-        /// <param name="key">room key of the room</param>
-        /// <returns>true on success or false</returns>
-        public bool Contains(string key)
-        {
-            return _Rooms.ContainsKey(key);
         }
 
         /// <summary>
@@ -112,16 +88,6 @@ namespace OdinNative.Odin.Room
         }
 
         /// <summary>
-        /// Copies rooms of the collection to an array
-        /// </summary>
-        /// <param name="array">target array</param>
-        /// <param name="arrayIndex">array offset</param>
-        public void CopyTo(Room[] array, int arrayIndex)
-        {
-            _Rooms.Values.CopyTo(array, arrayIndex);
-        }
-
-        /// <summary>
         /// Compares two rooms by name
         /// </summary>
         /// <param name="x">room</param>
@@ -129,7 +95,7 @@ namespace OdinNative.Odin.Room
         /// <returns>is equal</returns>
         public bool Equals(Room x, Room y)
         {
-            return x.Config.Name == y.Config.Name;
+            return x?.GetHashCode() == y?.GetHashCode();
         }
 
         /// <summary>
@@ -157,44 +123,66 @@ namespace OdinNative.Odin.Room
         /// <remarks>does NOT leave or free the room</remarks>
         /// <param name="key">Room name</param>
         /// <returns>is removed</returns>
-        public bool Remove(string key)
+        public bool Remove(ulong id)
         {
-            return _Rooms.TryRemove(key, out _);
+            var room = this[id];
+            return room != null && _Rooms.TryRemove(room.GetHashCode(), out _);
         }
 
         /// <summary>
-        /// Removes the room from this collection
+        /// Close a room
         /// </summary>
-        /// <remarks>does NOT leave or free the room</remarks>
-        /// <param name="item">room</param>
-        /// <returns>is removed</returns>
-        public bool Remove(Room item)
+        /// <remarks>Will not remove the room from collection</remarks>
+        /// <param name="room">room</param>
+        /// <returns>true if room to close found</returns>
+        public bool Close(Room room)
         {
-            if (string.IsNullOrEmpty(item.Config.Name))
-                return Remove(item.Config.Token);
-            else
-                return Remove(item.Config.Name);
+            return Close(room.Id);
         }
 
         /// <summary>
-        /// Get the room and leave
+        /// Close a room
         /// </summary>
-        /// <remarks>does NOT remove the room from the collection</remarks>
-        /// <param name="key">room name</param>
-        public void Leave(string key)
+        /// <param name="id"></param>
+        /// <returns>true if room to close found</returns>
+        public bool Close(ulong id)
         {
-            if(_Rooms.TryGetValue(key, out Room room))
-                room.Leave();
+            var room = this[id];
+            bool result = room != null && _Rooms.TryGetValue(room.GetHashCode(), out room);
+            if (result) room.Close();
+            return result;
         }
 
         /// <summary>
         /// Free and remove the room
         /// </summary>
         /// <param name="key">room name</param>
-        /// <returns>is removed</returns>
-        internal bool Free(string key)
+        /// <returns>true if removed</returns>
+        internal bool Free(Room room)
         {
-            bool result = _Rooms.TryRemove(key, out Room room);
+            return Free(room.GetHashCode());
+        }
+        /// <summary>
+        /// Free and remove the room
+        /// </summary>
+        /// <param name="id">room id <see cref="Room.GetRoomId"/></param>
+        /// <returns>true if removed</returns>
+        internal bool Free(ulong id)
+        {
+            var room = this[id];
+            bool result = room != null && _Rooms.TryRemove(room.GetHashCode(), out _);
+            if (result) room.Dispose();
+            return result;
+        }
+
+        /// <summary>
+        /// Free and remove the room
+        /// </summary>
+        /// <param name="key">room hashCode</param>
+        /// <returns>true if removed</returns>
+        internal bool Free(int key)
+        {
+            bool result = _Rooms.TryRemove(key, out var room);
             if (result) room.Dispose();
             return result;
         }
@@ -202,7 +190,7 @@ namespace OdinNative.Odin.Room
         internal void FreeAll()
         {
             foreach (var kvp in _Rooms)
-                Free(kvp.Key);
+                Free(kvp.Value);
         }
 
         IEnumerator IEnumerable.GetEnumerator()

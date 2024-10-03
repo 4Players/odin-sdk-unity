@@ -1,7 +1,5 @@
 #if UNITY_EDITOR
 using System;
-using System.Linq;
-using OdinNative.Unity;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,9 +10,8 @@ namespace OdinNative.Unity.UIEditor
     {
         public StyleSheet styleSheet;
         public string AccessKey;
-        public string Gateway;
+        public string Gateway = "gateway.odin.4players";
         private TextElement accessKeyTextElement;
-        private OdinEditorConfig config;
 
         [MenuItem("Window/4Players ODIN/Manage Access", false, 0)]
         public static void ShowWindow()
@@ -22,7 +19,7 @@ namespace OdinNative.Unity.UIEditor
             OdinKeysWindow window = GetWindow<OdinKeysWindow>();
             window.minSize = new Vector2(440, 220);
             window.maxSize = window.minSize;
-            window.titleContent = new GUIContent("Manage Access");
+            window.titleContent = new GUIContent("Access Generator");
         }
 
         public void CreateGUI()
@@ -35,12 +32,7 @@ namespace OdinNative.Unity.UIEditor
             headlineLabel.AddToClassList("headline");
             root.Add(headlineLabel);
 
-            #if UNITY_6000_0_OR_NEWER
-            config = FindFirstObjectByType<OdinEditorConfig>();
-            #else
-            config = FindObjectsOfType<OdinEditorConfig>().FirstOrDefault();
-            #endif
-            if (config == null)
+            if (string.IsNullOrEmpty(AccessKey) == false)
             {
                 // Displays no config found error
                 VisualElement innerContainerNoConfig = new VisualElement();
@@ -51,9 +43,6 @@ namespace OdinNative.Unity.UIEditor
                 innerContainerNoConfig.Add(noConfigFoundLabel);
                 return;
             }
-
-            AccessKey = config.AccessKey;
-            Gateway = config.Server;
 
             // Renders the gateway box
             VisualElement innerContainerGateway = new VisualElement();
@@ -85,13 +74,51 @@ namespace OdinNative.Unity.UIEditor
             accessKeyBtn.AddToClassList("access-key-btn");
             accessKeyBtn.text = "Generate Access Key";
             innerContainerKey.Add(accessKeyBtn);
+
+            Button copyBtn = new Button();
+            copyBtn.clicked += CopyBtn_clicked;
+            copyBtn.AddToClassList("access-key-btn");
+            copyBtn.text = "Copy Key";
+            innerContainerKey.Add(copyBtn);
+        }
+
+        private void CopyBtn_clicked()
+        {
+            GUIUtility.systemCopyBuffer = AccessKey;
         }
 
         public void OnClickAccessBtn()
         {
-            config.GenerateUIAccessKey();
-            accessKeyTextElement.text = config.AccessKey;
-            EditorUtility.SetDirty(config);
+            AccessKey = GenerateAccessKey();
+            accessKeyTextElement.text = AccessKey;
+            Debug.Log(AccessKey);
+        }
+
+        internal static string GenerateAccessKey()
+        {
+            var rand = new System.Random();
+            byte[] key = new byte[33];
+            rand.NextBytes(key);
+            key[0] = 0x01;
+            byte[] subArray = new ArraySegment<byte>(key, 1, 31).ToArray();
+            key[32] = Crc8(subArray);
+            return Convert.ToBase64String(key);
+        }
+
+        private static byte Crc8(byte[] data)
+        {
+            byte crc = 0xff;
+            for (int i = 0; i < data.Length; i++)
+            {
+                crc ^= data[i];
+                for (int j = 0; j < 8; j++)
+                {
+                    if ((crc & 0x80) != 0) crc = (byte)((crc << 1) ^ 0x31);
+                    else crc <<= 1;
+                }
+                crc = (byte)(0xff & crc);
+            }
+            return crc;
         }
     }
 }

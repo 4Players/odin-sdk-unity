@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace OdinNative.Odin
+namespace OdinNative.Wrapper
 {
     /// <summary>
     /// interface for transmitting UserData
@@ -61,7 +60,7 @@ namespace OdinNative.Odin
         /// <param name="userdata">userdata object</param>
         public static implicit operator byte[](UserData userdata) => userdata?.ToBytes() ?? new byte[0];
 
-        internal UserData() : this(new byte[0]) { }
+        internal UserData() : this(Array.Empty<byte>()) { }
         /// <summary>
         /// Odin UserData with default encoding UTF8
         /// </summary>
@@ -77,7 +76,7 @@ namespace OdinNative.Odin
         /// Odin UserData with default encoding UTF8
         /// </summary>
         /// <param name="data">raw representation</param>
-        public UserData(byte[] data) : this(data, null) { }
+        public UserData(byte[] data) : this(data, Encoding.UTF8) { }
         /// <summary>
         /// Odin UserData with custom encoding
         /// </summary>
@@ -85,8 +84,8 @@ namespace OdinNative.Odin
         /// <param name="encoding">custom encoding</param>
         public UserData(byte[] data, Encoding encoding)
         {
-            Encoding = encoding ?? Encoding.UTF8;
-            Buffer = data;
+            _buffer = data;
+            Encoding = encoding ?? Core.Imports.Native.Encoding;
         }
 
         /// <summary>

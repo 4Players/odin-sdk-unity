@@ -2,25 +2,24 @@
 using OdinNative.Core.Imports;
 using OdinNative.Core.Platform;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace OdinNative.Core
 {
     /// <summary>
-    /// Main lib entry class
+    /// Native library initializer
     /// </summary>
-    public static class OdinLibrary
+    public static class OdinCore<T, U> 
+        where T : OdinHandle
+        where U : NativeMethods<T>
     {
-        private static OdinHandle Handle;
-        private static NativeMethods NativeMethods;
+        private static T Handle;
+        private static NativeMethods<T> NativeMethods;
+
         private static ReaderWriterLock InitializedLock = new ReaderWriterLock();
         private static bool ProcessExitRegistered = false;
 
-        internal static NativeMethods Api
+        internal static NativeMethods<T> Api
         {
             get
             {
@@ -56,8 +55,7 @@ namespace OdinNative.Core
         {
             get
             {
-                OdinHandle handle = Handle;
-                return handle != null && handle.IsClosed == false && handle.IsInvalid == false;
+                return Handle != null && Handle.IsClosed == false && Handle.IsInvalid == false && Handle.IsInitialized;
             }
         }
 
@@ -65,18 +63,22 @@ namespace OdinNative.Core
         /// Initializes the native ODIN runtime
         /// </summary>
         /// <remarks>
-        /// This function explicitly loads the ODIN library. It will be invoked automatically by the SDK when required.
+        /// This function explicitly loads the ODIN library. It will be invoked automatically by the SDK when required. <b>Not supported in WebGL</b>
         /// </remarks>
         public static void Initialize()
         {
+#if UNITY_WEBGL
+            throw new NotSupportedException("Native loading without LLVM bitcode is not supported!");
+#else
             Initialize(new OdinLibraryParameters());
+#endif
         }
 
         /// <summary>
-        /// Creates a new <see cref="OdinLibrary"/>-Instance
+        /// Creates a new library-Instance
         /// </summary>
         /// <param name="parameters">Information used to create the instance</param>
-        /// <exception cref="System.InvalidOperationException">a <see cref="OdinLibrary"/> is already created</exception>
+        /// <exception cref="System.InvalidOperationException">a library is already created</exception>
         /// <exception cref="System.NullReferenceException"><paramref name="parameters"/> is null</exception>
         public static void Initialize(OdinLibraryParameters parameters)
         {
@@ -92,9 +94,9 @@ namespace OdinNative.Core
                     ProcessExitRegistered = true;
                 }
                 Platform = parameters.Platform;
-                Handle = OdinHandle.Load(Platform, parameters.PossibleNativeBinaryLocations);
+                Handle = (T)Activator.CreateInstance(typeof(T), Platform, parameters.PossibleNativeBinaryLocations);
                 NativeBinary = Handle.Location;
-                NativeMethods = new NativeMethods(Handle);
+                NativeMethods = (U)Activator.CreateInstance(typeof(U), Handle);
             }
             catch
             {
@@ -109,7 +111,7 @@ namespace OdinNative.Core
         }
 
         /// <summary>
-        /// Releases the unmanaged resources used by the <see cref="OdinLibrary"/>-Instance
+        /// Releases the unmanaged resources used by the wrapper
         /// </summary>
         public static void Release()
         {
@@ -140,18 +142,8 @@ namespace OdinNative.Core
 
         private static void ProcessExit(object sender, EventArgs e)
         {
-            if(IsInitialized)
+            if (IsInitialized)
                 Release();
-        }
-
-        internal static Exception CreateException(uint error, string extraMessage = null)
-        {
-            string message = Api.GetErrorMessage(error);
-            OdinException result = new OdinException(error, message);
-            if (!string.IsNullOrEmpty(extraMessage))
-                result.Data.Add("extraMessage", extraMessage);
-
-            return result;
         }
     }
 }

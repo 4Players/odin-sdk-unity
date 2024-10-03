@@ -1,8 +1,6 @@
 ﻿#if UNITY_EDITOR
 using OdinNative.Unity;
 using OdinNative.Unity.Audio;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -11,12 +9,14 @@ using UnityEngine.Audio;
 public class OdinAssetContext : Editor
 {
     internal const string MenuTag = "Assets/Create/4Players ODIN";
-    private static GameObject NewOdinManager(string guid = "a421abe223e2dee45b89e686a84e5545")
+    internal const string MenuEditorTag = MenuTag + "/OdinEditor Helper";
+    internal const string ContextTag = "Audio/4Players ODIN";
+    private static GameObject NewOdinInstance(string guid = "f7d24aee5ad24a646a7b72d963a24b6a")
     {
         string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-        if (!assetPath.EndsWith("OdinManager.prefab"))
+        if (!assetPath.EndsWith("OdinInstance.prefab"))
         {
-            Debug.LogError($"No OdinManager prefab! {assetPath}");
+            Debug.LogError($"No OdinRoom prefab! {assetPath}");
             return null;
         }
 
@@ -24,53 +24,78 @@ public class OdinAssetContext : Editor
         return PrefabUtility.InstantiatePrefab(asset) as GameObject;
     }
 
-    [MenuItem(MenuTag + "/OdinManager/Prefab/Default")]
+    [MenuItem(MenuEditorTag + "/Prefabs/Room")]
     public static GameObject CreateDefault()
     {
-        GameObject odin = NewOdinManager();
+        GameObject odin = NewOdinInstance();
         if(odin == null) return null;
-
-        OdinEditorConfig config = odin.GetComponent<OdinEditorConfig>();
-        if(config != null) config.DeviceSampleRate = OdinNative.Core.MediaSampleRate.Hz48000;
 
         return odin;
     }
 
-    [MenuItem(MenuTag + "/OdinManager/Prefab/Advanced")]
+    [ContextMenu("OdinRoom")]
+    public OdinRoom CreateRoom()
+    {
+        GameObject selected = Selection.activeGameObject;
+        if (selected == null)
+        {
+            Debug.LogError($"Selection must be a gameobject!");
+            return null;
+        }
+        return selected.AddComponent<OdinRoom>();
+    }
+
+    [MenuItem(MenuEditorTag + "/Template/Advanced (Room, Mic, MixerGroup)")]
     public static GameObject CreateAdvanced()
     {
+        Debug.Log($"Create Prefab...");
         GameObject odin = CreateDefault();
         if (odin == null) return null;
 
-        OdinHandler handler = odin.GetComponent<OdinHandler>();
+        OdinRoom handler = odin.GetComponent<OdinRoom>();
         if (handler != null)
         {
-            handler.Use3DAudio = true;
-            handler.CreatePlayback = false;
-
             Object obj = Selection.activeObject;
+            Debug.Log("Set playback mixer settings...");
             if (obj is AudioMixer)
             {
                 AudioMixer mixer = obj as AudioMixer;
-                handler.PlaybackAudioMixer = mixer;
+                Debug.Log("Looking for \"Odin\"-group...");
                 var groups = mixer.FindMatchingGroups("Odin");
-                if (groups.Length <= 0) groups = mixer.FindMatchingGroups("Master");
-                handler.PlaybackAudioMixerGroup =  groups.FirstOrDefault();
+                if (groups.Length <= 0)
+                {
+                    Debug.Log("Looking for \"Master\"-group...");
+                    groups = mixer.FindMatchingGroups("Master");
+                }
+                handler.AudioMixerGroup = groups.FirstOrDefault();
             }
             else if (obj is AudioMixerGroup)
             {
                 AudioMixerGroup group = obj as AudioMixerGroup;
-                handler.PlaybackAudioMixer = group.audioMixer;
-                handler.PlaybackAudioMixerGroup = group;
+                Debug.Log($"Set \"{group.name}\"-group...");
+                handler.AudioMixerGroup = group;
             }
             else
                 Debug.LogWarning("Selection has to be an AudioMixer or AudioMixerGroup! Skip playback mixer settings.");
+
+            var mic = odin.AddComponent<OdinMicrophoneReader>();
+            if (mic.OnAudioData == null) mic.OnAudioData = new OdinNative.Unity.Events.UnityAudioData();
+            if (mic.OnAudioData.GetPersistentEventCount() <= 0)
+            {
+#if UNITY_EDITOR
+                UnityEditor.Events.UnityEventTools.AddPersistentListener(mic.OnAudioData, handler.ProxyAudio);
+#else
+                mic.OnAudioData.AddListener(handler.ProxyAudio);
+#endif
+            }
+            else
+                Debug.LogWarning("Persistent event is already set! Skip microphone reader listener.");
         }
 
         return odin;
     }
 
-    [MenuItem(MenuTag + "/OdinManager/Components/Basic")]
+    [MenuItem(MenuEditorTag + "/Components/Basic (OdinRoom)")]
     public static GameObject CreateComponents()
     {
         GameObject obj = Selection.activeGameObject;
@@ -80,54 +105,49 @@ public class OdinAssetContext : Editor
             return null;
         }
 
-        #if UNITY_6000_0_OR_NEWER
-        OdinEditorConfig config = FindFirstObjectByType<OdinEditorConfig>();
-        #else
-        OdinEditorConfig[] configs = FindObjectsOfType<OdinEditorConfig>();
-        OdinEditorConfig config = configs.Length <= 0 ? obj.AddComponent<OdinEditorConfig>() : configs[0];
-        #endif
-        if (config != null) config.DeviceSampleRate = OdinNative.Core.MediaSampleRate.Hz48000;
-
-        OdinHandler handler = obj.GetComponent<OdinHandler>();
-        if(handler == null) handler = obj.AddComponent<OdinHandler>();
-        if (handler != null)
-        {
-            handler.Use3DAudio = true;
-            handler.CreatePlayback = false;
-        }
+        OdinRoom[] rooms = FindObjectsOfType<OdinRoom>();
+        OdinRoom room = rooms.Length <= 0 ? obj.AddComponent<OdinRoom>() : rooms[0];
 
         return obj;
     }
 
-    [MenuItem(MenuTag + "/OdinManager/Components/Extended")]
+    [MenuItem(MenuEditorTag + "/Components/Extended (Room, Microphone)")]
     public static GameObject CreateFullComponents()
     {
         GameObject obj = CreateComponents();
 
-        OdinHandler handler = obj.GetComponent<OdinHandler>();
-        
-        #if UNITY_6000_0_OR_NEWER
-        MicrophoneReader[] micReaders = FindObjectsByType<MicrophoneReader>(FindObjectsSortMode.None);
-        #else
-        MicrophoneReader[] micReaders = FindObjectsOfType<MicrophoneReader>();
-        #endif
-        if (handler != null) handler.Microphone = micReaders.Length <= 0 ? obj.AddComponent<MicrophoneReader>() : micReaders[0];
+        OdinRoom handler = obj.GetComponent<OdinRoom>();
+        OdinMicrophoneReader[] micReaders = FindObjectsOfType<OdinMicrophoneReader>();
+        if (handler != null)
+        {
+            var mic = micReaders.Length <= 0 ? obj.AddComponent<OdinMicrophoneReader>() : micReaders[0];
+            if (mic.OnAudioData == null) mic.OnAudioData = new OdinNative.Unity.Events.UnityAudioData();
+            if (mic.OnAudioData.GetPersistentEventCount() > 0)
+            {
+                Debug.LogWarning("Skip listener! Persistent event is already set.");
+                return obj;
+            }
+
+#if UNITY_EDITOR
+            UnityEditor.Events.UnityEventTools.AddPersistentListener(mic.OnAudioData, handler.ProxyAudio);
+#else
+            mic.OnAudioData.AddListener(handler.ProxyAudio);
+#endif
+        }
 
         return obj;
     }
 
-    [MenuItem(MenuTag + "/OdinManager/Link AudioMixerGroup")]
+    [MenuItem(MenuTag + "/Link AudioMixerGroup to OdinRoom")]
     public static void LinkAudioMixerGroup()
     {
         Object obj = Selection.activeObject;
-        #if UNITY_6000_0_OR_NEWER
-        foreach (OdinHandler handler in FindObjectsByType<OdinHandler>(FindObjectsSortMode.None))
+        foreach (OdinRoom handler in FindObjectsOfType<OdinRoom>())
         {
             if (obj is AudioMixerGroup)
             {
                 AudioMixerGroup group = obj as AudioMixerGroup;
-                handler.PlaybackAudioMixer = group.audioMixer;
-                handler.PlaybackAudioMixerGroup = group;
+                handler.AudioMixerGroup = group;
             }
             else
             {
@@ -135,22 +155,6 @@ public class OdinAssetContext : Editor
                 break;
             }
         }
-        #else
-        foreach (OdinHandler handler in FindObjectsOfType<OdinHandler>())
-        {
-            if (obj is AudioMixerGroup)
-            {
-                AudioMixerGroup group = obj as AudioMixerGroup;
-                handler.PlaybackAudioMixer = group.audioMixer;
-                handler.PlaybackAudioMixerGroup = group;
-            }
-            else
-            {
-                Debug.LogWarning("Selection has to be an AudioMixerGroup!");
-                break;
-            }
-        }
-        #endif
     }
 }
 #endif

@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OdinNative.Core
 {
@@ -71,7 +69,7 @@ namespace OdinNative.Core
                 string path = typeof(OdinHandle).Assembly.Location;
                 string root = string.IsNullOrEmpty(path) ? UnityEngine.Application.dataPath : path;
 #else
-                string root = Path.GetDirectoryName(Path.GetFullPath(typeof(OdinHandle).Assembly.Location));
+                string root = Path.GetDirectoryName(Path.GetFullPath(typeof(OdinLibraryHandle).Assembly.Location));
 #endif
                 result = result.Concat(result.Select(s => s == null ? null : Path.Combine(root, s)));
             }

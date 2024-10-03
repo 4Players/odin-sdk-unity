@@ -1,47 +1,19 @@
 ﻿using OdinNative.Core.Imports;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OdinNative.Core.Platform
 {
     /// <summary>
     /// This class file helps covering the platform specific requirements of the ODIN package as install locations 
     /// will vary based on how it is installed.
-    /// 
-    /// 1) Installing from git:
-    ///    $PROJECT_PATH/Library/PackageCache/io.fourplayers.odin@$COMMIT_HASH
-    /// 
-    /// 2) Installing from Unity asset store:
-    ///    $PROJECT_PATH/Assets/4Players/ODIN
-    /// 
-    /// 3) Installing from tarball:
-    ///    $PROJECT_PATH/Assets/io.fourplayers.odin
-    /// 
-    /// 4) Installing from Unity package bundle:
-    ///    $PROJECT_PATH/Packages/io.fourplayers.odin
     /// </summary>
     internal static class PlatformSpecific
     {
-        private const string PackageName = "io.fourplayers.odin";
-        private const string PackageVendor = "4Players";
-        private const string PackageShortName = "ODIN";
-
-        private const string AssetPath = "Assets/" + PackageName + "/Plugins";
-        private const string AssetStorePath = "Assets/" + PackageVendor + "/" + PackageShortName + "/Plugins";
-        private const string PackagePath = "Packages/" + PackageName + "/Plugins";
-
-        private const string WindowsLibName = "odin.dll";
-        private const string LinuxLibName = "libodin.so";
-        private const string AppleLibName = "libodin.dylib";
-        private const string IOSLibName = "Odin.framework/Odin";
-
-
         private static class NativeWindowsMethods
         {
             [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Winapi)]
@@ -215,9 +187,9 @@ namespace OdinNative.Core.Platform
         }
 
         /// <summary>
-        /// Returns the name of the native SDK binary that fits the current environment
+        /// Returns the name of the native binary that fits the current environment
         /// </summary>
-        /// <param name="names">possible names of the native sdk binary</param>
+        /// <param name="names">possible names of the native binary</param>
         /// <param name="platform">detected platform</param>
         /// <returns>true if a matching binary exists</returns>
         public static bool TryGetNativeBinaryName(out string[] names, out SupportedPlatform platform)
@@ -235,145 +207,26 @@ namespace OdinNative.Core.Platform
             OperatingSystem operatingSystem = Environment.OSVersion;
             switch (operatingSystem.Platform)
             {
-                case PlatformID.MacOSX: platform = SupportedPlatform.MacOSX; break;
-                case PlatformID.Unix: platform = GetUnixPlatform(); break;
-                case PlatformID.Win32NT:
-#if ENABLE_VR
-                    platform = SupportedPlatform.Windows; // no version check with VR
+                case PlatformID.MacOSX: 
+                    platform = SupportedPlatform.MacOSX; 
                     break;
-#endif
-
-#pragma warning disable CS0162 // Unreachable code detected
+                case PlatformID.Unix: 
+                    platform = GetUnixPlatform(); 
+                    break;
+                case PlatformID.Win32NT:
                     if (operatingSystem.Version >= new Version(5, 1)) // if at least windows xp or newer
                     {
                         platform = SupportedPlatform.Windows;
                         break;
                     }
                     else goto default;
-#pragma warning restore CS0162 // Unreachable code detected
                 default: platform = 0; names = null; return false;
             }
 
-            string LibraryCache = "Library/PackageCache";
-            try
-            {
-                LibraryCache = System.IO.Directory
-                    .GetDirectories(LibraryCache)
-                    .Where(dir => dir.Contains(PackageName))
-                    .FirstOrDefault();
-            }
-            catch (System.IO.DirectoryNotFoundException) { /* nop */ }
+            names = PlatformLocations
+                .GetPaths(platform, is64Bit)
+                .ToArray();
 
-            switch (platform)
-            {
-                case SupportedPlatform.iOS:
-                    names = new string[] {
-                        string.Format("{0}/../{1}/{2}", UnityEngine.Application.dataPath, "Frameworks", IOSLibName),
-                        string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", AppleLibName), // PkgManager
-                        string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", AppleLibName), // Editor
-                        string.Format("{0}/{1}/{2}", AssetStorePath, "macos/universal", AppleLibName), // Asset Store
-                        string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", AppleLibName) // PackageCache
-                    };
-                    break;
-                case SupportedPlatform.MacOSX:
-                    names = new string[] { AppleLibName,
-                        string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", AppleLibName), // PkgManager
-                        string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", AppleLibName), // Editor
-                        string.Format("{0}/{1}/{2}", AssetStorePath, "macos/universal", AppleLibName), // Asset Store
-                        string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", AppleLibName) // PackageCache
-#if UNITY_64
-                        ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", AppleLibName), string.Format("{0}/{1}", "Plugins", AppleLibName) // Standalone appbundle
-#endif
-                    };
-                    break;
-                case SupportedPlatform.Android:
-#if UNITY_ANDROID
-                    if (UnityEngine.SystemInfo.unsupportedIdentifier == UnityEngine.SystemInfo.deviceUniqueIdentifier)
-                        goto case SupportedPlatform.Linux;
-
-                    if (CultureInfo.InvariantCulture.CompareInfo.IndexOf(UnityEngine.SystemInfo.processorType, "ARM", CompareOptions.IgnoreCase) >= 0)
-                        {
-                            names = is64Bit
-                                ? new string[] { LinuxLibName,
-                                    string.Format("{0}/{1}/{2}", PackagePath, "android/aarch64", LinuxLibName), // PkgManager (ADB)
-                                    string.Format("{0}/{1}/{2}", AssetPath, "android/aarch64", LinuxLibName), // Editor  (ADB)
-                                    string.Format("{0}/{1}/{2}", AssetStorePath, "android/aarch64", LinuxLibName), // Asset Store  (ADB)
-                                    string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/android/aarch64", LinuxLibName) // PackageCache  (ADB)
-                                    ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
-                                    ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "aarch64", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "aarch64", LinuxLibName) // Standalone
-                                    ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "lib", LinuxLibName)
-                                    ,string.Format("{0}/{1}", UnityEngine.Application.dataPath, LinuxLibName)
-                                }
-                                : new string[] { LinuxLibName,
-                                    string.Format("{0}/{1}/{2}", PackagePath, "android/armv7", LinuxLibName), // PkgManager  (ADB)
-                                    string.Format("{0}/{1}/{2}", AssetPath, "android/armv7", LinuxLibName), // Editor  (ADB)
-                                    string.Format("{0}/{1}/{2}", AssetStorePath, "android/armv7", LinuxLibName), // Asset Store  (ADB)
-                                    string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/android/armv7", LinuxLibName) // PackageCache  (ADB)
-                                    ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
-                                    ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "armv7", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "armv7", LinuxLibName)  // Standalone
-                                    ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "lib", LinuxLibName)
-                                    ,string.Format("{0}/{1}", UnityEngine.Application.dataPath, LinuxLibName)
-                                };
-                    }
-                        else
-                            goto case SupportedPlatform.Linux;
-                    break;
-#endif
-                case SupportedPlatform.Linux:
-                    names = is64Bit
-                        ? new string[] { LinuxLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "linux/x86_64", LinuxLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "linux/x86_64", LinuxLibName), // Editor
-                            string.Format("{0}/{1}/{2}", AssetStorePath, "linux/x86_64", LinuxLibName), // Asset Store
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86_64", LinuxLibName) // PackageCache
-#if UNITY_64
-                            ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
-                            ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86_64", LinuxLibName) // Standalone
-#endif
-                        }
-                        : new string[] { LinuxLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "linux/x86", LinuxLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "linux/x86", LinuxLibName), // Editor
-                            string.Format("{0}/{1}/{2}", AssetStorePath, "linux/x86", LinuxLibName), // Asset Store
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86", LinuxLibName) // PackageCache
-#if UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
-                            ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", LinuxLibName)
-                            ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86", LinuxLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86", LinuxLibName)  // Standalone
-#endif
-                        };
-                    break;
-                case SupportedPlatform.Windows:
-                    names = is64Bit
-                        ? new string[] { WindowsLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "windows/x86_64", WindowsLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "windows/x86_64", WindowsLibName), // Editor
-                            string.Format("{0}/{1}/{2}", AssetStorePath, "windows/x86_64", WindowsLibName), // Asset Store
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86_64", WindowsLibName), // PackageCache
-#if UNITY_64
-                            string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", WindowsLibName),
-                            string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86_64", WindowsLibName),
-                            string.Format("{0}/{1}/{2}", "Plugins", "x86_64", WindowsLibName),  // Standalone
-#endif
-#if ENABLE_VR
-                            string.Format("{0}/{1}/{2}", PackagePath, "windows/aarch64", WindowsLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "windows/aarch64", WindowsLibName), // Editor
-                            string.Format("{0}/{1}/{2}", AssetStorePath, "windows/aarch64", WindowsLibName), // Asset Store
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/aarch64", WindowsLibName), // PackageCache
-#endif
-                        }
-                        : new string[] { WindowsLibName,
-                            string.Format("{0}/{1}/{2}", PackagePath, "windows/x86", WindowsLibName), // PkgManager
-                            string.Format("{0}/{1}/{2}", AssetPath, "windows/x86", WindowsLibName), // Editor
-                            string.Format("{0}/{1}/{2}", AssetStorePath, "windows/x86", WindowsLibName), // Asset Store
-                            string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86", WindowsLibName) // PackageCache
-#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-                            ,string.Format("{0}/{1}/{2}", UnityEngine.Application.dataPath, "Plugins", WindowsLibName)
-                            ,string.Format("{0}/{1}/{2}/{3}", UnityEngine.Application.dataPath, "Plugins", "x86", WindowsLibName), string.Format("{0}/{1}/{2}", "Plugins", "x86", WindowsLibName)  // Standalone
-#endif
-                        };
-                    break;
-                default: throw new NotImplementedException();
-            }
             return true;
         }
     }

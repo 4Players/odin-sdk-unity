@@ -1,11 +1,7 @@
-﻿using OdinNative.Odin.Media;
+﻿using OdinNative.Wrapper.Media;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace OdinNative.Odin.Room
+namespace OdinNative.Wrapper.Room
 {
     /// <summary>
     /// Arguments for RoomJoin events right before the room is joined
@@ -15,7 +11,7 @@ namespace OdinNative.Odin.Room
         /// <summary>
         /// room object
         /// </summary>
-        public Room Room;
+        public IRoom Room;
     }
 
     /// <summary>
@@ -26,7 +22,11 @@ namespace OdinNative.Odin.Room
         /// <summary>
         /// room object
         /// </summary>
-        public Room Room;
+        public IRoom Room;
+        /// <summary>
+        /// customer id
+        /// </summary>
+        public string Customer;
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ namespace OdinNative.Odin.Room
         /// <summary>
         /// room object
         /// </summary>
-        public Room Room;
+        public IRoom Room;
     }
 
     /// <summary>
@@ -46,9 +46,14 @@ namespace OdinNative.Odin.Room
     public class RoomLeftEventArgs : EventArgs
     {
         /// <summary>
-        /// room name
+        /// room id
         /// </summary>
-        public string RoomName;
+        public ulong RoomId;
+
+        /// <summary>
+        /// Reason for the Room Left event.
+        /// </summary>
+        public string Reason;
     }
 
     /// <summary>
@@ -56,18 +61,10 @@ namespace OdinNative.Odin.Room
     /// </summary>
     public class PeerJoinedEventArgs : EventArgs
     {
-        /// <summary>
-        /// peer Id
-        /// </summary>
-        public ulong PeerId { get; internal set; }
-        /// <summary>
-        /// user Id
-        /// </summary>
-        public string UserId { get; internal set; }
-        /// <summary>
-        /// peer object
-        /// </summary>
-        public Peer.Peer Peer;
+        public ulong PeerId;
+        public string UserId;
+        public UserData UserData;
+        public MediaRpc[] Medias;
     }
     /// <summary>
     /// EventHandler in the current room
@@ -105,7 +102,7 @@ namespace OdinNative.Odin.Room
         /// <summary>
         /// peer object
         /// </summary>
-        public Peer.Peer Peer;
+        public PeerEntity Peer;
         /// <summary>
         /// peer userdata
         /// </summary>
@@ -124,17 +121,22 @@ namespace OdinNative.Odin.Room
     public class MediaAddedEventArgs : EventArgs
     {
         /// <summary>
+        /// room id
+        /// </summary>
+        public ulong RoomId { get; internal set; }
+        /// <summary>
         /// peer id
         /// </summary>
         public ulong PeerId { get; internal set; }
         /// <summary>
-        /// peer object
+        /// media id
         /// </summary>
-        public Peer.Peer Peer;
+        public ushort MediaId { get; internal set; }
         /// <summary>
-        /// <see cref="OdinNative.Odin.Media.MediaStream"/> with <see cref="OdinNative.Odin.Media.IAudioStream"/>
+        /// media uid
         /// </summary>
-        public PlaybackStream Media;
+        public string MediaUId { get; internal set; }
+
     }
     /// <summary>
     /// EventHandler in the current room
@@ -151,11 +153,15 @@ namespace OdinNative.Odin.Room
         /// <summary>
         /// stream handle id
         /// </summary>
-        public long MediaStreamId { get; internal set; }
+        public ushort MediaId { get; internal set; }
         /// <summary>
         /// peer object
         /// </summary>
-        public Peer.Peer Peer;
+        public ulong PeerId { get; internal set; }
+        /// <summary>
+        /// Media uid
+        /// </summary>
+        public string MediaUID { get; internal set; }
     }
     /// <summary>
     /// EventHandler in the current room
@@ -170,9 +176,9 @@ namespace OdinNative.Odin.Room
     public class MediaActiveStateChangedEventArgs : EventArgs
     {
         /// <summary>
-        /// stream handle id
+        /// media id
         /// </summary>
-        public long MediaStreamId { get; internal set; }
+        public ushort MediaId { get; internal set; }
         /// <summary>
         /// peer id
         /// </summary>
@@ -183,8 +189,11 @@ namespace OdinNative.Odin.Room
         public bool Active { get; internal set; }
     }
     /// <summary>
-    /// EventHandler in the current room
+    /// EventHandler in the current room. Will work for both local and remote peers.
     /// </summary>
+    /// <remarks>
+    /// Will currently only work if either Voice Activity Detection or Volume Gate is active.
+    /// </remarks>
     /// <param name="sender">sender of type <see cref="Room"/></param>
     /// <param name="e">Arguments events in the current room</param>
     public delegate void MediaActiveStateChangedEventHandler(object sender, MediaActiveStateChangedEventArgs e);
@@ -235,25 +244,94 @@ namespace OdinNative.Odin.Room
     /// <summary>
     /// Arguments for ConnectionStateChanged events in the current room
     /// </summary>
-    public class ConnectionStateChangedEventArgs : EventArgs
+    public class RoomStateChangedEventArgs : EventArgs
     {
         /// <summary>
-        /// Connection state of the ODIN client
+        /// Room state of the ODIN client
         /// </summary>
-        public Core.Imports.NativeBindings.OdinRoomConnectionState ConnectionState { get; internal set; }
-        /// <summary>
-        /// Reason of connection state
-        /// </summary>
-        public Core.Imports.NativeBindings.OdinRoomConnectionStateChangeReason ChangeReason { get; internal set; }
-        /// <summary>
-        /// Connection retry count
-        /// </summary>
-        public int Retry { get; internal set; }
+        public string RoomState { get; internal set; }
     }
     /// <summary>
     /// EventHandler in the current room
     /// </summary>
     /// <param name="sender">sender of type <see cref="Room"/></param>
     /// <param name="e">Arguments events in the current room</param>
-    public delegate void RoomConnectionStateChangedEventHandler(object sender, ConnectionStateChangedEventArgs e);
+    public delegate void RoomConnectionStateChangedEventHandler(object sender, RoomStateChangedEventArgs e);
+
+    /// <summary>
+    /// Arguments for rpc events
+    /// </summary>
+    public class RpcEventArgs : EventArgs
+    {
+        /// <summary>
+        /// room id
+        /// </summary>
+        public ulong RoomId { get; internal set; }
+        /// <summary>
+        /// raw Msgpack rpc data
+        /// </summary>
+        public byte[] Rpc { get; internal set; } = Array.Empty<byte>();
+        /// <summary>
+        /// unused
+        /// </summary>
+        public MarshalByRefObject Userdata { get; internal set; }
+    }
+    /// <summary>
+    /// Result of send rpc responses 
+    /// <code>msgid, (method, params, error, result)</code>
+    /// </summary>
+    public class RpcResult : EventArgs
+    {
+        /// <summary>
+        /// msgid
+        /// </summary>
+        public uint Id { get; internal set; }
+        /// <summary>
+        /// method
+        /// </summary>
+        public string Name { get; internal set; }
+        /// <summary>
+        /// error
+        /// </summary>
+        public string Error { get; internal set; }
+        /// <summary>
+        /// result
+        /// </summary>
+        public object Value { get; internal set; }
+    }
+    /// <summary>
+    /// EventHandler in the current room
+    /// </summary>
+    /// <param name="sender">sender of type <see cref="Room"/></param>
+    /// <param name="e">Arguments events</param>
+    public delegate void RpcEventHandler(object sender, RpcEventArgs e);
+
+    /// <summary>
+    /// Arguments for datagram events
+    /// </summary>
+    public class DatagramEventArgs : EventArgs
+    {
+        /// <summary>
+        /// room id
+        /// </summary>
+        public ulong RoomId { get; internal set; }
+        /// <summary>
+        /// decoder datagram
+        /// </summary>
+        public IntPtr Datagram { get; internal set; }
+        /// <summary>
+        /// decoder datagram payload
+        /// </summary>
+        public byte[] Payload { get; internal set; } = Array.Empty<byte>();
+        /// <summary>
+        /// unused
+        /// </summary>
+        public MarshalByRefObject Userdata { get; internal set; }
+    }
+    /// <summary>
+    /// EventHandler in the current room
+    /// </summary>
+    /// <param name="sender">sender of type <see cref="Room"/></param>
+    /// <param name="e">Arguments events</param>
+    public delegate void DatagramEventHandler(object sender, DatagramEventArgs e);
 }
