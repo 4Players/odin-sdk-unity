@@ -429,7 +429,8 @@ namespace OdinNative.Odin.Room
         /// <remarks>Default <see cref="Room"/> sender and <see cref="MediaActiveStateChangedEventArgs"/></remarks>
         public event MediaActiveStateChangedEventHandler OnMediaActiveStateChanged;
         /// <summary>
-        /// Passthrough event that identified a new RoomUserDataChanged event by Event-Tag.
+        /// Passthrough event that identified a new RoomUserDataChanged event by Event-Tag. Changing a Room's UserData
+        /// is only possible via request to Odin server API, but not supported inside the client SDK.
         /// </summary>
         /// <remarks>Default <see cref="Room"/> sender and <see cref="RoomUserDataChangedEventArgs"/></remarks>
         public event RoomUserDataChangedEventHandler OnRoomUserDataChanged;

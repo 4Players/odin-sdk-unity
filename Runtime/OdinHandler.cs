@@ -81,7 +81,8 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     public MediaActiveStateChangedProxy OnMediaActiveStateChanged;
     /// <summary>
-    /// Called on the Room that updates his UserData
+    /// Called on the Room that updates his UserData. Changing a Room's UserData is only possible via request to Odin
+    /// server API, but not supported inside the client SDK.
     /// </summary>
     public RoomUserDataChangedProxy OnRoomUserDataChanged;
     /// <summary>
@@ -521,6 +522,12 @@ public class OdinHandler : MonoBehaviour
         EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(sender, e));
     }
 
+    /// <summary>
+    /// The rooms user data was updated.
+    /// Changing a Room's UserData is only possible via request to Odin server API, but not supported inside the client SDK.
+    /// </summary>
+    /// <param name="sender">The sending object</param>
+    /// <param name="e">Event data containing room name and new user data.</param>
     protected virtual void Room_OnRoomUserDataChanged(object sender, RoomUserDataChangedEventArgs e)
     {
         if (Config.Verbose) Debug.Log($"Odin Room \"{(sender as Room).Config.Name}\": changed {e.RoomName} data: {e.Data}");
@@ -895,8 +902,11 @@ public class OdinHandler : MonoBehaviour
         if (room == null) return default;
 
         if (includeSelf)
-            return room.RemotePeers
-                .AsEnumerable();
+        {
+            var peersAsEnumerable = room.RemotePeers.ToList();
+            peersAsEnumerable.Add(room.Self);
+            return peersAsEnumerable;
+        }
 
         return room.RemotePeers
             .Where(p => p.Id != room.OwnId);

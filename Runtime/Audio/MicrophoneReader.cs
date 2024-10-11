@@ -107,10 +107,11 @@ namespace OdinNative.Unity.Audio
         /// <summary>
         /// Create and play <see cref="UnityEngine.AudioSource"/> <see href="https://docs.unity3d.com/ScriptReference/AudioSource.html">(AudioSource)</see>
         /// with a Microphone <see cref="UnityEngine.AudioClip"/> <see href="https://docs.unity3d.com/ScriptReference/AudioClip.html">(AudioClip)</see> on loop.
+        /// Odin APM Settings are not applied in the loopback sound.
         /// </summary>
         /// <remarks>Needs <see href="https://docs.unity3d.com/Manual/PlatformSpecific.html">Platform specific Permissions</see> i.e Microphone to work.</remarks>
         [Header("Microphone Test")]
-        [Tooltip("Start/Stop Audio-Loopback")]
+        [Tooltip("Start/Stop Audio-Loopback. This let's you test the microphone input locally. Odin APM Settings are not yet applied in the loopback sound.")]
         [SerializeField]
         public bool Loopback = false;
         private AudioSource LoopSource;
@@ -305,7 +306,7 @@ namespace OdinNative.Unity.Audio
             }
 
             Flush();
-            //TestLoopback();
+            TestLoopback();
         }
 
         private void AudioSettings_OnAudioConfigurationChanged(bool deviceWasChanged)

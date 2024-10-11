@@ -190,7 +190,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6416255994182429956}
   m_Layer: 0
-  m_Name: DemoPath
+  m_Name: VoiceEffectsPath
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

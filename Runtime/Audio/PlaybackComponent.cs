@@ -324,7 +324,6 @@ namespace OdinNative.Unity.Audio
                 SetupPlaybackSource();
             }
 
-            // Debug.Log($"Audio Buffer: {audioBufferSize * 1000.0f} ms, Pitch: {pitch}, fixed delta time: {Time.fixedUnscaledDeltaTime}");
             // finally insert the read data into the spatial clip.
             SpatialClip.SetData(_ClipBuffer, 0);
         }
