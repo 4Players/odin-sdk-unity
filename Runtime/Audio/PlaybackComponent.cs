@@ -206,7 +206,20 @@ namespace OdinNative.Unity.Audio
         /// <summary>
         ///     Use the output settings given by unity. Most of the time this is 44100Hz
         /// </summary>
-        private int OutSampleRate => AudioSettings.outputSampleRate;
+        private int OutSampleRate
+        {
+            get
+            {
+                
+                #if !ODIN_UNITY_AUDIO_ENGINE_DISABLED
+                return AudioSettings.outputSampleRate;
+                #else
+                Debug.Log("ODIN: PlaybackComponent will only work with the Unity Audio Engine. If you'd like to support other Audio Engines like Wwise or FMOD, please check out our guides at https://www.4players.io/odin/guides/unity/. Returning default value.");
+                return (int) OdinDefaults.RemoteSampleRate;
+                #endif
+                
+            }
+        }
 
         public bool HasActivity
         {
@@ -342,7 +355,7 @@ namespace OdinNative.Unity.Audio
             RedirectPlaybackAudio = true;
             if (OdinHandler.Config.VerboseDebug)
                 Debug.Log(
-                    $"## {nameof(PlaybackComponent)}.OnEnable AudioSettings: outputSampleRate {AudioSettings.outputSampleRate}, driverCapabilities {Enum.GetName(typeof(AudioSpeakerMode), AudioSettings.driverCapabilities)}, speakerMode {Enum.GetName(typeof(AudioSpeakerMode), AudioSettings.speakerMode)}");
+                    $"## {nameof(PlaybackComponent)}.OnEnable AudioSettings: outputSampleRate {OutSampleRate}, driverCapabilities {Enum.GetName(typeof(AudioSpeakerMode), AudioSettings.driverCapabilities)}, speakerMode {Enum.GetName(typeof(AudioSpeakerMode), AudioSettings.speakerMode)}");
 
             SetupPlaybackSource();
         }

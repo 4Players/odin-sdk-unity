@@ -594,12 +594,22 @@ public class OdinHandler : MonoBehaviour
 
     private bool RouteAudioProcess(Room room)
     {
-        int readBufferSize = Mathf.FloorToInt(Time.fixedUnscaledDeltaTime * AudioSettings.outputSampleRate);
+        #if !ODIN_UNITY_AUDIO_ENGINE_DISABLED
+       uint sampleRate = (uint) AudioSettings.outputSampleRate;
+        if (0 == sampleRate)
+        {
+            sampleRate = OdinNative.Core.Imports.NativeBindings.BlockSamplerate;
+            Debug.LogWarning("ODIN: Sample Rate returned by Unity Audio Settings is invalid. This usually happens when the Unity Audio Engine is disabled. If this is the case, please set the ODIN_UNITY_AUDIO_ENGINE_DISABLED flag in the Player Settings Scripting Define Symbols section.");
+        }
+        int readBufferSize = Mathf.FloorToInt(Time.fixedUnscaledDeltaTime * sampleRate);
         if (Config.VerboseDebug)
             Debug.Log($"EC for {room.Config.Name} audio process size {readBufferSize}");
         float[] buffer = new float[readBufferSize];
         AudioListener.GetOutputData(buffer, 0); // only mono block
         return room.AudioProcessReverse(buffer);
+        #else
+        return false;
+        #endif
     }
 
     private IEnumerator HandleActionQueue()
