@@ -153,6 +153,8 @@ public class OdinHandler : MonoBehaviour
     /// </summary>
     /// <remarks>Provides access to the client with a usual Unity singleton pattern and add a instance if the client is missing in the scene</remarks>
     public static OdinHandler Instance { get; private set; }
+    
+    public static event Action OnInstanceInitialized;
 
     /// <summary>
     /// Identify ODIN client
@@ -197,6 +199,7 @@ public class OdinHandler : MonoBehaviour
         ClientId = string.Join(".", Application.companyName, Application.productName, Identifier);
 
         SetupEventProxy();
+        OnInstanceInitialized?.Invoke();
     }
 
     void Start()

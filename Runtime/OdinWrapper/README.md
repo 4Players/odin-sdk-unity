@@ -1,6 +1,6 @@
 <p align="center">
 	<img src="https://raw.githubusercontent.com/4Players/odin-sdk-unity/master/Editor/Editor%20Default%20Resources/odinbanner.png" alt="OdinWrapper" width="200" /><br>
-	<b>Version 1</b><br>
+	<b>Version 1 (legacy)</b><br>
 	C# wrapper for ODIN<br>
 	cross-platform client library aki
 </p>

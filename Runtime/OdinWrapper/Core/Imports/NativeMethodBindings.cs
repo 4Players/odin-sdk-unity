@@ -456,7 +456,7 @@ namespace OdinNative.Core.Imports
         }
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinRoomSetEventCallbackDelegate(IntPtr room, OdinEventCallback callback, MarshalByRefObject extra_data);
+        internal delegate uint OdinRoomSetEventCallbackDelegate(IntPtr room, OdinEventCallback callback, IntPtr extra_data);
         readonly OdinRoomSetEventCallbackDelegate _OdinRoomSetEventCallback;
         /// <summary>
         /// Register a <see cref="OdinEventCallback"/> for all room events in the <see cref="RoomCreate"/> provided room.
@@ -465,7 +465,7 @@ namespace OdinNative.Core.Imports
         /// <param name="callback">extern "C" fn(event: *const <see cref="OdinNative.Core.Imports.NativeBindings.OdinEvent"/>) -> ()</param>
         /// <param name="extra_data">custom ref object</param>
         /// <returns>0 or error code that is readable with <see cref="ErrorFormat"/></returns>
-        public uint RoomSetEventCallback(RoomHandle room, OdinEventCallback callback, MarshalByRefObject extra_data = null)
+        public uint RoomSetEventCallback(RoomHandle room, OdinEventCallback callback, IntPtr extra_data = default)
         {
             using (Lock)
             {
@@ -474,7 +474,7 @@ namespace OdinNative.Core.Imports
                 return error;
             }
         }
-        public delegate void OdinEventCallback(IntPtr room, IntPtr odinEvent, MarshalByRefObject userData);
+        public delegate void OdinEventCallback(IntPtr room, IntPtr odinEvent, IntPtr userData);
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate uint OdinRoomUpdateUserDataDelegate(IntPtr room, byte[] userData, ulong userDataLength);
@@ -781,7 +781,7 @@ namespace OdinNative.Core.Imports
         }
 
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
-        internal delegate uint OdinAudioReadDataDelegate(IntPtr mediaStream, [In, Out][MarshalAs(UnmanagedType.LPArray)] float[] buffer, [In] int bufferLength, [In, Out][MarshalAs(UnmanagedType.I4)] OdinChannelLayout channelLayout);
+        internal delegate uint OdinAudioReadDataDelegate(IntPtr mediaStream, [In, Out][MarshalAs(UnmanagedType.LPArray)] float[] buffer, [In] int bufferLength/*, [In, Out][MarshalAs(UnmanagedType.I4)] OdinChannelLayout channelLayout*/);
         readonly OdinAudioReadDataDelegate _OdinAudioReadData;
         /// <summary>
         /// Reads audio data from the specified `OdinMediaStream`. 
@@ -796,7 +796,7 @@ namespace OdinNative.Core.Imports
         public uint AudioReadData(StreamHandle mediaStream, [In, Out] float[] buffer, int bufferLength, OdinChannelLayout channelLayout = OdinChannelLayout.OdinChannelLayout_Mono)
         {
             using (Lock)
-                return _OdinAudioReadData(mediaStream, buffer, bufferLength, channelLayout);
+                return _OdinAudioReadData(mediaStream, buffer, bufferLength/*, channelLayout*/);
         }
         
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]

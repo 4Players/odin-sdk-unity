@@ -7,40 +7,24 @@ using OdinNative.Odin.Room;
 using UnityEditor.VSAttribution.Odin;
 using UnityEngine;
 
-namespace io.fourplayers.odin.Editor
+namespace UnityEditor.VSAttribution.Odin
 {
     [InitializeOnLoad]
     public static class OdinRoomJoinListener
     {
         private static readonly string AttributionActionName = "OdinJoin";
         private static readonly string AttributionPartnerName = "io.fourplayers.odin.pre";
-
-        private static readonly HashSet<OdinHandler> RegisteredHandlers = new HashSet<OdinHandler>();
         
         static OdinRoomJoinListener()
         {
-            EditorApplication.update += MonitorRoomJoin;
+            OdinHandler.OnInstanceInitialized += OnOdinHandlerInstanceInitialized;
         }
 
-        private static void MonitorRoomJoin()
+        private static void OnOdinHandlerInstanceInitialized()
         {
-            ListenToJoinEvents();
-        }
-
-        private static void ListenToJoinEvents()
-        {
-            #if UNITY_6000_0_OR_NEWER
-            var allHandlers = Object.FindObjectsByType<OdinHandler>(FindObjectsSortMode.None);
-            #else
-            var allHandlers = Object.FindObjectsOfType<OdinHandler>();
-            #endif
-            foreach (var handler in allHandlers)
+            if (OdinHandler.Instance)
             {
-                if (null != handler && !RegisteredHandlers.Contains(handler))
-                {
-                    handler.OnRoomJoined.AddListener(Editor_OnJoined);
-                    RegisteredHandlers.Add(handler);
-                }
+                OdinHandler.Instance.OnRoomJoined.AddListener(Editor_OnJoined);
             }
         }
 

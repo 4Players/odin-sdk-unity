@@ -457,7 +457,7 @@ namespace OdinNative.Odin.Room
         /// <param name="_">this instance</param>
         /// <param name="event">OdinEvent struct</param>
         /// <param name="extraData">userdata pointer</param>
-        internal void OnEventReceived(Room _, OdinEvent @event, MarshalByRefObject extraData)
+        internal void OnEventReceived(Room _, OdinEvent @event, IntPtr extraData)
         {
             switch (@event.tag)
             {

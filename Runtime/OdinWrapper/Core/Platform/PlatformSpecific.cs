@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -41,7 +42,9 @@ namespace OdinNative.Core.Platform
         private const string AppleLibName = "libodin.dylib";
         private const string IOSLibName = "Odin.framework/Odin";
 
+        private static string GetFullPackagePath => Path.GetFullPath(PackagePath);
 
+        
         private static class NativeWindowsMethods
         {
             [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Winapi)]
@@ -62,6 +65,17 @@ namespace OdinNative.Core.Platform
             public static IntPtr dlsym(IntPtr id, string symbol) => IntPtr.Zero;
             public static int dlclose(IntPtr id) => 0;
             public static int uname(IntPtr buf) => 0;
+#elif ODIN_MACOS
+            [DllImport("dl")]
+            public static extern IntPtr dlopen(string filename, int flags);
+            [DllImport("dl")]
+            public static extern IntPtr dlerror();
+            [DllImport("dl")]
+            public static extern IntPtr dlsym(IntPtr id, string symbol);
+            [DllImport("dl")]
+            public static extern int dlclose(IntPtr id);
+            [DllImport("dl")]
+            public static extern int uname(IntPtr buf);
 #else
             [DllImport("__Internal")]
             public static extern IntPtr dlopen(string filename, int flags);
@@ -268,8 +282,11 @@ namespace OdinNative.Core.Platform
             {
                 case SupportedPlatform.iOS:
                     names = new string[] {
+#if UNITY_64
                         string.Format("{0}/../{1}/{2}", UnityEngine.Application.dataPath, "Frameworks", IOSLibName),
+#endif
                         string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", AppleLibName), // PkgManager
+                        string.Format("{0}/{1}/{2}", GetFullPackagePath, "macos/universal", AppleLibName), // PkgManager
                         string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", AppleLibName), // Editor
                         string.Format("{0}/{1}/{2}", AssetStorePath, "macos/universal", AppleLibName), // Asset Store
                         string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", AppleLibName) // PackageCache
@@ -278,6 +295,7 @@ namespace OdinNative.Core.Platform
                 case SupportedPlatform.MacOSX:
                     names = new string[] { AppleLibName,
                         string.Format("{0}/{1}/{2}", PackagePath, "macos/universal", AppleLibName), // PkgManager
+                        string.Format("{0}/{1}/{2}", GetFullPackagePath, "macos/universal", AppleLibName), // PkgManager
                         string.Format("{0}/{1}/{2}", AssetPath, "macos/universal", AppleLibName), // Editor
                         string.Format("{0}/{1}/{2}", AssetStorePath, "macos/universal", AppleLibName), // Asset Store
                         string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/macos/universal", AppleLibName) // PackageCache
@@ -296,6 +314,7 @@ namespace OdinNative.Core.Platform
                             names = is64Bit
                                 ? new string[] { LinuxLibName,
                                     string.Format("{0}/{1}/{2}", PackagePath, "android/aarch64", LinuxLibName), // PkgManager (ADB)
+                                    string.Format("{0}/{1}/{2}", GetFullPackagePath, "android/aarch64", LinuxLibName), // PkgManager (ADB)
                                     string.Format("{0}/{1}/{2}", AssetPath, "android/aarch64", LinuxLibName), // Editor  (ADB)
                                     string.Format("{0}/{1}/{2}", AssetStorePath, "android/aarch64", LinuxLibName), // Asset Store  (ADB)
                                     string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/android/aarch64", LinuxLibName) // PackageCache  (ADB)
@@ -306,6 +325,7 @@ namespace OdinNative.Core.Platform
                                 }
                                 : new string[] { LinuxLibName,
                                     string.Format("{0}/{1}/{2}", PackagePath, "android/armv7", LinuxLibName), // PkgManager  (ADB)
+                                    string.Format("{0}/{1}/{2}", GetFullPackagePath, "android/armv7", LinuxLibName), // PkgManager  (ADB)
                                     string.Format("{0}/{1}/{2}", AssetPath, "android/armv7", LinuxLibName), // Editor  (ADB)
                                     string.Format("{0}/{1}/{2}", AssetStorePath, "android/armv7", LinuxLibName), // Asset Store  (ADB)
                                     string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/android/armv7", LinuxLibName) // PackageCache  (ADB)
@@ -323,6 +343,7 @@ namespace OdinNative.Core.Platform
                     names = is64Bit
                         ? new string[] { LinuxLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "linux/x86_64", LinuxLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", GetFullPackagePath, "linux/x86_64", LinuxLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "linux/x86_64", LinuxLibName), // Editor
                             string.Format("{0}/{1}/{2}", AssetStorePath, "linux/x86_64", LinuxLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86_64", LinuxLibName) // PackageCache
@@ -333,6 +354,7 @@ namespace OdinNative.Core.Platform
                         }
                         : new string[] { LinuxLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "linux/x86", LinuxLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", GetFullPackagePath, "linux/x86", LinuxLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "linux/x86", LinuxLibName), // Editor
                             string.Format("{0}/{1}/{2}", AssetStorePath, "linux/x86", LinuxLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/linux/x86", LinuxLibName) // PackageCache
@@ -346,6 +368,7 @@ namespace OdinNative.Core.Platform
                     names = is64Bit
                         ? new string[] { WindowsLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "windows/x86_64", WindowsLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", GetFullPackagePath, "windows/x86_64", WindowsLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "windows/x86_64", WindowsLibName), // Editor
                             string.Format("{0}/{1}/{2}", AssetStorePath, "windows/x86_64", WindowsLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86_64", WindowsLibName), // PackageCache
@@ -356,6 +379,7 @@ namespace OdinNative.Core.Platform
 #endif
 #if ENABLE_VR
                             string.Format("{0}/{1}/{2}", PackagePath, "windows/aarch64", WindowsLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", GetFullPackagePath, "windows/aarch64", WindowsLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "windows/aarch64", WindowsLibName), // Editor
                             string.Format("{0}/{1}/{2}", AssetStorePath, "windows/aarch64", WindowsLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/aarch64", WindowsLibName), // PackageCache
@@ -363,6 +387,7 @@ namespace OdinNative.Core.Platform
                         }
                         : new string[] { WindowsLibName,
                             string.Format("{0}/{1}/{2}", PackagePath, "windows/x86", WindowsLibName), // PkgManager
+                            string.Format("{0}/{1}/{2}", GetFullPackagePath, "windows/x86", WindowsLibName), // PkgManager
                             string.Format("{0}/{1}/{2}", AssetPath, "windows/x86", WindowsLibName), // Editor
                             string.Format("{0}/{1}/{2}", AssetStorePath, "windows/x86", WindowsLibName), // Asset Store
                             string.Format("{0}/{1}/{2}", LibraryCache, "Plugins/windows/x86", WindowsLibName) // PackageCache

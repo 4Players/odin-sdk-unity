@@ -270,7 +270,7 @@ namespace OdinNative.Odin
 #if UNITY_EDITOR || UNITY_STANDALONE || UNITY_IOS || UNITY_ANDROID || UNITY_WEBGL || UNITY_64
         [AOT.MonoPInvokeCallback(typeof(Core.Imports.NativeMethods.OdinEventCallback))]
 #endif
-        internal static void OnEventReceivedProxy(IntPtr roomPtr, IntPtr odinEvent, MarshalByRefObject extraData)
+        internal static void OnEventReceivedProxy(IntPtr roomPtr, IntPtr odinEvent, IntPtr extraData)
         {
             try
             {
