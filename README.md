@@ -1,10 +1,16 @@
+![ODIN](https://www.4players.io/images/odin/banner.jpg)
+
+[![Releases](https://img.shields.io/github/release/4Players/odin-sdk-unity)](https://github.com/4Players/odin-sdk/releases)
+[![Documentation](https://img.shields.io/badge/docs-4Players.io-orange)](https://docs.4players.io/voice)
+[![Twitter](https://img.shields.io/badge/twitter-@ODIN4Players-blue)](https://twitter.com/ODIN4Players)
+
 # 4Players ODIN Unity SDK
 
 ODIN is a cross-platform software development kit (SDK) that enables developers to integrate real-time chat technology into multiplayer games, apps and websites.
 
 The ODIN package for Unity adds real-time VoIP communication to your game, thus making it more social and interactive, while increasing the immersion of the experience for your players.
 
-[Online Documentation](https://www.4players.io/developers/)
+[Online Documentation](https://docs.4players.io/voice/unity/)
 
 ## Prerequisites
 
