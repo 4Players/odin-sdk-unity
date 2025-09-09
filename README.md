@@ -6,9 +6,9 @@
 
 # 4Players ODIN Unity SDK
 
-ODIN is a cross-platform software development kit (SDK) that enables developers to integrate real-time chat technology into multiplayer games, apps and websites.
+ODIN is a cross-platform software development kit (SDK) that enables developers to integrate real-time voice chat technology into multiplayer games, apps and websites.
 
-The ODIN package for Unity adds real-time VoIP communication to your game, thus making it more social and interactive, while increasing the immersion of the experience for your players.
+The ODIN package for Unity adds proximity VoIP communication to your game, thus making it more social and interactive, while increasing the immersion of the player experience by supporting sound occlusion and environmental audio effects and more.
 
 [Online Documentation](https://docs.4players.io/voice/unity/)
 
