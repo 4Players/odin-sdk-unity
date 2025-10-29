@@ -1,7 +1,7 @@
 ![ODIN](https://www.4players.io/images/odin/banner.jpg)
 
 [![Releases](https://img.shields.io/github/release/4Players/odin-sdk-unity)](https://github.com/4Players/odin-sdk/releases)
-[![Documentation](https://img.shields.io/badge/docs-4Players.io-orange)](https://docs.4players.io/voice)
+[![Documentation](https://img.shields.io/badge/docs-4Players.io-orange)](https://docs.4players.io/voice/)
 [![Twitter](https://img.shields.io/badge/twitter-@ODIN4Players-blue)](https://twitter.com/ODIN4Players)
 
 # 4Players ODIN Unity SDK
@@ -60,7 +60,7 @@ Contact us through the listed methods below to receive answers to your questions
 
 Join our official Discord server to chat with us directly and become a part of the 4Players ODIN community.
 
-[![Join us on Discord](https://developers.4players.io/images/join_discord.png)](https://4np.de/discord)
+[![Join us on Discord](https://docs.4players.io/img/join_discord.png)](https://4np.de/discord)
 
 ### Twitter
 
