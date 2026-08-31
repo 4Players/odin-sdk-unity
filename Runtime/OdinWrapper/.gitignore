@@ -232,6 +232,7 @@ _pkginfo.txt
 ClientBin/
 ~$*
 *~
+!Tests~/
 *.dbmdl
 *.dbproj.schemaview
 *.jfm
@@ -395,3 +396,5 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+# test reports
+test-results.xml

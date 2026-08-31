@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine.Events;
-using OdinNative.Odin.Room;
 
 namespace OdinNative.Unity.Events
 {
+    [Obsolete("Not raised by any component since the 2.x media rework; kept for compatibility and to be removed in a future release")]
     [Serializable]
-    public class UnityCreatedMediaObject : UnityEvent<string, ulong, long>
+    public class UnityCreatedMediaObject : UnityEvent<ulong, ulong, ushort>
     {
     }
 }

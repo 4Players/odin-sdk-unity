@@ -1,11 +1,11 @@
-﻿using System;
+﻿using OdinNative.Utils.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace OdinNative.Odin
+namespace OdinNative.Wrapper
 {
     /// <summary>
     /// interface for transmitting UserData
@@ -22,6 +22,14 @@ namespace OdinNative.Odin
         /// </summary>
         /// <returns>arbitrary data</returns>
         byte[] ToBytes();
+        /// <summary>
+        /// Json representation of raw buffer
+        /// </summary>
+        string ToJson();
+        /// <summary>
+        /// Type deserialization of json string buffer content
+        /// </summary>
+        T ToType<T>() where T : class;
     }
 
     /// <summary>
@@ -61,7 +69,12 @@ namespace OdinNative.Odin
         /// <param name="userdata">userdata object</param>
         public static implicit operator byte[](UserData userdata) => userdata?.ToBytes() ?? new byte[0];
 
-        internal UserData() : this(new byte[0]) { }
+        internal UserData() : this(Array.Empty<byte>()) { }
+        /// <summary>
+        /// Odin UserData as json string of type
+        /// </summary>
+        /// <param name="obj">type representation</param>
+        public UserData(object obj) : this(JSONWriter.ToJson(obj)) { }
         /// <summary>
         /// Odin UserData with default encoding UTF8
         /// </summary>
@@ -72,12 +85,12 @@ namespace OdinNative.Odin
         /// </summary>
         /// <param name="text">string representation of userdata</param>
         /// <param name="encoding">custom encoding</param>
-        public UserData(string text, Encoding encoding) : this(encoding.GetBytes(text), encoding) { }
+        public UserData(string text, Encoding encoding) : this(encoding.GetBytes(text ?? ""), encoding) { }
         /// <summary>
         /// Odin UserData with default encoding UTF8
         /// </summary>
         /// <param name="data">raw representation</param>
-        public UserData(byte[] data) : this(data, null) { }
+        public UserData(byte[] data) : this(data, Encoding.UTF8) { }
         /// <summary>
         /// Odin UserData with custom encoding
         /// </summary>
@@ -85,8 +98,8 @@ namespace OdinNative.Odin
         /// <param name="encoding">custom encoding</param>
         public UserData(byte[] data, Encoding encoding)
         {
-            Encoding = encoding ?? Encoding.UTF8;
-            Buffer = data;
+            _buffer = data;
+            Encoding = encoding ?? Core.Imports.Native.Encoding;
         }
 
         /// <summary>
@@ -114,7 +127,7 @@ namespace OdinNative.Odin
         /// <summary>
         /// Indicates whether substring occurs
         /// </summary>
-        /// <remark>uses the specified encoding</remark>
+        /// <remarks>uses the specified encoding</remarks>
         /// <param name="value"></param>
         /// <returns>true if contain</returns>
         public virtual bool Contains(string value)
@@ -135,10 +148,10 @@ namespace OdinNative.Odin
         }
 
         /// <summary>
-        /// Indicates whether two sequence are equal
+        /// Finds all occurrences of the byte sequence in the buffer
         /// </summary>
         /// <param name="pattern">byte sequence</param>
-        /// <returns>true if contain</returns>
+        /// <returns>indices of all occurrences of the pattern</returns>
         public virtual IEnumerable<int> PatternAt(byte[] pattern)
         {
             for (int i = 0; i < Buffer.Length; i++)
@@ -165,12 +178,32 @@ namespace OdinNative.Odin
         }
 
         /// <summary>
+        /// Json representation of raw byte buffer
+        /// </summary>
+        /// <remarks>json of buffer, not the content [see <see cref="ToType{T}"/>]</remarks>
+        /// <returns>json representation</returns>
+        public virtual string ToJson()
+        {
+            return JSONWriter.ToJson(Buffer);
+        }
+
+        /// <summary>
         /// String representation of Buffer based on the specified encoding
         /// </summary>
         /// <returns>string representation</returns>
         public override string ToString()
         {
             return Encoding.GetString(Buffer);
+        }
+
+        /// <summary>
+        /// Type deserialization of json string buffer content
+        /// </summary>
+        /// <typeparam name="T">not an abstract or interface type</typeparam>
+        /// <returns>T instance</returns>
+        public virtual T ToType<T>() where T : class
+        {
+            return JSONParser.FromJson<T>(ToString());
         }
     }
 }

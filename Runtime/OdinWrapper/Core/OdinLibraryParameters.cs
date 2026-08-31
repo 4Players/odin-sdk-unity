@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OdinNative.Core
 {
@@ -46,7 +44,7 @@ namespace OdinNative.Core
         /// <summary>
         /// Creates a new <see cref="OdinLibraryParameters"/>-Object.
         /// </summary>
-        /// <param name="odinBinaryFolder">location where the native Aki sdk files can be found.</param>
+        /// <param name="odinBinaryFolder">location where the native ODIN sdk files can be found.</param>
         public OdinLibraryParameters(string odinBinaryFolder)
         {
             if (TryGetNativeBinaryName(out string[] nativeBinaryLocations, out SupportedPlatform platform) == false)
@@ -71,7 +69,7 @@ namespace OdinNative.Core
                 string path = typeof(OdinHandle).Assembly.Location;
                 string root = string.IsNullOrEmpty(path) ? UnityEngine.Application.dataPath : path;
 #else
-                string root = Path.GetDirectoryName(Path.GetFullPath(typeof(OdinHandle).Assembly.Location));
+                string root = Path.GetDirectoryName(Path.GetFullPath(typeof(OdinLibraryHandle).Assembly.Location));
 #endif
                 result = result.Concat(result.Select(s => s == null ? null : Path.Combine(root, s)));
             }
@@ -81,7 +79,7 @@ namespace OdinNative.Core
         /// <summary>
         /// Creates a new <see cref="OdinLibraryParameters"/>-Object.
         /// </summary>
-        /// <param name="nativeBinaryLocation">Location to the Aki library binary.</param>
+        /// <param name="nativeBinaryLocation">Location to the ODIN library binary.</param>
         /// <param name="platform">Determines which platform specific code will be executed.</param>
         public OdinLibraryParameters(string nativeBinaryLocation, SupportedPlatform platform)
         {

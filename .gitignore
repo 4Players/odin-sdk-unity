@@ -1,2 +1,41 @@
-obj
+# ------------------------------------------------------------------
+# OS / editor cruft
+# ------------------------------------------------------------------
 .DS_Store
+._*
+.AppleDouble
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+*.swp
+*~.nib
+
+# ------------------------------------------------------------------
+# IDE
+# ------------------------------------------------------------------
+.vs/
+.vscode/
+.idea/
+*.user
+*.userprefs
+*.suo
+
+# ------------------------------------------------------------------
+# .NET build output (OdinWrapper / Tests~)
+# ------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+*.pdb
+
+# ------------------------------------------------------------------
+# Not part of the published package -- the release pipeline strips
+# these before bundling, keep them out of the mirror as well.
+# ------------------------------------------------------------------
+/api_to_json.sh
+/api_to_json.sh.meta
+/docfx.json
+/docfx.json.meta
+/Documentation/docfx/
+/Runtime/OdinWrapper/.gitlab-ci.yml

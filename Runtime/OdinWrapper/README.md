@@ -1,8 +1,8 @@
 <p align="center">
 	<img src="https://raw.githubusercontent.com/4Players/odin-sdk-unity/master/Editor/Editor%20Default%20Resources/odinbanner.png" alt="OdinWrapper" width="200" /><br>
-	<b>Version 1 (legacy)</b><br>
+	<b>Version 2</b><br>
 	C# wrapper for ODIN<br>
-	cross-platform client library aki
+	cross-platform client library ODIN
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 
 # 4Players ODIN SDK C# Wrapper
 
-ODIN SDK Wrapper is for the dotnet framework based on native ODIN.
+The ODIN SDK Wrapper is a .NET wrapper based on the native ODIN library.
 
 ODIN is a cross-platform software development kit (SDK) that enables developers
 to integrate real-time chat technology into multiplayer games, apps and
@@ -59,10 +59,10 @@ The `OdinClient`-Class is the convenient client wrapper for ODIN ffi. Available
 with the pre-compiled managed library of your target framework or Shared
 Project.
 
-For your own Client use the internal function `OdinLibrary.Api` which is
-currently only in a Shared Project reference available.
+For your own Client use `Odin.Api` / `Odin.Library.Methods` which is
+currently only available with a Shared Project reference.
 
-_The Project includes meta files for Unity Assets (2019.4+) as well as
+_The Project includes meta files for Unity Assets (2022.3+) as well as
 LogException, LogAssertions, ... support. Until - "Future versions of Unity are
 expected to always throw exceptions"._
 

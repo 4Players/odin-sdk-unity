@@ -1,13 +1,31 @@
 ﻿using System;
 using UnityEngine.Events;
-using OdinNative.Odin.Room;
 
 namespace OdinNative.Unity.Events
 {
     /// <summary>
-    /// This class provides the base functionality for UnityEvents based <see cref="OdinNative.Odin.Room.MediaActiveStateChangedEventHandler"/>.
+    /// Arguments for activity state change events on a decoder media stream.
+    /// </summary>
+    public class MediaActiveStateChangedEventArgs : EventArgs
+    {
+        /// <summary>
+        /// true when the audio stream is active (not silent)
+        /// </summary>
+        public bool Active { get; internal set; }
+        /// <summary>
+        /// Id of the media stream that changed state
+        /// </summary>
+        public ulong MediaId { get; internal set; }
+        /// <summary>
+        /// Id of the peer that owns the media stream
+        /// </summary>
+        public uint PeerId { get; internal set; }
+    }
+
+    /// <summary>
+    /// Unity Inspector event wrapper for media activity state changes.
     /// A persistent callback that can be saved with the Scene.
-    /// Unity Inspector event wrapper <see href="https://docs.unity3d.com/ScriptReference/Events.UnityEvent.html">(UnityEvent)</see>
+    /// <see href="https://docs.unity3d.com/ScriptReference/Events.UnityEvent.html">(UnityEvent)</see>
     /// </summary>
     [Serializable]
     public class MediaActiveStateChangedProxy : UnityEvent<object, MediaActiveStateChangedEventArgs>

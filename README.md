@@ -1,24 +1,18 @@
-![ODIN](https://www.4players.io/images/odin/banner.jpg)
-
-[![Releases](https://img.shields.io/github/release/4Players/odin-sdk-unity)](https://github.com/4Players/odin-sdk/releases)
-[![Documentation](https://img.shields.io/badge/docs-4Players.io-orange)](https://docs.4players.io/voice/)
-[![Twitter](https://img.shields.io/badge/twitter-@ODIN4Players-blue)](https://twitter.com/ODIN4Players)
-
 # 4Players ODIN Unity SDK
 
-ODIN is a cross-platform software development kit (SDK) that enables developers to integrate real-time voice chat technology into multiplayer games, apps and websites.
+ODIN is a cross-platform software development kit (SDK) that enables developers to integrate real-time chat technology into multiplayer games, apps and websites.
 
-The ODIN package for Unity adds proximity VoIP communication to your game, thus making it more social and interactive, while increasing the immersion of the player experience by supporting sound occlusion and environmental audio effects and more.
+The ODIN package for Unity adds real-time VoIP communication to your game, thus making it more social and interactive, while increasing the immersion of the experience for your players.
 
-[Online Documentation](https://docs.4players.io/voice/unity/)
+[Online Documentation](https://docs.4players.io/voice/unity)
 
 ## Prerequisites
 
-- Unity 2019.4 or any later version
+- Unity 2022.3 or any later version
 
 This Unity version was chosen as it is Long Term Supported and provides compatibility with all targeted platforms.
 
-**Note**: WebGL is not natively supported. To integrate ODIN with your WebGL builds, use our [JavaScript/TypeScript SDK](https://www.npmjs.com/package/@4players/odin).
+**Note**: WebGL is currently not supported. Support for WebGL builds will return with the upcoming ODIN web SDK.
 
 ## Installation
 
@@ -46,11 +40,11 @@ Click the + button in the upper left and select `Add package from tarball`. Next
 
 ## Samples
 
-We ship a sample package with the Unity SDK, which contains several examples and a demo scene. To import it into your project, open the Package Manager and hit import on on the `*`Examples` package.
+We ship a sample package with the Unity SDK, which contains several examples and a demo scene. To import it into your project, open the Package Manager and hit import on the `Examples` package.
 
 ### Usage
 
-The base Prefab Asset is available at `Packages/io.fourplayers.odin/Runtime/OdinManager.prefab` and Script accessibility with the `OdinHandler` class.
+The base Prefab Asset is available at `Packages/io.fourplayers.odin/Runtime/OdinInstance.prefab` and Script accessibility with the `OdinRoom` class.
 
 ## Troubleshooting
 
@@ -58,14 +52,8 @@ Contact us through the listed methods below to receive answers to your questions
 
 ### Discord
 
-Join our official Discord server to chat with us directly and become a part of the 4Players ODIN community.
-
-[![Join us on Discord](https://docs.4players.io/img/join_discord.png)](https://4np.de/discord)
-
-### Twitter
-
-Have a quick question? Tweet us at [@4PlayersBiz](https://twitter.com/4PlayersBiz) and we’ll help you resolve any issues.
+Join our [official Discord server](https://4np.de/discord) to chat with us directly and become a part of the 4Players ODIN community.
 
 ### Email
 
-Don’t use Discord or Twitter? Send us an [email](mailto:odin@4players.io) and we’ll get back to you as soon as possible.
+Don’t use Discord or X? Send us an [email](mailto:odin@4players.io) and we’ll get back to you as soon as possible.

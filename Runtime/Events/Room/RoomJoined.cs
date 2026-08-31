@@ -1,6 +1,6 @@
-﻿using System;
+﻿using OdinNative.Wrapper.Room;
+using System;
 using UnityEngine.Events;
-using OdinNative.Odin.Room;
 
 namespace OdinNative.Unity.Events
 {
@@ -9,7 +9,7 @@ namespace OdinNative.Unity.Events
     /// A persistent callback that can be saved with the Scene.
     /// </summary>
     [Serializable]
-    public class RoomJoinedProxy : UnityEvent<RoomJoinedEventArgs>
+    public class RoomJoinedProxy : UnityEvent<object, RoomJoinedEventArgs>
     {
     }
 }
