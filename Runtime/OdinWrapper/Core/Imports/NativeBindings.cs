@@ -12,11 +12,11 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// ODIN_VERSION
         /// </summary>
-        public const string OdinLibraryVersion = "2.2.4";
+        public const string OdinLibraryVersion = "2.2.5";
         /// <summary>
         /// ODIN_CRYPTO_VERSION
         /// </summary>
-        public const string OdinCryptoVersion = "2.1.0";
+        public const string OdinCryptoVersion = "2.2.0";
 
         #region NativeLibrary
 
