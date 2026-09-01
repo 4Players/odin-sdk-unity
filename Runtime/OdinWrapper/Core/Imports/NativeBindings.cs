@@ -12,7 +12,7 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// ODIN_VERSION
         /// </summary>
-        public const string OdinLibraryVersion = "2.2.3";
+        public const string OdinLibraryVersion = "2.2.4";
         /// <summary>
         /// ODIN_CRYPTO_VERSION
         /// </summary>
