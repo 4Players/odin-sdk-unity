@@ -222,6 +222,11 @@ namespace OdinNative.Wrapper.Room
         /// Guards the release against running twice.
         /// </summary>
         private int _released;
+        private int _disposeStarted;
+        private volatile bool _nativeClosed;
+        private readonly object _closeTimerLock = new object();
+        private Timer _closeTimer;
+        private const int CloseTimeoutMs = 2000;
         /// <summary>
         /// Initialise dangling room
         /// </summary>
@@ -431,6 +436,8 @@ namespace OdinNative.Wrapper.Room
             if (Volatile.Read(ref _activeCallbacks) > 0) return;
             if (Interlocked.CompareExchange(ref _released, 1, 0) != 0) return;
 
+            disposedValue = true;
+
             // Attempt every release even when a resource's Dispose override throws. Cleanup can
             // run in a native callback's finally block, so errors must stay on the managed side.
             RunCleanup(UnsubscribeEvents, nameof(UnsubscribeEvents));
@@ -441,6 +448,26 @@ namespace OdinNative.Wrapper.Room
 
             RunCleanup(() => Handle?.Dispose(), nameof(Handle));
             Handle = null;
+        }
+
+        private void RequestRelease()
+        {
+            _callbacksDisabled = true;
+            _callbackRooms.TryRemove(_callbackId, out _);
+            Interlocked.Exchange(ref _releaseRequested, 1);
+            lock (_closeTimerLock)
+            {
+                _closeTimer?.Dispose();
+                _closeTimer = null;
+            }
+
+            TryReleaseResources();
+        }
+
+        private void OnCloseTimeout(object state)
+        {
+            // The timer runs independently of Unity Update, including after OnDisable/OnDestroy.
+            RunCleanup(RequestRelease, nameof(OnCloseTimeout));
         }
 
         // native keeps the function pointers for the lifetime of the room; static
@@ -746,7 +773,18 @@ namespace OdinNative.Wrapper.Room
 
         private void RoomStatusChangedRpc(RoomStatusChangedObjectContainer values)
         {
-            OnRoomStatusChanged?.Invoke(this, string.IsNullOrEmpty(values.status) ? "unknown" : values.status);
+            if (string.Equals(values.status, "Closed", StringComparison.OrdinalIgnoreCase))
+                _nativeClosed = true;
+
+            try
+            {
+                OnRoomStatusChanged?.Invoke(this, string.IsNullOrEmpty(values.status) ? "unknown" : values.status);
+            }
+            finally
+            {
+                if (_nativeClosed && Volatile.Read(ref _disposeStarted) != 0)
+                    RequestRelease();
+            }
         }
 
         private void NewReconnectTokenRpc(NewReconnectTokenObjectContainer values)
@@ -851,7 +889,7 @@ namespace OdinNative.Wrapper.Room
             OdinLog.Assert(string.IsNullOrEmpty(EndPoint.ToString()) == false, $"{nameof(Odin.Library.Methods.RoomCreate)} {nameof(EndPoint)} IsNullOrEmpty");
             OdinLog.Assert(string.IsNullOrEmpty(authentication) == false, $"{nameof(Odin.Library.Methods.RoomCreate)} {nameof(authentication)} IsNullOrEmpty");
 
-            if(IsJoined)
+            if (IsJoined || Volatile.Read(ref _disposeStarted) != 0)
                 return false;
 
             this.Authentication = authentication;
@@ -1414,21 +1452,42 @@ namespace OdinNative.Wrapper.Room
         /// </summary>
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _callbacksDisabled = true;
-                    _callbackRooms.TryRemove(_callbackId, out _);
-                    
-                    if (Handle != null && Handle.IsAlive)
-                        RunCleanup(Close, nameof(Close));
+            if (!disposing) return;
 
-                    Interlocked.Exchange(ref _releaseRequested, 1);
-                    TryReleaseResources();
+            // Also protect the Close call itself: a synchronous status callback or the timeout
+            // must not free its handle before the native call returns.
+            Interlocked.Increment(ref _activeCallbacks);
+            try
+            {
+                if (Interlocked.CompareExchange(ref _disposeStarted, 1, 0) != 0) return;
+
+                if (_nativeClosed || Handle == null || !Handle.IsAlive)
+                {
+                    RequestRelease();
+                    return;
                 }
 
-                disposedValue = true;
+                // Existing native versions already emit Closed. Keep their callbacks alive until
+                // that event arrives, with a bounded fallback if the worker cannot finish.
+                lock (_closeTimerLock)
+                {
+                    if (Volatile.Read(ref _releaseRequested) == 0)
+                    {
+                        _closeTimer = new Timer(OnCloseTimeout, null, Timeout.Infinite, Timeout.Infinite);
+                        _closeTimer.Change(CloseTimeoutMs, Timeout.Infinite);
+                    }
+                }
+
+                Close();
+            }
+            catch (Exception e)
+            {
+                LogCallbackError(nameof(Dispose), e);
+                RequestRelease();
+            }
+            finally
+            {
+                ExitCallback(this);
             }
         }
 
@@ -1441,7 +1500,7 @@ namespace OdinNative.Wrapper.Room
         }
 
         /// <summary>
-        /// On dispose will free the room and all associated data
+        /// Requests close, then frees resources after Closed or a timeout and after active callbacks exit.
         /// </summary>
         public void Dispose()
         {
