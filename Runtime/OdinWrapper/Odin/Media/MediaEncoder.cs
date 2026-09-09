@@ -185,6 +185,22 @@ namespace OdinNative.Wrapper
             }
         }
 
+        internal OdinError Pop(byte[] buffer, out uint count)
+        {
+            count = 0;
+            bool refAdded = false;
+            try { Handle.DangerousAddRef(ref refAdded); }
+            catch (ObjectDisposedException) { return OdinError.ODIN_ERROR_CLOSED; }
+            try
+            {
+                return Odin.Library.Methods.EncoderPop(Handle, buffer, out count);
+            }
+            finally
+            {
+                if (refAdded) Handle.DangerousRelease();
+            }
+        }
+
         /// <summary>
         /// Push samples to the media
         /// </summary>

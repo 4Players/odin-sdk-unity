@@ -350,6 +350,9 @@ namespace OdinNative.Unity.Audio
         /// Upper bound on how much captured audio a single <see cref="PullClipData"/> forwards.
         /// </summary>
         private const float MaxDrainSeconds = 0.2f;
+        private float _LastDrainWarningTime = float.NegativeInfinity;
+        private static readonly Unity.Profiling.ProfilerMarker GetDataMarker = new Unity.Profiling.ProfilerMarker("ODIN.Microphone.GetData");
+        private static readonly Unity.Profiling.ProfilerMarker DispatchAudioMarker = new Unity.Profiling.ProfilerMarker("ODIN.Microphone.DispatchAudio");
 
         /// <summary>
         /// Minimum time between two capture device resets.
@@ -426,7 +429,11 @@ namespace OdinNative.Unity.Audio
             if (dataToRead > maxFramesPerPull)
             {
                 int skip = dataToRead - maxFramesPerPull;
-                OdinLog.LogWarning($"{nameof(OdinMicrophoneReader)} dropping {skip} captured frames ({(float)skip / InputClip.frequency:0.00}s) to catch up after a stall");
+                if (Time.unscaledTime - _LastDrainWarningTime >= 1f)
+                {
+                    _LastDrainWarningTime = Time.unscaledTime;
+                    OdinLog.LogWarning($"{nameof(OdinMicrophoneReader)} dropping {skip} captured frames ({(float)skip / InputClip.frequency:0.00}s) to catch up after a stall");
+                }
                 _MicPosition = (_MicPosition + skip) % InputClip.samples;
                 dataToRead = maxFramesPerPull;
             }
@@ -441,10 +448,14 @@ namespace OdinNative.Unity.Audio
                 {
                     // If the read length from the offset is longer than the clip length,
                     // the read will wrap around and read the remaining samples from the start of the clip.
-                    if (InputClip.GetData(mic.buffer, _MicPosition) == false)
-                        return; // do not push a stale buffer on a failed read
+                    using (GetDataMarker.Auto())
+                    {
+                        if (InputClip.GetData(mic.buffer, _MicPosition) == false)
+                            return; // do not push a stale buffer on a failed read
+                    }
                     _MicPosition = (_MicPosition + framesPerBuffer) % InputClip.samples;
-                    OnMicrophoneData?.Invoke(mic.buffer, _MicPosition);
+                    using (DispatchAudioMarker.Auto())
+                        OnMicrophoneData?.Invoke(mic.buffer, _MicPosition);
 
                     mic.Cycle();
                     dataToRead -= framesPerBuffer;

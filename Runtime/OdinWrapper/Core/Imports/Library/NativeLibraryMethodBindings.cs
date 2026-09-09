@@ -351,6 +351,9 @@ namespace OdinNative.Core.Imports
         /// </remarks>
         public OdinError EncoderPop(OdinEncoderHandle encoder, ref byte[] datagram)
         {
+#if UNITY_2022_3_OR_NEWER
+            using var profilerScope = EncoderPopMarker.Auto();
+#endif
             _DbgTrace();
             using (Lock)
             {
@@ -376,6 +379,36 @@ namespace OdinNative.Core.Imports
             }
         }
 
+#if UNITY_2022_3_OR_NEWER
+        private static readonly Unity.Profiling.ProfilerMarker EncoderPushMarker = new Unity.Profiling.ProfilerMarker("ODIN.Encoder.Push");
+        private static readonly Unity.Profiling.ProfilerMarker EncoderPopMarker = new Unity.Profiling.ProfilerMarker("ODIN.Encoder.Pop");
+        private static readonly Unity.Profiling.ProfilerMarker SendDatagramMarker = new Unity.Profiling.ProfilerMarker("ODIN.Room.SendDatagram");
+#endif
+
+        internal OdinError EncoderPop(OdinEncoderHandle encoder, byte[] buffer, out uint count)
+        {
+#if UNITY_2022_3_OR_NEWER
+            using var profilerScope = EncoderPopMarker.Auto();
+#endif
+            _DbgTrace();
+            count = (uint)buffer.Length;
+            using (Lock)
+            {
+                GCHandle pinned = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+                try
+                {
+                    var result = _OdinEncoderPop(encoder, pinned.AddrOfPinnedObject(), ref count);
+                    if (result == OdinError.ODIN_ERROR_SUCCESS && count > buffer.Length)
+                        return OdinError.ODIN_ERROR_ARGUMENT_TOO_SMALL;
+                    return result;
+                }
+                finally
+                {
+                    pinned.Free();
+                }
+            }
+        }
+
         /// <summary>
         /// <see cref="OdinNative.Core.Imports.NativeLibraryMethods.OdinEncoderPushDelegate"/>
         /// </summary>
@@ -384,6 +417,9 @@ namespace OdinNative.Core.Imports
         /// </remarks>
         public OdinError EncoderPush(OdinEncoderHandle encoder, float[] samples)
         {
+#if UNITY_2022_3_OR_NEWER
+            using var profilerScope = EncoderPushMarker.Auto();
+#endif
             _DbgTrace();
             using (Lock)
             {
@@ -811,14 +847,22 @@ namespace OdinNative.Core.Imports
         /// OdinError odin_room_send_datagram(struct OdinRoom *room, const uint8_t* bytes, uint32_t bytes_length);
         /// </remarks>
         public OdinError RoomSendDatagram(OdinRoomHandle room, byte[] datagram)
+            => RoomSendDatagram(room, datagram, (uint)datagram.Length);
+
+        internal OdinError RoomSendDatagram(OdinRoomHandle room, byte[] datagram, uint count)
         {
+            if (count > datagram.Length)
+                throw new ArgumentOutOfRangeException(nameof(count));
+#if UNITY_2022_3_OR_NEWER
+            using var profilerScope = SendDatagramMarker.Auto();
+#endif
             _DbgTrace();
             using (Lock)
             {
                 GCHandle handle = GCHandle.Alloc(datagram, GCHandleType.Pinned);
                 try
                 {
-                    return _OdinRoomSendDatagram(room, handle.AddrOfPinnedObject(), (uint)datagram.Length);
+                    return _OdinRoomSendDatagram(room, handle.AddrOfPinnedObject(), count);
                 }
                 finally
                 {

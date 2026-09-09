@@ -1331,6 +1331,26 @@ namespace OdinNative.Wrapper.Room
             if(encoder == null)
                 return false;
 
+            // Preserve the byte[] virtual send hook for derived rooms.
+            if (GetType() == typeof(Room))
+            {
+                byte[] buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1920);
+                try
+                {
+                    while (true)
+                    {
+                        var result = encoder.Pop(buffer, out uint count);
+                        if (result == OdinError.ODIN_ERROR_NO_DATA) return true;
+                        if (result != OdinError.ODIN_ERROR_SUCCESS) return false;
+                        if (SendDatagram(buffer, count) != OdinError.ODIN_ERROR_SUCCESS) return false;
+                    }
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+
             OdinError error;
             do
             {
@@ -1355,10 +1375,13 @@ namespace OdinNative.Wrapper.Room
         /// <param name="datagram">encoder datagram</param>
         /// <returns><see cref="OdinNative.Core.Imports.NativeBindings.OdinError.ODIN_ERROR_SUCCESS"/> or error</returns>
         protected virtual OdinError SendDatagram(byte[] datagram)
+            => SendDatagram(datagram, (uint)datagram.Length);
+
+        private OdinError SendDatagram(byte[] datagram, uint count)
         {
             if (OdinDefaults.DEBUG) OdinLog.Assert(Handle.IsAlive, $"{nameof(Odin.Library.Methods.RoomSendDatagram)} {nameof(OdinRoomHandle)} is released", silent: true);
 
-            OdinError result = Odin.Library.Methods.RoomSendDatagram(Handle, datagram);
+            OdinError result = Odin.Library.Methods.RoomSendDatagram(Handle, datagram, count);
             if (Utility.IsOk(result) == false)
                 OdinLog.Assert(message: new OdinException(result, $"{nameof(Odin.Library.Methods.RoomSendDatagram)} in {nameof(Room.SendDatagram)} failed (handle {Handle.IsAlive}): {Utility.OdinLastErrorString()} (code {result})").ToString());
             return result;
