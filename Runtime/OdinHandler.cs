@@ -595,6 +595,8 @@ public class OdinHandler : MonoBehaviour
         HandleActionQueue();
     }
 
+    private float[] ReverseBuffer;
+
     private bool RouteAudioProcess(Room room)
     {
         #if !ODIN_UNITY_AUDIO_ENGINE_DISABLED
@@ -607,9 +609,12 @@ public class OdinHandler : MonoBehaviour
         int readBufferSize = Mathf.FloorToInt(Time.fixedUnscaledDeltaTime * sampleRate);
         if (Config.VerboseDebug)
             Debug.Log($"EC for {room.Config.Name} audio process size {readBufferSize}");
-        float[] buffer = new float[readBufferSize];
-        AudioListener.GetOutputData(buffer, 0); // only mono block
-        return room.AudioProcessReverse(buffer);
+        // Reuse the buffer across frames. This runs every FixedUpdate for every joined room,
+        // so allocating here produces steady garbage and avoidable GC spikes on mobile targets.
+        if (ReverseBuffer == null || ReverseBuffer.Length != readBufferSize)
+            ReverseBuffer = new float[readBufferSize];
+        AudioListener.GetOutputData(ReverseBuffer, 0); // only mono block
+        return room.AudioProcessReverse(ReverseBuffer);
         #else
         return false;
         #endif

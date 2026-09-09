@@ -9,7 +9,7 @@ using static OdinNative.Core.Imports.NativeBindings;
 
 namespace OdinNative.Core.Imports
 {
-    internal partial class NativeMethods
+    public partial class NativeMethods
     {
         readonly OdinHandle Handle;
 

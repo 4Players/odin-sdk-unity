@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Core.Handles
 {
-    internal class OdinHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public class OdinHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public string Location { get; }
         public SupportedPlatform Platform { get; }

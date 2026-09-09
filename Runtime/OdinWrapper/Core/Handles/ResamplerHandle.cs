@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Core.Handles
 {
-    class ResamplerHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public class ResamplerHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public static implicit operator IntPtr(ResamplerHandle handle) => handle?.DangerousGetHandle() ?? IntPtr.Zero;
         public uint FromRate;

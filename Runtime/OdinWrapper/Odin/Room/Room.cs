@@ -533,11 +533,18 @@ namespace OdinNative.Odin.Room
         {
             ConnectionState = new KeyValuePair<OdinRoomConnectionState, OdinRoomConnectionStateChangeReason>(@event.state, @event.reason);
             if (ConnectionState.Key.HasFlag(OdinRoomConnectionState.Disconnected))
+            {
                 IsJoined = false;
+            }
             if (ConnectionState.Key.HasFlag(OdinRoomConnectionState.Connected))
+            {
+                IsJoined = true;
                 ConnectionRetry = 0;
+            }
             else
+            {
                 ConnectionRetry++;
+            }
 
             OnConnectionStateChanged?.Invoke(this, new ConnectionStateChangedEventArgs() 
             { 

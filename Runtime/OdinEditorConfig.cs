@@ -15,6 +15,10 @@ namespace OdinNative.Unity
     public class OdinEditorConfig : MonoBehaviour, IOdinApmConfig
     {
         /// <summary>
+        /// UnityEngine.Application.dataPath
+        /// </summary>
+        public static string UnityApplicationDataPath {  get; set; }
+        /// <summary>
         /// Enable additional Logs
         /// </summary>
         public bool Verbose = OdinDefaults.Verbose;
@@ -142,6 +146,8 @@ namespace OdinNative.Unity
 
         void Awake()
         {
+            UnityApplicationDataPath = Application.dataPath;
+
             if (string.IsNullOrEmpty(ClientId))
                 ClientId = string.Join(".", Application.companyName, Application.productName);
         }

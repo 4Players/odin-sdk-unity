@@ -61,7 +61,7 @@ namespace OdinNative.Unity.Audio
         [Tooltip("Is the length of the AudioClip produced by the recording.")]
         [Range(1, 60)]
         [SerializeField]
-        public int AudioClipLength = 1;
+        public int AudioClipLength = 3;
         /// <summary>
         /// Use set <see cref="SampleRate"/> on true, <see cref="OdinEditorConfig.DeviceSampleRate"/> on false
         /// </summary>
@@ -146,7 +146,10 @@ namespace OdinNative.Unity.Audio
         void Start()
         {
             SetupMicrophoneReader();
-#if UNITY_IOS || (UNITY_STANDALONE_OSX && UNITY_6000_0_OR_NEWER)
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (!HasPermission)
+                UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
+#elif UNITY_IOS || (UNITY_STANDALONE_OSX && UNITY_6000_0_OR_NEWER)
             if(!HasPermission)
                 StartCoroutine(RequestAuthorization());
 #endif
@@ -256,10 +259,23 @@ namespace OdinNative.Unity.Audio
 
             foreach (Room room in OdinHandler.Instance.Client.Rooms)
             {
-                if (room?.MicrophoneMedia != null)
-                    room.MicrophoneMedia.AudioPushData(buffer);
-                else if (null != room && room.IsJoined && OdinHandler.Config.Verbose && OdinHandler.Config.VerboseDebug)
-                    Debug.LogWarning($"Room {room.Config.Name} is missing a microphone stream. See Room.CreateMicrophoneMedia");
+                if (room is { IsJoined: true })
+                {
+                    if (null != room.MicrophoneMedia)
+                    {
+                        room.MicrophoneMedia.AudioPushData(buffer);
+                    }
+                    else if(OdinHandler.Config.Verbose &&
+                            OdinHandler.Config.VerboseDebug)
+                    {
+                        Debug.LogWarning(
+                            $"Room {room.Config.Name} is missing a microphone stream. See Room.CreateMicrophoneMedia");
+                    }
+                }
+                else if(OdinHandler.Config.Verbose && OdinHandler.Config.VerboseDebug)
+                {
+                    Debug.LogWarning($"Tried pushing audio to room {room.Config.Name}, but room is invalid or not joined.");
+                }
             }
         }
 
@@ -286,8 +302,9 @@ namespace OdinNative.Unity.Audio
 
         void Update()
         {
-            if (IsInputDeviceConnected == false) return;
-
+            // The permission check has to come first: some platforms, Android among them, enumerate
+            // no capture devices at all until the grant, so gating this behind IsInputDeviceConnected
+            // means a permission granted after startup would never be picked up.
             if (InitialPermission == false)
             {
                 /* If the app targets Android 11 or higher and isn't used for a few months,
@@ -296,14 +313,15 @@ namespace OdinNative.Unity.Audio
                 if (HasPermission)
                 {
                     InitialPermission = HasPermission; // Override because we should not need the check this lifetime anymore. 
-                    ResetDevice(InputDevice);
-                    return;
+                    ResetDevice(InputDevice); // full re-setup, the device list may have changed with the grant
                 }
                 /* if the user taps Deny for a specific permission more than once during the app's lifetime on a device,
                  * the user doesn't see the system permissions dialog even if the app requests that permission again.
                  * The user's action implies "don't ask again."*/
-                else return;
+                return;
             }
+
+            if (IsInputDeviceConnected == false) return;
 
             Flush();
             TestLoopback();

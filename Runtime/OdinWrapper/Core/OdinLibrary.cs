@@ -15,12 +15,14 @@ namespace OdinNative.Core
     /// </summary>
     public static class OdinLibrary
     {
+        public static OdinLibraryParameters LibraryParameters { get; set; } = new OdinLibraryParameters();
+
         private static OdinHandle Handle;
         private static NativeMethods NativeMethods;
         private static ReaderWriterLock InitializedLock = new ReaderWriterLock();
         private static bool ProcessExitRegistered = false;
 
-        internal static NativeMethods Api
+        public static NativeMethods Api
         {
             get
             {
@@ -33,7 +35,7 @@ namespace OdinNative.Core
                         try
                         {
                             if (IsInitialized == false)
-                                Initialize();
+                                Initialize(LibraryParameters);
                         }
                         finally
                         {
@@ -69,7 +71,7 @@ namespace OdinNative.Core
         /// </remarks>
         public static void Initialize()
         {
-            Initialize(new OdinLibraryParameters());
+            Initialize(LibraryParameters);
         }
 
         /// <summary>

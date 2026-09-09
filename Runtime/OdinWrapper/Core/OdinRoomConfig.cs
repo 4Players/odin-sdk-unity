@@ -85,11 +85,12 @@ namespace OdinNative.Core
         /// <summary>
         /// Enable or disable the pre amplifier
         /// </summary>
-        public bool PreAmplifier
-        {
-            get { return ApmConfig.pre_amplifier; }
-            set { ApmConfig.pre_amplifier = value; }
-        }
+        /// <remarks>
+        /// The native ODIN APM has no pre amplifier since 1.7.0. The value is kept for source
+        /// compatibility and no longer reaches the native library.
+        /// </remarks>
+        [Obsolete("The native APM has no pre amplifier. Setting this has no effect.")]
+        public bool PreAmplifier { get; set; }
 
         /// <summary>
         /// Set the aggressiveness of the suppression
@@ -110,10 +111,23 @@ namespace OdinNative.Core
         /// <summary>
         /// Enable or disable the gain controller
         /// </summary>
+        /// <remarks>
+        /// Convenience wrapper around <see cref="GainControllerVersion"/>. Enabling selects
+        /// <see cref="OdinGainControllerVersion.V2"/>, the recommended version.
+        /// </remarks>
         public bool GainController
         {
-            get { return ApmConfig.gain_controller; }
-            set { ApmConfig.gain_controller = value; }
+            get { return ApmConfig.gain_controller_version != OdinGainControllerVersion.None; }
+            set { ApmConfig.gain_controller_version = value ? OdinGainControllerVersion.V2 : OdinGainControllerVersion.None; }
+        }
+
+        /// <summary>
+        /// Set the version of the gain controller (AGC) to use
+        /// </summary>
+        public OdinGainControllerVersion GainControllerVersion
+        {
+            get { return ApmConfig.gain_controller_version; }
+            set { ApmConfig.gain_controller_version = value; }
         }
 
         internal bool RemoteConfig { get; private set; }
@@ -122,7 +136,7 @@ namespace OdinNative.Core
 
         private OdinApmConfig ApmConfig = new OdinApmConfig();
 
-        private OdinRoomConfig(OdinApmConfig config) : this(config.voice_activity_detection, config.voice_activity_detection_attack_probability, config.voice_activity_detection_release_probability, config.volume_gate, config.volume_gate_attack_loudness, config.volume_gate_release_loudness, config.echo_canceller, config.high_pass_filter, config.pre_amplifier, config.noise_suppression_level, config.transient_suppressor, config.gain_controller, true) { }
+        private OdinRoomConfig(OdinApmConfig config) : this(config.voice_activity_detection, config.voice_activity_detection_attack_probability, config.voice_activity_detection_release_probability, config.volume_gate, config.volume_gate_attack_loudness, config.volume_gate_release_loudness, config.echo_canceller, config.high_pass_filter, false, config.noise_suppression_level, config.transient_suppressor, config.gain_controller_version, true) { }
         /// <summary>
         /// Audio processing configuration of an ODIN room
         /// </summary>
@@ -151,16 +165,16 @@ namespace OdinNative.Core
             OdinNoiseSuppressionLevel noiseSuppressionLevel = OdinNoiseSuppressionLevel.None,
             bool transientSuppressor = false,
             bool gainController = false)
-            : this(voiceActivityDetection, voiceActivityDetectionAttackProbability, voiceActivityDetectionReleaseProbability, volumeGate, volumeGateAttackLoudness, volumeGateReleaseLoudness, echoCanceller, highPassFilter, preAmplifier, noiseSuppressionLevel, transientSuppressor, gainController, false)
+            : this(voiceActivityDetection, voiceActivityDetectionAttackProbability, voiceActivityDetectionReleaseProbability, volumeGate, volumeGateAttackLoudness, volumeGateReleaseLoudness, echoCanceller, highPassFilter, preAmplifier, noiseSuppressionLevel, transientSuppressor, gainController ? OdinGainControllerVersion.V2 : OdinGainControllerVersion.None, false)
         {
         }
         /// <summary>
         /// Audio processing configuration of an ODIN room
         /// </summary>
         /// <param name="odinApm">Interface for Audio processing configuration of an ODIN room</param>
-        public OdinRoomConfig(IOdinApmConfig odinApm) : this(odinApm.VoiceActivityDetection, odinApm.VoiceActivityDetectionAttackProbability, odinApm.VoiceActivityDetectionReleaseProbability, odinApm.VolumeGate, odinApm.VolumeGateAttackLoudness, odinApm.VolumeGateReleaseLoudness, odinApm.EchoCanceller, odinApm.HighPassFilter, odinApm.PreAmplifier, odinApm.NoiseSuppressionLevel, odinApm.TransientSuppressor, odinApm.GainController) { }
+        public OdinRoomConfig(IOdinApmConfig odinApm) : this(odinApm.VoiceActivityDetection, odinApm.VoiceActivityDetectionAttackProbability, odinApm.VoiceActivityDetectionReleaseProbability, odinApm.VolumeGate, odinApm.VolumeGateAttackLoudness, odinApm.VolumeGateReleaseLoudness, odinApm.EchoCanceller, odinApm.HighPassFilter, odinApm.PreAmplifier, odinApm.NoiseSuppressionLevel, odinApm.TransientSuppressor, odinApm.GainController ? OdinGainControllerVersion.V2 : OdinGainControllerVersion.None) { }
         internal OdinRoomConfig(bool voiceActivityDetection, float voiceActivityDetectionAttackProbability, float voiceActivityDetectionReleaseProbability, bool volumeGate, float volumeGateAttackLoudness,
-            float volumeGateReleaseLoudness, bool echoCanceller, bool highPassFilter, bool preAmplifier, OdinNoiseSuppressionLevel noiseSuppressionLevel, bool transientSuppressor, bool gainController, bool remote = false)
+            float volumeGateReleaseLoudness, bool echoCanceller, bool highPassFilter, bool preAmplifier, OdinNoiseSuppressionLevel noiseSuppressionLevel, bool transientSuppressor, OdinGainControllerVersion gainControllerVersion, bool remote = false)
         {
             VoiceActivityDetection = voiceActivityDetection;
             VoiceActivityDetectionAttackProbability = voiceActivityDetectionAttackProbability;
@@ -170,10 +184,12 @@ namespace OdinNative.Core
             VolumeGateReleaseLoudness = volumeGateReleaseLoudness;
             EchoCanceller = echoCanceller;
             HighPassFilter = highPassFilter;
+#pragma warning disable CS0618 // kept for source compatibility
             PreAmplifier = preAmplifier;
+#pragma warning restore CS0618
             NoiseSuppressionLevel = noiseSuppressionLevel;
             TransientSuppressor = transientSuppressor;
-            GainController = gainController;
+            GainControllerVersion = gainControllerVersion;
             RemoteConfig = remote;
         }
 
@@ -195,7 +211,7 @@ namespace OdinNative.Core
                 Odin.OdinDefaults.PreAmplifier,
                 Odin.OdinDefaults.NoiseSuppressionLevel,
                 Odin.OdinDefaults.TransientSuppressor,
-                Odin.OdinDefaults.GainController);
+                Odin.OdinDefaults.GainControllerVersion);
         }
 
         /// <summary>
@@ -213,10 +229,12 @@ namespace OdinNative.Core
                 $", {nameof(VolumeGateReleaseLoudness)} {VolumeGateReleaseLoudness}" +
                 $", {nameof(EchoCanceller)} {EchoCanceller}" +
                 $", {nameof(HighPassFilter)} {HighPassFilter}" +
+#pragma warning disable CS0618 // kept for source compatibility
                 $", {nameof(PreAmplifier)} {PreAmplifier}" +
+#pragma warning restore CS0618
                 $", {nameof(NoiseSuppressionLevel)} {Enum.GetName(typeof(OdinNoiseSuppressionLevel), NoiseSuppressionLevel)}" +
                 $", {nameof(TransientSuppressor)} {TransientSuppressor}" +
-                $", {nameof(GainController)} {GainController}" +
+                $", {nameof(GainControllerVersion)} {GainControllerVersion}" +
                 $", {nameof(RemoteConfig)} {RemoteConfig}";
         }
     }

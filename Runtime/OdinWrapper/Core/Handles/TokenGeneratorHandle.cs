@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Core.Handles
 {
-    class TokenGeneratorHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public class TokenGeneratorHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public static implicit operator IntPtr(TokenGeneratorHandle handle) => handle?.DangerousGetHandle() ?? IntPtr.Zero;
         internal NativeMethods.OdinTokenGeneratorDestroyDelegate Free;

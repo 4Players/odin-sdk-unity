@@ -10,7 +10,7 @@ using static OdinNative.Core.Imports.NativeBindings;
 
 namespace OdinNative.Core.Imports
 {
-    internal partial class NativeMethods
+    public partial class NativeMethods
     {
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate bool OdinStartupDelegate(string version);
@@ -35,7 +35,7 @@ namespace OdinNative.Core.Imports
         /// </summary>
         /// <remarks>Use <see cref="OdinNative.Core.Imports.NativeBindings.OdinVersion"/> to pass the `version` argument.</remarks>
         /// <returns>false on Version mismatch</returns>
-        private bool Startup(string version = OdinNative.Core.Imports.NativeBindings.OdinVersion)
+        internal bool Startup(string version = OdinNative.Core.Imports.NativeBindings.OdinVersion)
         {
             using (Lock)
                 return _OdinStartup(version);
@@ -50,7 +50,7 @@ namespace OdinNative.Core.Imports
         /// application.
         /// </summary>
         /// <remarks>Make sure to use the same settings on consecutive calls of this function.</remarks>
-        private bool StartupEx(NativeBindings.OdinAudioStreamConfig config, string version = OdinNative.Core.Imports.NativeBindings.OdinVersion)
+        internal bool StartupEx(NativeBindings.OdinAudioStreamConfig config, string version = OdinNative.Core.Imports.NativeBindings.OdinVersion)
         {
             using (Lock)
                 return _OdinStartupEx(version, config);
@@ -62,7 +62,7 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// Stops native ODIN runtime threads that were previously started with <see cref="Startup"/>
         /// </summary>
-        private void Shutdown()
+        internal void Shutdown()
         {
             using (Lock)
                 _OdinShutdown();
@@ -77,7 +77,7 @@ namespace OdinNative.Core.Imports
         /// <param name="key">access key</param>
         /// <param name="capacity">max string buffer size</param>
         /// <returns>string length or error code that is readable with <see cref="ErrorFormat"/></returns>
-        internal uint GenerateAccessKey(out string key, int capacity = 128)
+        public uint GenerateAccessKey(out string key, int capacity = 128)
         {
             using (Lock)
             {
@@ -94,7 +94,7 @@ namespace OdinNative.Core.Imports
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate uint OdinAccessKeyPublicKeyDelegate(string accessKey, [In, Out][MarshalAs(UnmanagedType.LPStr)] StringBuilder stringBuffer, [In] int bufferLength);
         readonly OdinAccessKeyPublicKeyDelegate _OdinAccessKeyPublicKey;
-        private uint LoadPublicKey(string accessKey, out string key, int capacity = 128)
+        public uint LoadPublicKey(string accessKey, out string key, int capacity = 128)
         {
             using (Lock)
             {
@@ -111,7 +111,7 @@ namespace OdinNative.Core.Imports
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate uint OdinAccessKeySecretKeyDelegate(string accessKey, [In, Out][MarshalAs(UnmanagedType.LPStr)] StringBuilder stringBuffer, [In] int bufferLength);
         readonly OdinAccessKeySecretKeyDelegate _OdinAccessKeySecretKey;
-        private uint LoadSecretKey(string accessKey, out string key, int capacity = 128)
+        public uint LoadSecretKey(string accessKey, out string key, int capacity = 128)
         {
             using (Lock)
             {

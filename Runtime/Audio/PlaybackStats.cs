@@ -10,9 +10,13 @@ namespace OdinNative.Unity.Audio
         private PlaybackComponent currentPlayback;
         private Core.Imports.NativeBindings.OdinAudioStreamStats currentStats;
 
+        public uint PacketsTotal;
         public uint PacketsProcessed;
         public uint PacketsDroppedEarly;
         public uint PacketsDroppedLate;
+        public uint PacketsDropped;
+        public uint PacketsInvalid;
+        public uint PacketsRepeated;
         public uint PacketsLost;
         public AnimationCurve PacketsAvailableDifference;
 
@@ -27,10 +31,14 @@ namespace OdinNative.Unity.Audio
             if (Application.isEditor == false || currentPlayback == null) return;
 
             currentStats = currentPlayback.GetOdinAudioStreamStats();
-            PacketsProcessed = currentStats.jitter_packets_processed;
-            PacketsDroppedEarly = currentStats.jitter_packets_dropped_too_early;
-            PacketsDroppedLate = currentStats.jitter_packets_dropped_too_late;
-            PacketsLost = currentStats.jitter_packets_lost;
+            PacketsTotal = currentStats.packets_total;
+            PacketsProcessed = currentStats.packets_processed;
+            PacketsDroppedEarly = currentStats.packets_arrived_too_early;
+            PacketsDroppedLate = currentStats.packets_arrived_too_late;
+            PacketsDropped = currentStats.packets_dropped;
+            PacketsInvalid = currentStats.packets_invalid;
+            PacketsRepeated = currentStats.packets_repeated;
+            PacketsLost = currentStats.packets_lost;
             var failed = PacketsDroppedEarly + PacketsDroppedLate + PacketsLost;
             if (failed > 0 && !PauseAnimationCurve)
             {
@@ -42,6 +50,9 @@ namespace OdinNative.Unity.Audio
                 $"{nameof(PacketsProcessed)} {PacketsProcessed}," +
                 $"{nameof(PacketsDroppedEarly)} {PacketsDroppedEarly}," +
                 $"{nameof(PacketsDroppedLate)} {PacketsDroppedLate}," +
+                $"{nameof(PacketsDropped)} {PacketsDropped}," +
+                $"{nameof(PacketsInvalid)} {PacketsInvalid}," +
+                $"{nameof(PacketsRepeated)} {PacketsRepeated}," +
                 $"{nameof(PacketsLost)} {PacketsLost}");
         }
     }

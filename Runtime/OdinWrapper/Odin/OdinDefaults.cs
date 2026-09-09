@@ -127,6 +127,7 @@ namespace OdinNative.Odin
         /// <summary>
         /// Idicates whether the ApmConfig setting is enabled by default
         /// </summary>
+        /// <remarks>The native APM has no pre amplifier since 1.7.0; kept for source compatibility.</remarks>
         public static bool PreAmplifier = false;
         /// <summary>
         /// Idicates the level of noise suppression ApmConfig setting by default
@@ -139,7 +140,12 @@ namespace OdinNative.Odin
         /// <summary>
         /// Idicates whether the ApmConfig setting is enabled by default
         /// </summary>
-        public static bool GainController = false;
+        /// <remarks>Convenience flag for <see cref="GainControllerVersion"/>.</remarks>
+        public static bool GainController = true;
+        /// <summary>
+        /// Indicates the version of the gain controller (AGC) used by default
+        /// </summary>
+        public static Core.Imports.NativeBindings.OdinGainControllerVersion GainControllerVersion = Core.Imports.NativeBindings.OdinGainControllerVersion.V2;
         #endregion Apm
     }
 }

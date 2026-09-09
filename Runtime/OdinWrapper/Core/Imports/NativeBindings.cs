@@ -16,12 +16,31 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// ODIN_VERSION
         /// </summary>
-        public const string OdinVersion = "1.7.4";
+        public const string OdinVersion = "1.7.7";
 
         /// <summary>
         /// Block_SAMPLE_RATE
         /// </summary>
         public const UInt32 BlockSamplerate = 48000;
+
+        /// <summary>
+        /// Valid versions of the gain controller (AGC)
+        /// </summary>
+        public enum OdinGainControllerVersion
+        {
+            /// <summary>
+            /// AGC is disabled; the signal is not modified
+            /// </summary>
+            None,
+            /// <summary>
+            /// Legacy AGC with adaptive digital gain control and a limiter
+            /// </summary>
+            V1,
+            /// <summary>
+            /// Enhanced AGC with improved digital processing and an input volume controller
+            /// </summary>
+            V2,
+        }
 
         /// <summary>
         /// Valid levels for aggressiveness of the noise suppression
@@ -53,30 +72,40 @@ namespace OdinNative.Core.Imports
             VeryHigh,
         }
 
-        internal struct OdinApmConfig
+        /// <remarks>
+        /// Must mirror OdinApmConfig in odin.h exactly. The native bools are a single byte each,
+        /// so every bool needs UnmanagedType.I1 - the default marshalling of 4 bytes shifts every
+        /// following field and silently corrupts the whole configuration.
+        /// </remarks>
+        [StructLayout(LayoutKind.Sequential)]
+        public struct OdinApmConfig
         {
+            [MarshalAs(UnmanagedType.I1)]
             public bool voice_activity_detection;
             public float voice_activity_detection_attack_probability;
             public float voice_activity_detection_release_probability;
+            [MarshalAs(UnmanagedType.I1)]
             public bool volume_gate;
             public float volume_gate_attack_loudness;
             public float volume_gate_release_loudness;
+            [MarshalAs(UnmanagedType.I1)]
             public bool echo_canceller;
+            [MarshalAs(UnmanagedType.I1)]
             public bool high_pass_filter;
-            public bool pre_amplifier;
             public OdinNoiseSuppressionLevel noise_suppression_level;
+            [MarshalAs(UnmanagedType.I1)]
             public bool transient_suppressor;
-            public bool gain_controller;
+            public OdinGainControllerVersion gain_controller_version;
         }
 
-        internal enum OdinTokenAudience
+        public enum OdinTokenAudience
         {
             None,
             Gateway,
             Sfu
         }
 
-        internal struct OdinTokenOptions
+        public struct OdinTokenOptions
         {
 #pragma warning disable CS0649 // never assigned to, and will always have
             public string customer; // Customer identifier should not be set - unless connecting directly to an ODIN server
@@ -87,7 +116,7 @@ namespace OdinNative.Core.Imports
 
         #region EventStructs
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent
+        public struct OdinEvent
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.I4)]
@@ -129,7 +158,7 @@ namespace OdinNative.Core.Imports
             #endregion OdinEvent union
         };
 
-        internal enum OdinEventTag
+        public enum OdinEventTag
         {
             OdinEvent_Joined,
             OdinEvent_PeerJoined,
@@ -199,33 +228,58 @@ namespace OdinNative.Core.Imports
         /// <summary>
         /// Audio stream statistics.
         /// </summary>
+        /// <remarks>
+        /// Must mirror OdinAudioStreamStats in odin.h exactly. The native struct holds eight
+        /// uint32 fields (32 bytes); anything smaller overruns the caller's buffer, because the
+        /// native side writes the full struct through the out parameter.
+        /// </remarks>
         [StructLayout(LayoutKind.Explicit)]
         public struct OdinAudioStreamStats
         {
             /// <summary>
-            /// The number of packets processed by the medias jitter buffer.
+            /// The total number of packets seen by the medias jitter buffer.
             /// </summary>
             [FieldOffset(0)]
-            public uint jitter_packets_processed;
+            public uint packets_total;
+            /// <summary>
+            /// The number of packets processed by the medias jitter buffer.
+            /// </summary>
+            [FieldOffset(4)]
+            public uint packets_processed;
             /// <summary>
             /// The number of packets dropped because they seemed to arrive too early.
             /// </summary>
-            [FieldOffset(4)]
-            public uint jitter_packets_dropped_too_early;
-            /// <summary>
-            /// The number of packets processed because they seemed to arrive too late.
-            /// </summary>
             [FieldOffset(8)]
-            public uint jitter_packets_dropped_too_late;
+            public uint packets_arrived_too_early;
+            /// <summary>
+            /// The number of packets dropped because they seemed to arrive too late.
+            /// </summary>
+            [FieldOffset(12)]
+            public uint packets_arrived_too_late;
+            /// <summary>
+            /// The number of packets dropped due to a jitter buffer reset.
+            /// </summary>
+            [FieldOffset(16)]
+            public uint packets_dropped;
+            /// <summary>
+            /// The number of packets marked as invalid.
+            /// </summary>
+            [FieldOffset(20)]
+            public uint packets_invalid;
+            /// <summary>
+            /// The number of packets marked as duplicates.
+            /// </summary>
+            [FieldOffset(24)]
+            public uint packets_repeated;
             /// <summary>
             /// The number of packets marked as lost during transmission.
             /// </summary>
-            [FieldOffset(12)]
-            public uint jitter_packets_lost;
+            [FieldOffset(28)]
+            public uint packets_lost;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_JoinedData
+        public struct OdinEvent_JoinedData
         {
             [FieldOffset(0)]
             public IntPtr room_id;
@@ -250,7 +304,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_PeerJoinedData
+        public struct OdinEvent_PeerJoinedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -268,7 +322,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_PeerLeftData
+        public struct OdinEvent_PeerLeftData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -276,7 +330,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_PeerUserDataChangedData
+        public struct OdinEvent_PeerUserDataChangedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -295,7 +349,7 @@ namespace OdinNative.Core.Imports
         /// Note, that the stream is read only. Use OdinAudioReadData if needed.
         /// </remarks>
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_MediaAddedData
+        public struct OdinEvent_MediaAddedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -305,7 +359,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_MediaRemovedData
+        public struct OdinEvent_MediaRemovedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -315,7 +369,7 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_MediaActiveStateChangedData
+        public struct OdinEvent_MediaActiveStateChangedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -323,11 +377,12 @@ namespace OdinNative.Core.Imports
             [FieldOffset(8)]
             public IntPtr media_handle;
             [FieldOffset(16)]
+            [MarshalAs(UnmanagedType.I1)]
             public bool active;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_RoomUserDataChangedData
+        public struct OdinEvent_RoomUserDataChangedData
         {
             [FieldOffset(0)]
             public IntPtr room_user_data;
@@ -337,19 +392,20 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_RoomConnectionStateChangedData
+        public struct OdinEvent_RoomConnectionStateChangedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.I4)]
             public OdinRoomConnectionState state;
-            [FieldOffset(8)]
+            // Both natives are 4-byte enums, so reason sits directly behind state.
+            [FieldOffset(4)]
             [MarshalAs(UnmanagedType.I4)]
             public OdinRoomConnectionStateChangeReason reason;
 
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct OdinEvent_MessageReceivedData
+        public struct OdinEvent_MessageReceivedData
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.U8)]
@@ -401,19 +457,19 @@ namespace OdinNative.Core.Imports
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct OdinAudioStreamConfig
+        public struct OdinAudioStreamConfig
         {
             public uint sample_rate;
             public byte channel_count;
         }
 
-        internal enum OdinChannelLayout : byte
+        public enum OdinChannelLayout : byte
         {
             OdinChannelLayout_Mono = 1,
             OdinChannelLayout_Stereo
         }
 
-        internal enum OdinMediaStreamType
+        public enum OdinMediaStreamType
         {
             OdinMediaStreamType_Audio,
             OdinMediaStreamType_Video,

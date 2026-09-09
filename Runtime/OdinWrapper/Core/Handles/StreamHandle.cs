@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace OdinNative.Core.Handles
 {
-    class StreamHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public class StreamHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public static implicit operator IntPtr(StreamHandle handle) => handle?.DangerousGetHandle() ?? IntPtr.Zero;
 

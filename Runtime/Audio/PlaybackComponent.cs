@@ -46,7 +46,7 @@ namespace OdinNative.Unity.Audio
         ///     the <see cref="LastPlaybackUpdateTime" /> to determine if we have hit this value.
         /// </summary>
         private const float MaxFrameLossTime = 0.2f;
-        
+
         /// <summary>
         ///     The Unity AudioSource component for playback
         /// </summary>
@@ -84,7 +84,7 @@ namespace OdinNative.Unity.Audio
         ///     Could potentially also be filled asynchronously, if implementation is changed to async.
         /// </summary>
         private float[] _ClipBuffer;
-        
+
         private bool _IsDestroying;
         private long _MediaStreamId;
         private ulong _PeerId;
@@ -93,9 +93,9 @@ namespace OdinNative.Unity.Audio
         ///     Buffer used to read data from the media stream.
         /// </summary>
         private float[] _ReadBuffer;
-        
+
         private string _RoomName;
-        
+
         /// <summary>
         ///     The end position of the buffered stream audio frames inside the Spatial Audio Clip. We use this to append
         ///     a new Audio Frame from the Media Stream.
@@ -108,6 +108,7 @@ namespace OdinNative.Unity.Audio
         private float LastPlaybackUpdateTime;
 
         private PlaybackStream _playbackMedia;
+
         private PlaybackStream PlaybackMedia
         {
             get => _playbackMedia;
@@ -190,7 +191,7 @@ namespace OdinNative.Unity.Audio
             _MediaStreamId = mediaId;
             PlaybackMedia = OdinMedia;
         }
-        
+
 
         /// <summary>
         ///     Number of Samples in the <see cref="SpatialClip" /> used for playback.
@@ -210,14 +211,12 @@ namespace OdinNative.Unity.Audio
         {
             get
             {
-                
-                #if !ODIN_UNITY_AUDIO_ENGINE_DISABLED
+#if !ODIN_UNITY_AUDIO_ENGINE_DISABLED
                 return AudioSettings.outputSampleRate;
-                #else
+#else
                 Debug.Log("ODIN: PlaybackComponent will only work with the Unity Audio Engine. If you'd like to support other Audio Engines like Wwise or FMOD, please check out our guides at https://www.4players.io/odin/guides/unity/. Returning default value.");
                 return (int) OdinDefaults.RemoteSampleRate;
-                #endif
-                
+#endif
             }
         }
 
@@ -250,6 +249,8 @@ namespace OdinNative.Unity.Audio
         {
             bool canRead = !(_IsDestroying || PlaybackMedia == null || PlaybackMedia.HasErrors ||
                              RedirectPlaybackAudio == false) && OutSampleRate > 0;
+            int numClipSamples = ClipSamples;
+
             if (canRead)
             {
                 // readBufferSize is based on the fixed unscaled delta time - we want to read "one frame" from the media stream
@@ -282,13 +283,13 @@ namespace OdinNative.Unity.Audio
                         for (int i = 0; i < readBufferSize; i++)
                         {
                             int writePosition = _FrameBufferEndPos + i;
-                            writePosition %= ClipSamples;
+                            writePosition %= numClipSamples;
                             _ClipBuffer[writePosition] = _ReadBuffer[i];
                         }
 
                         // Update the buffer end position
                         _FrameBufferEndPos += readBufferSize;
-                        _FrameBufferEndPos %= ClipSamples;
+                        _FrameBufferEndPos %= numClipSamples;
                         // Update the last time we wrote into the playback clip buffer
                         LastPlaybackUpdateTime = Time.time;
                     }
@@ -326,7 +327,7 @@ namespace OdinNative.Unity.Audio
             int cleanUpCount = GetBufferDistance(_FrameBufferEndPos, CurrentClipPos);
             for (int i = 0; i < cleanUpCount; i++)
             {
-                int cleanUpIndex = (_FrameBufferEndPos + i) % ClipSamples;
+                int cleanUpIndex = (_FrameBufferEndPos + i) % numClipSamples;
                 _ClipBuffer[cleanUpIndex] = 0.0f;
             }
 
@@ -373,7 +374,7 @@ namespace OdinNative.Unity.Audio
 
             _FrameBufferEndPos = GetTargetFrameBufferEndPosition();
             _FrameBufferEndPos %= ClipSamples;
-        }    
+        }
 
         private void OnDisable()
         {
@@ -394,7 +395,7 @@ namespace OdinNative.Unity.Audio
                     .RemotePeers[PeerId]?
                     .Medias.Free(MediaStreamId);
         }
-        
+
         public NativeBindings.OdinAudioStreamStats GetOdinAudioStreamStats()
         {
             if (PlaybackMedia.AudioStats(out NativeBindings.OdinAudioStreamStats stats))
@@ -415,7 +416,7 @@ namespace OdinNative.Unity.Audio
         /// <returns>The targeted frame buffer end position in time samples</returns>
         private int GetTargetFrameBufferEndPosition()
         {
-            return (int) (CurrentClipPos + TargetBufferSize * OutSampleRate);
+            return (int)(CurrentClipPos + TargetBufferSize * OutSampleRate);
         }
 
         /// <summary>
