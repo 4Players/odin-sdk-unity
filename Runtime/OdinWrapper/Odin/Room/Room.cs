@@ -175,7 +175,7 @@ namespace OdinNative.Wrapper.Room
         /// </summary>
         public event OnPeerJoinedDelegate OnPeerJoined;
         /// <summary>
-        /// Odin peer left
+        /// A remote peer left, or was removed locally when this session ended.
         /// </summary>
         public event OnPeerLeftDelegate OnPeerLeft;
         /// <summary>
@@ -440,9 +440,9 @@ namespace OdinNative.Wrapper.Room
 
             // Attempt every release even when a resource's Dispose override throws. Cleanup can
             // run in a native callback's finally block, so errors must stay on the managed side.
-            RunCleanup(UnsubscribeEvents, nameof(UnsubscribeEvents));
             RunCleanup(FreeEncoders, nameof(FreeEncoders));
             RunCleanup(FreePeers, nameof(FreePeers));
+            RunCleanup(UnsubscribeEvents, nameof(UnsubscribeEvents));
             RunCleanup(() => CryptoCipher?.Dispose(), nameof(CryptoCipher));
             CryptoCipher = null;
 
@@ -778,6 +778,10 @@ namespace OdinNative.Wrapper.Room
 
             try
             {
+                // The next join sends a fresh peer snapshot. Retire the old session before its
+                // status event, so consumers remove old decoders before seeing any new joins.
+                if (_nativeClosed || string.Equals(values.status, "Joining", StringComparison.OrdinalIgnoreCase))
+                    FreePeers();
                 OnRoomStatusChanged?.Invoke(this, string.IsNullOrEmpty(values.status) ? "unknown" : values.status);
             }
             finally
@@ -802,7 +806,15 @@ namespace OdinNative.Wrapper.Room
 
         private void PeerLeftRpc(PeerLeftObjectContainer values)
         {
-            OnPeerLeft?.Invoke(this, values);
+            if (!RemotePeers.TryRemove(values.peer_id, out PeerEntity peer)) return;
+            RunCleanup(() => peer.Dispose(), nameof(PeerLeftRpc));
+            lock (_ListenChannelMasksLock)
+                _ListenChannelMaskOverrides.Remove(values.peer_id);
+
+            var handlers = OnPeerLeft;
+            if (handlers == null) return;
+            foreach (OnPeerLeftDelegate handler in handlers.GetInvocationList())
+                RunCleanup(() => handler(this, values), nameof(OnPeerLeft));
         }
 
         private void ChangeSelfRpc(ChangeSelfObjectContainer values)
@@ -814,6 +826,7 @@ namespace OdinNative.Wrapper.Room
 
         private void PeerJoinedRpc(PeerJoinedObjectContainer values)
         {
+            if (Volatile.Read(ref _disposeStarted) != 0) return;
             OnPeerJoined?.Invoke(this, values);
         }
 
@@ -1440,10 +1453,8 @@ namespace OdinNative.Wrapper.Room
 
         private void FreePeers()
         {
-            foreach (var kvp in RemotePeers)
-                RunCleanup(() => kvp.Value.Dispose(), nameof(FreePeers));
-
-            RemotePeers.Clear();
+            foreach (uint peerId in RemotePeers.Keys)
+                PeerLeftRpc(new PeerLeftObjectContainer { peer_id = peerId });
         }
 
         private bool disposedValue;

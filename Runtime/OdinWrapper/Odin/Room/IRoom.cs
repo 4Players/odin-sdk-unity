@@ -91,7 +91,7 @@ namespace OdinNative.Wrapper
         /// </summary>
         event OnPeerJoinedDelegate OnPeerJoined;
         /// <summary>
-        /// Odin peer left
+        /// A remote peer left, or was removed locally when this session ended.
         /// </summary>
         event OnPeerLeftDelegate OnPeerLeft;
         /// <summary>

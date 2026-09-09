@@ -302,6 +302,7 @@ namespace OdinNative.Unity
         }
 
         private ConcurrentQueue<KeyValuePair<object, EventArgs>> EventQueue;
+        private readonly HashSet<uint> _announcedPeers = new HashSet<uint>();
         private readonly Dictionary<uint, List<OdinDecoder>> _decoderRegistry = new Dictionary<uint, List<OdinDecoder>>();
 
         /// <summary>
@@ -326,6 +327,7 @@ namespace OdinNative.Unity
         /// <summary>
         /// Event <see cref="OdinNative.Wrapper.Room.Room.OnPeerLeft"/> redirected as Unity event
         /// </summary>
+        /// <remarks>Also raised for all announced peers when the local session is lost or disabled.</remarks>
         public PeerLeftProxy OnPeerLeft;
         /// <summary>
         /// Event <see cref="OdinNative.Wrapper.Room.Room.OnMessageReceived"/> redirected as Unity event
@@ -456,7 +458,7 @@ namespace OdinNative.Unity
         /// <param name="mediaId">media id of the created decoder</param>
         public virtual void ExtraOnNativeDecoderCreated(object sender, uint peerId, ulong mediaId)
         {
-            var room = sender as Room;
+            var room = sender as Room ?? (ReferenceEquals(sender, this) ? _Room as Room : null);
             var args = new DecoderAddedEventArgs()
             {
                 PeerId = peerId,
@@ -490,7 +492,7 @@ namespace OdinNative.Unity
         /// <param name="mediaId">media id of the removed decoder</param>
         public virtual void ExtraOnNativeDecoderRemoved(object sender, uint peerId, ulong mediaId)
         {
-            var room = sender as Room;
+            var room = sender as Room ?? (ReferenceEquals(sender, this) ? _Room as Room : null);
             var args = new DecoderRemovedEventArgs()
             {
                 MediaId = mediaId,
@@ -519,7 +521,7 @@ namespace OdinNative.Unity
         protected virtual void Room_OnRoomJoined(object sender, JoinedObjectContainer args)
         {
             EventQueue.Enqueue(new KeyValuePair<object, System.EventArgs>(
-                this,
+                sender,
                 new RoomJoinedEventArgs() { Room = sender as IRoom, customer = args.customer, own_peer_id = args.own_peer_id, room_name = args.room_name }));
         }
 
@@ -665,16 +667,23 @@ namespace OdinNative.Unity
             if (EventQueue == null) return;
             while (EventQueue.TryDequeue(out KeyValuePair<object, System.EventArgs> uEvent))
             {
+                if (_Room == null || !ReferenceEquals(uEvent.Key, _Room)) continue;
                 if (uEvent.Value is RoomStateChangedEventArgs)
                     OnRoomStateChanged?.Invoke(this, uEvent.Value as RoomStateChangedEventArgs);
                 //Room
                 else if (uEvent.Value is RoomJoinedEventArgs)
                     OnRoomJoined?.Invoke(this, uEvent.Value as RoomJoinedEventArgs);
                 //SubRoom
-                else if (uEvent.Value is PeerJoinedEventArgs)
-                    OnPeerJoined?.Invoke(this, uEvent.Value as PeerJoinedEventArgs);
-                else if (uEvent.Value is PeerLeftEventArgs)
-                    OnPeerLeft?.Invoke(this, uEvent.Value as PeerLeftEventArgs);
+                else if (uEvent.Value is PeerJoinedEventArgs joined)
+                {
+                    if (_announcedPeers.Add(joined.peer_id))
+                        OnPeerJoined?.Invoke(this, joined);
+                }
+                else if (uEvent.Value is PeerLeftEventArgs left)
+                {
+                    if (_announcedPeers.Remove(left.PeerId))
+                        OnPeerLeft?.Invoke(this, left);
+                }
                 else if (uEvent.Value is DecoderAddedEventArgs)
                     OnDecoderAdded?.Invoke(this, uEvent.Value as DecoderAddedEventArgs);
                 else if (uEvent.Value is DecoderRemovedEventArgs)
@@ -909,21 +918,42 @@ namespace OdinNative.Unity
         {
             if(_Room == null) return;
 
-            _Room.OnRoomStatusChanged -= Room_OnConnectionStatusChanged;
-            _Room.OnRoomJoined -= Room_OnRoomJoined;
-            _Room.OnPeerJoined -= Room_OnPeerJoined;
-            _Room.OnPeerLeft -= Room_OnPeerLeft;
-            _Room.OnMessageReceived -= Room_OnMessageReceived;
-            if (_Room is Room baseRoom)
+            var room = _Room;
+            _Room = null;
+            room.OnRoomStatusChanged -= Room_OnConnectionStatusChanged;
+            room.OnRoomJoined -= Room_OnRoomJoined;
+            room.OnPeerJoined -= Room_OnPeerJoined;
+            room.OnPeerLeft -= Room_OnPeerLeft;
+            room.OnMessageReceived -= Room_OnMessageReceived;
+            if (room is Room baseRoom)
                 baseRoom.OnDatagram -= Room_OnAutoCreateDecoder;
 
             OnNativeDecoderCreated -= ExtraOnNativeDecoderCreated;
             OnNativeDecoderRemoved -= ExtraOnNativeDecoderRemoved;
 
-            // OnEnable creates a new Room, so fully dispose the current one to
-            // release its GCHandle and native handles even while still joining
-            (_Room as Room)?.Dispose();
-            _Room = null;
+            // Update will no longer drain queued leaves. Notify Unity consumers synchronously on
+            // this main thread, even if the native room is still waiting for its Closed callback.
+            var peers = _announcedPeers.ToArray();
+            _announcedPeers.Clear();
+            EventQueue?.Clear();
+            try
+            {
+                foreach (uint peerId in peers)
+                {
+                    try
+                    {
+                        OnPeerLeft?.Invoke(this, new PeerLeftEventArgs { PeerId = peerId });
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogException(e);
+                    }
+                }
+            }
+            finally
+            {
+                (room as Room)?.Dispose();
+            }
         }
         void OnDestroy()
         {
