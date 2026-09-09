@@ -1182,13 +1182,22 @@ namespace OdinNative.Wrapper.Room
             return result;
         }
 
+        private bool _closed;
+
         /// <summary>
         /// Close the native room. (native dispose)
         /// </summary>
+        /// <remarks>
+        /// Makes our own peer leave the room on the server. Repeated calls are ignored, since both a
+        /// server side leave and <see cref="Dispose()"/> reach this.
+        /// </remarks>
         public void Close()
         {
+            if (_closed) return;
+
             OdinLog.Assert(Handle.IsAlive, $"{nameof(Odin.Library.Methods.RoomClose)} {nameof(OdinRoomHandle)} is released");
 
+            _closed = true;
             Odin.Library.Methods.RoomClose(Handle);
         }
 
@@ -1232,6 +1241,14 @@ namespace OdinNative.Wrapper.Room
             {
                 if (disposing)
                 {
+                    // Leave the room on the server before letting go of the handle. odin_room_free
+                    // only retires the handle locally; odin_room_close is what makes our peer leave,
+                    // so freeing without it leaves the peer sitting in the room until the server
+                    // times it out. Close ignores a repeat, so a server side leave that already
+                    // closed it stays a no-op here.
+                    if (Handle != null && Handle.IsAlive)
+                        Close();
+
                     if (_selfHandle.IsAllocated)
                         _selfHandle.Free();
                     
