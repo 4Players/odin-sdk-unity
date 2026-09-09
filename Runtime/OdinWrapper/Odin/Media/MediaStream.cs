@@ -165,6 +165,24 @@ namespace OdinNative.Odin.Media
         }
 
         /// <summary>
+        /// Number of samples currently available for reading.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="AudioReadData(float[], int)"/> always fills the whole buffer and pads with
+        /// silence once the jitter buffer runs dry, so a caller needs this to tell an underrun from
+        /// a peer that is simply not talking.
+        /// </remarks>
+        /// <returns>available sample count, or 0 if the stream reported an error</returns>
+        public virtual int AudioDataLength()
+        {
+            uint result = OdinLibrary.Api.AudioDataLen(Handle);
+            // Deliberately does not raise HasErrors: this is a query used to interpret the next read,
+            // and flagging the stream here would stop playback over a transient failure. A real
+            // problem surfaces on AudioReadData.
+            return Utility.IsError(result) ? 0 : (int)result;
+        }
+
+        /// <summary>
         /// Reads data from the audio stream.
         /// </summary>
         /// <param name="buffer">buffer to write into</param>

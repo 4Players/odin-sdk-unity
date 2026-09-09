@@ -800,6 +800,24 @@ namespace OdinNative.Core.Imports
         }
         
         [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
+        internal delegate uint OdinAudioDataLenDelegate(IntPtr mediaStream);
+        readonly OdinAudioDataLenDelegate _OdinAudioDataLen;
+        /// <summary>
+        /// Returns the number of samples available in the audio buffer of an output `OdinMediaStream`.
+        /// </summary>
+        /// <remarks>
+        /// Lets a caller tell an empty jitter buffer from a peer that is simply silent: `AudioReadData`
+        /// always fills the requested buffer and pads with silence, so its return value cannot.
+        /// </remarks>
+        /// <param name="mediaStream">OdinMediaStream *</param>
+        /// <returns>available sample count, or an error code - test with <see cref="Utility.IsError(uint)"/></returns>
+        public uint AudioDataLen(StreamHandle mediaStream)
+        {
+            using (Lock)
+                return _OdinAudioDataLen(mediaStream);
+        }
+
+        [UnmanagedFunctionPointer(Native.OdinCallingConvention)]
         internal delegate uint OdinAudioResetDelegate(IntPtr mediaStream);
         readonly OdinAudioResetDelegate _OdinAudioReset;
         
