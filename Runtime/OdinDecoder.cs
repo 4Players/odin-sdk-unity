@@ -200,6 +200,15 @@ namespace OdinNative.Unity
         private const float TargetSizePitchAdjustment = 0.025f;
 
         /// <summary>
+        ///     Time constant for easing the playback pitch towards its target.
+        /// </summary>
+        /// <remarks>
+        ///     Picked so the result matches the previous per-call factor of 0.1 at Unity's default
+        ///     0.02 fixed timestep: 1 - e^(-0.02 / 0.19) = 0.0999.
+        /// </remarks>
+        private const float PitchSmoothingTime = 0.19f;
+
+        /// <summary>
         ///     The maximum amount of zero frames in seconds we wait before resetting the current audio buffer. Uses
         ///     the <see cref="LastPlaybackUpdateTime" /> to determine if we have hit this value.
         /// </summary>
@@ -494,23 +503,25 @@ namespace OdinNative.Unity
                 return; // do not process the stale buffer of a failed pop
             }
 
-            // Only read the data, if there is data in the _AudioBuffer
-            if (isSilent == false)
+            // Write and advance unconditionally, silence included. The AudioSource play head moves
+            // with wall clock, so skipping a write leaves the cursor permanently one frame behind,
+            // and that deficit is only ever recovered by a buffer reset - which fabricates silence,
+            // mid-word if the skipped stretch sat inside one.
+            for (int i = 0; i < readBufferSize; i++)
             {
-                // write the data into the _ClipBuffer.
-                for (int i = 0; i < readBufferSize; i++)
-                {
-                    int writePosition = _FrameBufferEndPos + i;
-                    writePosition %= ClipSamples;
-                    _ClipBuffer[writePosition] = _AudioBuffer[i];
-                }
-
-                // Update the buffer end position
-                _FrameBufferEndPos += readBufferSize;
-                _FrameBufferEndPos %= ClipSamples;
-                // Update the last time we wrote into the playback clip buffer
-                LastPlaybackUpdateTime = Time.time;
+                int writePosition = _FrameBufferEndPos + i;
+                writePosition %= ClipSamples;
+                _ClipBuffer[writePosition] = _AudioBuffer[i];
             }
+
+            // Update the buffer end position
+            _FrameBufferEndPos += readBufferSize;
+            _FrameBufferEndPos %= ClipSamples;
+
+            // Only actual audio counts as "the stream is alive"; silence must not, or a decoder that
+            // stopped delivering would never hit MaxFrameLossTime.
+            if (isSilent == false)
+                LastPlaybackUpdateTime = Time.time;
         }
 
         public virtual float GetFrameBufferSize()
@@ -545,9 +556,12 @@ namespace OdinNative.Unity
             else if (audioBufferSize > TargetBufferSize + TargetBufferTolerance)
                 targetPitch = 1.0f + TargetSizePitchAdjustment;
 
-            // Interpolate the pitch over a few frames to avoid sudden pitch jumps.
+            // Ease the pitch towards the target. The factor has to follow elapsed time rather than
+            // be applied once per call, otherwise a project running a 100 Hz fixed timestep corrects
+            // twice as aggressively as one at Unity's default 50 Hz.
             float pitch = Playback.pitch;
-            pitch += (targetPitch - pitch) * 0.1f;
+            float pitchSmoothing = 1f - Mathf.Exp(-Time.fixedUnscaledDeltaTime / PitchSmoothingTime);
+            pitch += (targetPitch - pitch) * pitchSmoothing;
             Playback.pitch = pitch;
         }
 
