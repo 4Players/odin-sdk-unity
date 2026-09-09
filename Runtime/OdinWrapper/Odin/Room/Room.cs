@@ -6,6 +6,7 @@ using OdinNative.Wrapper.Room.Rpc;
 using OdinNative.Wrapper.Socket;
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -189,7 +190,38 @@ namespace OdinNative.Wrapper.Room
         #pragma warning restore CS0067 // The event is never used
         #endregion
         private OdinRoomEvents _connectionEvents;
-        private GCHandle _selfHandle;
+
+        /// <summary>
+        /// Rooms reachable from a native callback, keyed by <see cref="_callbackId"/>.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately not a GCHandle. Mono reuses the value of a freed handle, so a callback that
+        /// the native side dispatched before it noticed the room was gone could resolve to whichever
+        /// room happens to hold that value now, silently delivering events into a live session. Ids
+        /// come from a counter that never hands out the same value twice, so a late callback finds
+        /// nothing instead. The entry also keeps the room alive for as long as native code may call
+        /// back into it, which is what the GCHandle used to do.
+        /// </remarks>
+        private static readonly ConcurrentDictionary<long, Room> _callbackRooms = new ConcurrentDictionary<long, Room>();
+        private static long _lastCallbackId;
+        private readonly long _callbackId;
+
+        /// <summary>
+        /// Set before teardown starts; no callback may enter the room afterwards.
+        /// </summary>
+        private volatile bool _callbacksDisabled;
+        /// <summary>
+        /// Number of native callbacks currently executing inside this room.
+        /// </summary>
+        private int _activeCallbacks;
+        /// <summary>
+        /// Set once teardown has asked for the room's resources to be released.
+        /// </summary>
+        private int _releaseRequested;
+        /// <summary>
+        /// Guards the release against running twice.
+        /// </summary>
+        private int _released;
         /// <summary>
         /// Initialise dangling room
         /// </summary>
@@ -201,12 +233,13 @@ namespace OdinNative.Wrapper.Room
         public Room(string endPoint, uint samplerate, bool stereo, IntPtr extraCallbackData = default)
         {
             _handle = new OdinRoomHandle(IntPtr.Zero, false);
-            _selfHandle = GCHandle.Alloc(this);
+            _callbackId = Interlocked.Increment(ref _lastCallbackId);
+            _callbackRooms[_callbackId] = this;
             _connectionEvents = new OdinRoomEvents(
                 StaticOnDatagramDelegate,
                 StaticOnRpcDelegate,
                 StaticOnSocketDelegate,
-                GCHandle.ToIntPtr(_selfHandle)
+                new IntPtr(_callbackId)
             );
 
             Name = string.Empty;
@@ -302,6 +335,114 @@ namespace OdinNative.Wrapper.Room
             });
         }
 
+        /// <summary>
+        /// Resolves the room behind a native callback's user data.
+        /// </summary>
+        /// <remarks>
+        /// The native side can still dispatch a queued event while the room is being torn down. This
+        /// must never throw: an exception escaping a native-to-managed callback is undefined
+        /// behaviour and was observed to leave the runtime unable to create further rooms.
+        /// </remarks>
+        private static bool TryEnterCallback(IntPtr userData, out Room self)
+        {
+            self = null;
+
+            // A room drops out of the registry before it is torn down, and its id is never handed
+            // out again, so a callback the native side dispatched too late resolves to nothing
+            // rather than to whichever room came after it.
+            if (_callbackRooms.TryGetValue(userData.ToInt64(), out Room room) == false) return false;
+            if (room._callbacksDisabled) return false;
+
+            Interlocked.Increment(ref room._activeCallbacks);
+            // Teardown may have started between the check above and the increment. Re-reading the
+            // flag afterwards is what makes the handshake with teardown airtight: either we
+            // observe the flag and back out, or teardown observes our count and leaves the
+            // release to us.
+            if (room._callbacksDisabled)
+            {
+                ExitCallback(room);
+                return false;
+            }
+
+            self = room;
+            return true;
+        }
+
+        private static void ExitCallback(Room self)
+        {
+            // The last callback out is the one that gets to release the room, if teardown asked for
+            // it while callbacks were still inside.
+            if (Interlocked.Decrement(ref self._activeCallbacks) == 0)
+            {
+                try
+                {
+                    self.TryReleaseResources();
+                }
+                catch (Exception e)
+                {
+                    LogCallbackError(nameof(ExitCallback), e);
+                }
+            }
+        }
+
+        private static void LogCallbackError(string operation, Exception error)
+        {
+            try
+            {
+                OdinLog.LogError($"{operation} failed: {error}");
+            }
+            catch (Exception)
+            {
+                // A custom logger must not let an exception escape into native code either.
+            }
+        }
+
+        private static void RunCleanup(Action cleanup, string operation)
+        {
+            try
+            {
+                cleanup();
+            }
+            catch (Exception e)
+            {
+                LogCallbackError(operation, e);
+            }
+        }
+
+        // Each callback below repeats the enter/try/finally by hand rather than sharing a helper
+        // that takes a delegate: StaticOnDatagram runs for every datagram, and a closure per call
+        // would put an allocation in the audio path. The catch is not optional either - an exception
+        // crossing back into native code is undefined behaviour and was observed to leave the
+        // runtime unable to create further rooms.
+
+        /// <summary>
+        /// Releases the room's resources once no native callback is inside it any more.
+        /// </summary>
+        /// <remarks>
+        /// Called from teardown and from the last callback to leave; whichever finds the room empty
+        /// does the work, and the interlocked flag keeps it to exactly one. Releasing behind a
+        /// running callback is what has to be avoided: it could still add sockets or peers after
+        /// FreePeers, or raise events on a half released room. Waiting for it instead is not an
+        /// option, since teardown usually runs on Unity's main thread during OnDestroy.
+        /// </remarks>
+        private void TryReleaseResources()
+        {
+            if (Volatile.Read(ref _releaseRequested) == 0) return;
+            if (Volatile.Read(ref _activeCallbacks) > 0) return;
+            if (Interlocked.CompareExchange(ref _released, 1, 0) != 0) return;
+
+            // Attempt every release even when a resource's Dispose override throws. Cleanup can
+            // run in a native callback's finally block, so errors must stay on the managed side.
+            RunCleanup(UnsubscribeEvents, nameof(UnsubscribeEvents));
+            RunCleanup(FreeEncoders, nameof(FreeEncoders));
+            RunCleanup(FreePeers, nameof(FreePeers));
+            RunCleanup(() => CryptoCipher?.Dispose(), nameof(CryptoCipher));
+            CryptoCipher = null;
+
+            RunCleanup(() => Handle?.Dispose(), nameof(Handle));
+            Handle = null;
+        }
+
         // native keeps the function pointers for the lifetime of the room; static
         // references prevent the marshaling thunks from being garbage collected
         private static readonly NativeLibraryMethods.OdinOnDatagramDelegate StaticOnDatagramDelegate = StaticOnDatagram;
@@ -313,8 +454,20 @@ namespace OdinNative.Wrapper.Room
 #endif
         private static void StaticOnDatagram(IntPtr room, ref OdinDatagramProperties properties, IntPtr bytes, uint bytesLength, IntPtr userData)
         {
-            if (userData != IntPtr.Zero && GCHandle.FromIntPtr(userData).Target is Room self)
+            if (TryEnterCallback(userData, out Room self) == false) return;
+
+            try
+            {
                 self.OnNativeDatagramReceived(room, in properties, bytes, bytesLength, userData);
+            }
+            catch (Exception e)
+            {
+                LogCallbackError(nameof(StaticOnDatagram), e);
+            }
+            finally
+            {
+                ExitCallback(self);
+            }
         }
 
 #if UNITY_64 || __MonoCS__
@@ -322,8 +475,20 @@ namespace OdinNative.Wrapper.Room
 #endif
         private static void StaticOnRpc(IntPtr room, string json, IntPtr userData)
         {
-            if (userData != IntPtr.Zero && GCHandle.FromIntPtr(userData).Target is Room self)
+            if (TryEnterCallback(userData, out Room self) == false) return;
+
+            try
+            {
                 self.OnNativeRPCReceived(room, json, userData);
+            }
+            catch (Exception e)
+            {
+                LogCallbackError(nameof(StaticOnRpc), e);
+            }
+            finally
+            {
+                ExitCallback(self);
+            }
         }
 
 #if UNITY_64 || __MonoCS__
@@ -331,8 +496,20 @@ namespace OdinNative.Wrapper.Room
 #endif
         private static void StaticOnSocket(IntPtr socket, IntPtr bytes, uint bytesLength, IntPtr userData)
         {
-            if (userData != IntPtr.Zero && GCHandle.FromIntPtr(userData).Target is Room self)
+            if (TryEnterCallback(userData, out Room self) == false) return;
+
+            try
+            {
                 self.OnNativeSocketReceived(socket, bytes, bytesLength, userData);
+            }
+            catch (Exception e)
+            {
+                LogCallbackError(nameof(StaticOnSocket), e);
+            }
+            finally
+            {
+                ExitCallback(self);
+            }
         }
 
         private void Room_OnPeerJoined(object sender, PeerJoinedObjectContainer args)
@@ -1218,7 +1395,7 @@ namespace OdinNative.Wrapper.Room
         private void FreeEncoders()
         {
             foreach (var encoder in Encoders)
-                encoder.Value.Dispose();
+                RunCleanup(() => encoder.Value.Dispose(), nameof(FreeEncoders));
 
             Encoders.Clear();
         }
@@ -1226,7 +1403,7 @@ namespace OdinNative.Wrapper.Room
         private void FreePeers()
         {
             foreach (var kvp in RemotePeers)
-                kvp.Value.Dispose();
+                RunCleanup(() => kvp.Value.Dispose(), nameof(FreePeers));
 
             RemotePeers.Clear();
         }
@@ -1241,25 +1418,14 @@ namespace OdinNative.Wrapper.Room
             {
                 if (disposing)
                 {
-                    // Leave the room on the server before letting go of the handle. odin_room_free
-                    // only retires the handle locally; odin_room_close is what makes our peer leave,
-                    // so freeing without it leaves the peer sitting in the room until the server
-                    // times it out. Close ignores a repeat, so a server side leave that already
-                    // closed it stays a no-op here.
-                    if (Handle != null && Handle.IsAlive)
-                        Close();
-
-                    if (_selfHandle.IsAllocated)
-                        _selfHandle.Free();
+                    _callbacksDisabled = true;
+                    _callbackRooms.TryRemove(_callbackId, out _);
                     
-                    UnsubscribeEvents();
-                    FreeEncoders();
-                    FreePeers();
-                    CryptoCipher?.Dispose();
-                    CryptoCipher = null;
+                    if (Handle != null && Handle.IsAlive)
+                        RunCleanup(Close, nameof(Close));
 
-                    Handle?.Dispose();
-                    Handle = null;
+                    Interlocked.Exchange(ref _releaseRequested, 1);
+                    TryReleaseResources();
                 }
 
                 disposedValue = true;
