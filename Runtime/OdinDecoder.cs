@@ -444,6 +444,10 @@ namespace OdinNative.Unity
             if (SpatialClip == null || SpatialClip.samples <= 0 || SpatialClip.samples != _ClipBuffer?.Length)
                 SetupPlaybackClip();
 
+            // SetupPlaybackClip refuses to build a clip at an invalid samplerate. Without one there is
+            // nothing to read into or hand to the AudioSource, and continuing would dereference null.
+            if (SpatialClip == null || _ClipBuffer == null) return;
+
             // Read => buffer
             ReadOdinAudioData();
 
