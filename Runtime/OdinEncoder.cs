@@ -73,7 +73,7 @@ namespace OdinNative.Unity
 
         void Awake()
         {
-            Samplerate = (uint)AudioSettings.outputSampleRate;
+            Samplerate = OdinRoom.OutputSampleRate;
             Stereo = false;
         }
 

@@ -53,7 +53,15 @@ namespace OdinNative.Unity
         /// </summary>
         public AudioSource Playback;
 
-        public int OutSampleRate => AudioSettings.outputSampleRate;
+        /// <summary>
+        /// Playback samplerate reported by Unity, or <see cref="OdinRoom.DefaultSampleRate"/> when the
+        /// Unity audio engine is disabled.
+        /// </summary>
+        /// <remarks>
+        /// Passing Unity's reported 0 on produced an AudioClip.Create call with zero length and zero
+        /// samplerate, which crashes inside native code, and a zero samplerate in the APM config.
+        /// </remarks>
+        public int OutSampleRate => (int)OdinRoom.OutputSampleRate;
 
         /// <summary>
         /// Gets the playback channel count derived from <see href="https://docs.unity3d.com/ScriptReference/AudioSettings-speakerMode.html">AudioSettings.speakerMode</see>, clamped to stereo (1 or 2).
@@ -356,6 +364,11 @@ namespace OdinNative.Unity
                 Destroy(SpatialClip);
 
             int clipSamples = (int)(OutSampleRate * 3.0f * TargetBufferSize);
+            if (clipSamples <= 0)
+            {
+                OdinLog.LogError($"{nameof(OdinDecoder)} ({MediaDecoder?.Id}) refusing to create a playback clip of {clipSamples} samples at {OutSampleRate}Hz");
+                return;
+            }
             // see Unity Issue 819365,1246661
             SpatialClip = AudioClip.Create("spatialClip", clipSamples, 1, OutSampleRate, false);
             OdinLog.LogInfo($"AudioClip \"{SpatialClip.name}\" {clipSamples}@{OutSampleRate}Hz, {SpatialClip.length}s {SpatialClip.channels} channels {SpatialClip.samples}@{SpatialClip.frequency}Hz");

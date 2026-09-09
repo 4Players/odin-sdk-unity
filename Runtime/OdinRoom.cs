@@ -66,6 +66,28 @@ namespace OdinNative.Unity
         /// Unity samplerate
         /// </summary>
         public uint Samplerate { get; set; }
+
+        /// <summary>
+        /// Fallback samplerate for setups that run without the Unity audio engine.
+        /// </summary>
+        public const uint DefaultSampleRate = 48000;
+
+        /// <summary>
+        /// Playback samplerate reported by Unity, or <see cref="DefaultSampleRate"/> when the
+        /// Unity audio engine is disabled.
+        /// </summary>
+        /// <remarks>
+        /// Unity reports 0 while the audio engine is disabled, which projects driving FMOD or Wwise
+        /// commonly do. A zero reaches the native pipeline through encoder and decoder creation.
+        /// </remarks>
+        public static uint OutputSampleRate
+        {
+            get
+            {
+                int rate = AudioSettings.outputSampleRate;
+                return rate > 0 ? (uint)rate : DefaultSampleRate;
+            }
+        }
         /// <summary>
         /// Unity channel flag
         /// </summary>
@@ -330,7 +352,7 @@ namespace OdinNative.Unity
 
         void Awake()
         {
-            Samplerate = (uint)AudioSettings.outputSampleRate;
+            Samplerate = OutputSampleRate;
             // we use Mono for convenience setup and less samples to init encoders/decoders
             // even without a check to 'AudioSettings.speakerMode >= AudioSpeakerMode.Stereo;'
             // Unity will resample and/or upmix, downmix on AudioClip<->AudioSource
