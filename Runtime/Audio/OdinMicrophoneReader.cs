@@ -351,8 +351,8 @@ namespace OdinNative.Unity.Audio
         /// </summary>
         private const float MaxDrainSeconds = 0.2f;
         private float _LastDrainWarningTime = float.NegativeInfinity;
-        private static readonly Unity.Profiling.ProfilerMarker GetDataMarker = new Unity.Profiling.ProfilerMarker("ODIN.Microphone.GetData");
-        private static readonly Unity.Profiling.ProfilerMarker DispatchAudioMarker = new Unity.Profiling.ProfilerMarker("ODIN.Microphone.DispatchAudio");
+        private static readonly global::Unity.Profiling.ProfilerMarker GetDataMarker = new global::Unity.Profiling.ProfilerMarker("ODIN.Microphone.GetData");
+        private static readonly global::Unity.Profiling.ProfilerMarker DispatchAudioMarker = new global::Unity.Profiling.ProfilerMarker("ODIN.Microphone.DispatchAudio");
 
         /// <summary>
         /// Minimum time between two capture device resets.

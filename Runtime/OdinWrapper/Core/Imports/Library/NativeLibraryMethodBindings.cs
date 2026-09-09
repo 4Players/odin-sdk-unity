@@ -380,9 +380,9 @@ namespace OdinNative.Core.Imports
         }
 
 #if UNITY_2022_3_OR_NEWER
-        private static readonly Unity.Profiling.ProfilerMarker EncoderPushMarker = new Unity.Profiling.ProfilerMarker("ODIN.Encoder.Push");
-        private static readonly Unity.Profiling.ProfilerMarker EncoderPopMarker = new Unity.Profiling.ProfilerMarker("ODIN.Encoder.Pop");
-        private static readonly Unity.Profiling.ProfilerMarker SendDatagramMarker = new Unity.Profiling.ProfilerMarker("ODIN.Room.SendDatagram");
+        private static readonly global::Unity.Profiling.ProfilerMarker EncoderPushMarker = new global::Unity.Profiling.ProfilerMarker("ODIN.Encoder.Push");
+        private static readonly global::Unity.Profiling.ProfilerMarker EncoderPopMarker = new global::Unity.Profiling.ProfilerMarker("ODIN.Encoder.Pop");
+        private static readonly global::Unity.Profiling.ProfilerMarker SendDatagramMarker = new global::Unity.Profiling.ProfilerMarker("ODIN.Room.SendDatagram");
 #endif
 
         internal OdinError EncoderPop(OdinEncoderHandle encoder, byte[] buffer, out uint count)
