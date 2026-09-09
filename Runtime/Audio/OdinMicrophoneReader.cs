@@ -60,7 +60,10 @@ namespace OdinNative.Unity.Audio
         [Header("AudioClip Settings")]
         public int Samplerate = 48000;
 
-        private bool IsInputDeviceConnected;
+        /// <summary>
+        /// True while a capture device was found and set up.
+        /// </summary>
+        public bool IsInputDeviceConnected { get; private set; }
         private int InputMinFreq;
         private int InputMaxFreq;
         /// <summary>
@@ -154,9 +157,10 @@ namespace OdinNative.Unity.Audio
 #if PLATFORM_ANDROID || UNITY_ANDROID || PLATFORM_IOS || UNITY_IOS || UNITY_WEBGL
             OdinLog.LogInfo($"User has authorization of Microphone: {HasPermission}");
 #endif
-            InputDevice = CustomInputDevice ? customDevice : Microphone.devices.FirstOrDefault();
+            string[] devices = Microphone.devices;
+            InputDevice = CustomInputDevice ? customDevice : devices.FirstOrDefault();
 
-            if (string.IsNullOrEmpty(InputDevice) && CustomInputDevice == false || Microphone.devices.Length <= 0)
+            if (string.IsNullOrEmpty(InputDevice) && CustomInputDevice == false || devices.Length <= 0)
             {
                 IsInputDeviceConnected = false;
                 OdinLog.LogWarning($"{nameof(OdinMicrophoneReader)} no Microphone.devices found.");
@@ -342,7 +346,26 @@ namespace OdinNative.Unity.Audio
             }
         }
 
+        /// <summary>
+        /// Upper bound on how much captured audio a single <see cref="PullClipData"/> forwards.
+        /// </summary>
+        private const float MaxDrainSeconds = 0.2f;
+
+        /// <summary>
+        /// Minimum time between two capture device resets.
+        /// </summary>
+        private const float DeviceResetCooldown = 1.0f;
+        private float _LastDeviceResetTime = float.NegativeInfinity;
+
         RBuffer[] MicBuffers = new RBuffer[RBuffer.sizesMax + 1];
+
+        private bool AllBuffersNull()
+        {
+            for (int i = 0; i < MicBuffers.Length; i++)
+                if (MicBuffers[i] != null) return false;
+
+            return true;
+        }
 
         void SetupBuffers()
         {
@@ -355,7 +378,7 @@ namespace OdinNative.Unity.Audio
         void PullClipData()
         {
             // initialization failure
-            if (MicBuffers == null || MicBuffers.All(b => b == null))
+            if (MicBuffers == null || AllBuffersNull())
             {
                 OdinLog.LogError("Odin MicBuffer corrupted. Try restart!");
                 SetupMicrophoneReader();
@@ -369,8 +392,14 @@ namespace OdinNative.Unity.Audio
                 // self-guard a clip left empty/stale by a device change, in case the audio
                 // configuration changed event did not on the current platform.
                 // Skip if no microphone available
-                if (IsInputDeviceConnected)
+                if (IsInputDeviceConnected && Time.unscaledTime - _LastDeviceResetTime >= DeviceResetCooldown)
+                {
+                    // A reset reopens the capture device and reallocates every ring buffer. If the clip
+                    // stays invalid - the audio engine being disabled underneath us will do that - an
+                    // unthrottled retry burns a full core doing this once per frame.
+                    _LastDeviceResetTime = Time.unscaledTime;
                     ResetDevice(InputDevice);
+                }
                 return;
             }
 
@@ -384,6 +413,24 @@ namespace OdinNative.Unity.Audio
 
             // give a sample on start ( S + 1 - 0 ) % S = 1 and give a sample at the end ( S + 0 - 99 ) % S = 1
             int dataToRead = (InputClip.samples + newPosition - _MicPosition) % InputClip.samples;
+
+            // Any stall - a scene load, an audio engine init, a paused editor - leaves a backlog in the
+            // clip. Draining all of it in one call means a GetData plus a full encode per buffer, which
+            // can cost hundreds of milliseconds and produces the next stall itself. Voice older than
+            // MaxDrainSeconds is worthless anyway, so skip past it instead of working through it.
+            // The cap must still admit the smallest ring buffer, otherwise the loop below never runs
+            // while the cursor keeps skipping ahead, and capture goes silent for good. That happens
+            // at low samplerates, where MaxDrainSeconds is worth fewer frames than one buffer holds.
+            int minFramesPerPull = (1 << RBuffer.sizesMin) / channels;
+            int maxFramesPerPull = Mathf.Max(minFramesPerPull, Mathf.FloorToInt(MaxDrainSeconds * InputClip.frequency));
+            if (dataToRead > maxFramesPerPull)
+            {
+                int skip = dataToRead - maxFramesPerPull;
+                OdinLog.LogWarning($"{nameof(OdinMicrophoneReader)} dropping {skip} captured frames ({(float)skip / InputClip.frequency:0.00}s) to catch up after a stall");
+                _MicPosition = (_MicPosition + skip) % InputClip.samples;
+                dataToRead = maxFramesPerPull;
+            }
+
             for (int i = RBuffer.sizesMax; i >= RBuffer.sizesMin; i--)
             {
                 RBuffer mic = MicBuffers[i];
