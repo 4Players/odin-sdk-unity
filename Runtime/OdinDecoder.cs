@@ -163,6 +163,11 @@ namespace OdinNative.Unity
 
         private AudioClip SpatialClip;
         /// <summary>
+        ///     Keeps the missing audio engine from being reported once per frame, since the frame
+        ///     update retries the setup for as long as there is no clip.
+        /// </summary>
+        private bool _WarnedMissingAudioEngine;
+        /// <summary>
         ///     Represents the audio clip buffer used for Unity Playback. The Spatial Clip Data is set to this data every frame.
         ///     Could potentially also be filled asynchronously, if implementation is changed to async.
         /// </summary>
@@ -368,6 +373,30 @@ namespace OdinNative.Unity
         /// </remarks>
         private void SetupPlaybackClip()
         {
+            // Unity's audio engine can be switched off entirely, which projects driving FMOD or Wwise
+            // commonly do. AudioClip.Create is not valid in that state: it walks an uninitialised
+            // pointer inside Unity and takes the process down with an access violation. The raw
+            // samplerate is the signal for it - OutSampleRate deliberately masks the zero, because the
+            // native encoder and decoder still need a usable rate.
+            if (AudioSettings.outputSampleRate <= 0)
+            {
+                // a clip from before the engine went away is useless, and dropping it keeps the
+                // frame update's guard from running on a dead one
+                if (SpatialClip != null)
+                {
+                    Destroy(SpatialClip);
+                    SpatialClip = null;
+                }
+
+                if (_WarnedMissingAudioEngine == false)
+                {
+                    _WarnedMissingAudioEngine = true;
+                    OdinLog.LogError($"{nameof(OdinDecoder)} ({MediaDecoder?.Id}) cannot create a playback clip while the Unity audio engine is disabled, so this component stays silent. Drive {nameof(MediaDecoder)} yourself when playing back through FMOD or Wwise.");
+                }
+                return;
+            }
+            _WarnedMissingAudioEngine = false;
+
             // a previously created procedural clip is not garbage collected by Unity
             if (SpatialClip != null)
                 Destroy(SpatialClip);
