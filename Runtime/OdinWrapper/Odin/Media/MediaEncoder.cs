@@ -100,11 +100,14 @@ namespace OdinNative.Wrapper
         /// Get native effect pipeline
         /// </summary>
         /// <returns>managed effect pipeline</returns>
+        /// <remarks>The native pipeline belongs to the encoder, so the managed pipeline is created once and reused.
+        /// Effect components rely on this to detect a re-created media by a changed pipeline instance.</remarks>
         public MediaPipeline GetPipeline()
         {
             OdinLog.LogAssert(Handle.IsAlive, $"{nameof(GetPipeline)} {nameof(MediaEncoder)} handle is released");
 
             if (Handle.IsAlive == false) return null;
+            if (Pipeline != null) return Pipeline;
             return Pipeline = new MediaPipeline(Odin.Library.Methods.EncoderGetPipeline(Handle));
         }
 
@@ -266,6 +269,9 @@ namespace OdinNative.Wrapper
             {
                 if (disposing)
                 {
+                    // the native pipeline is freed together with the media, effect components
+                    // holding the pipeline must see it as released instead of calling into it
+                    Pipeline?.Handle?.Dispose();
                     Pipeline = null;
                     AddtionalData = null;
                     Handle?.Dispose();

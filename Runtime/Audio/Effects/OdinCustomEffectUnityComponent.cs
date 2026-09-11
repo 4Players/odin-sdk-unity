@@ -23,12 +23,12 @@ namespace OdinNative.Unity.Audio
         /// <summary>
         /// Get Media
         /// </summary>
-        /// <remarks>Will reset the effect if the media id has changed</remarks>
+        /// <remarks>Removes the effect from the previous media if the media has changed, it is added to the new media on the next update</remarks>
         public virtual IMedia Media { get => _Media; 
             set 
             { 
                 if (_Media != null && (_Media.Id != value?.Id || _Media != value))
-                    this.ResetEffect();
+                    this.ClearEffect();
 
                 _Media = value;
             } 
@@ -53,6 +53,10 @@ namespace OdinNative.Unity.Audio
 
         protected bool _warn = true;
         protected bool _corrupt = false;
+
+        // pipeline instance the effect was created on; stable per media lifetime since the
+        // wrapper caches it at media creation, so a rebuild yields a new instance (no ABA)
+        private MediaPipeline _effectPipeline;
 
         protected virtual void OnEnable()
         {
@@ -96,9 +100,14 @@ namespace OdinNative.Unity.Audio
                 return;
             }
 
+            MediaPipeline pipeline = Media?.GetPipeline();
+            // a rebuilt media (e.g. OdinEncoder re-created after a room rejoin or a disable/enable cycle)
+            // brings a new pipeline and the old effect died with it
+            if (IsCreated && ReferenceEquals(pipeline, _effectPipeline) == false)
+                ClearEffect();
+
             if (IsCreated == false)
             {
-                MediaPipeline pipeline = Media?.GetPipeline();
                 if (pipeline == null)
                 {
                     if (_warn)
@@ -114,6 +123,7 @@ namespace OdinNative.Unity.Audio
                 if (customEffect != null)
                 {
                     Effect = customEffect;
+                    _effectPipeline = pipeline;
 
                     IsCreated = true;
                     OdinLog.LogInfo($"{gameObject.name} {this.GetType()} added {Effect.GetType()} (id {Effect.Id})");
@@ -170,18 +180,34 @@ namespace OdinNative.Unity.Audio
                 return;
             }
 
-            if (Effect != null)
-                pipeline.RemoveEffect(Effect.Id);
+            ClearEffect();
 
             var effect = pipeline.AddCustomEffect(CustomEffectCallback, GetEffectUserData()); 
             if (effect != null)
+            {
                 Effect = effect;
+                _effectPipeline = pipeline;
+                IsCreated = true;
+            }
+        }
+
+        /// <summary>
+        /// Removes the effect from the pipeline it was created on, if that pipeline is still alive
+        /// </summary>
+        /// <remarks>The effect is added again on the next update while a pipeline is available</remarks>
+        protected virtual void ClearEffect()
+        {
+            if (Effect != null && _effectPipeline?.Handle?.IsAlive == true)
+                _effectPipeline.RemoveEffect(Effect.Id);
+
+            Effect = null;
+            IsCreated = false;
+            _effectPipeline = null;
         }
 
         protected virtual void OnDestroy()
         {
-            if (Media != null && Effect != null)
-                Media.GetPipeline()?.RemoveEffect(Effect.Id);
+            ClearEffect();
         }
 
         /// <summary>

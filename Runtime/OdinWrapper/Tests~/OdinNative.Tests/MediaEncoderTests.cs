@@ -64,6 +64,33 @@ namespace OdinNative.Tests
             Assert.Equal(ChannelMask.Channel3, TransmittedChannels(encoder));
         }
 
+        [SkippableFact]
+        public void GetPipeline_ReturnsSameInstance()
+        {
+            _fixture.SkipUnlessLoaded();
+            using var encoder = MediaEncoder.Create(1, SampleRate, false);
+            using var decoder = MediaDecoder.Create(SampleRate, false);
+
+            Assert.Same(encoder.GetPipeline(), encoder.GetPipeline());
+            Assert.Same(decoder.GetPipeline(), decoder.GetPipeline());
+        }
+
+        [SkippableFact]
+        public void Dispose_ReleasesPipelineHandle()
+        {
+            _fixture.SkipUnlessLoaded();
+            var encoder = MediaEncoder.Create(1, SampleRate, false);
+            var decoder = MediaDecoder.Create(SampleRate, false);
+            MediaPipeline encoderPipeline = encoder.GetPipeline();
+            MediaPipeline decoderPipeline = decoder.GetPipeline();
+
+            encoder.Dispose();
+            decoder.Dispose();
+
+            Assert.False(encoderPipeline.Handle.IsAlive);
+            Assert.False(decoderPipeline.Handle.IsAlive);
+        }
+
         /// <summary>
         ///     Encodes a tone and decodes the resulting datagrams to read the channels the encoder transmitted on.
         /// </summary>
