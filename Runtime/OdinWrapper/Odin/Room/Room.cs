@@ -73,6 +73,12 @@ namespace OdinNative.Wrapper.Room
         /// </summary>
         public string ReconnectToken { get; private set; }
         /// <summary>
+        /// User data of the local peer that is sent together with the join request
+        /// </summary>
+        /// <remarks>Uses the same format as <see cref="UpdateUserData(string)"/> and has to be set before joining.
+        /// Later changes are sent with <see cref="UpdateUserData(string)"/>; ODIN keeps the latest user data and sends it again by itself on reconnects.</remarks>
+        public string InitialUserData { get; set; }
+        /// <summary>
         /// IsJoined
         /// </summary>
         public bool IsJoined => RoomStatus?.Equals("Joined", StringComparison.InvariantCultureIgnoreCase) ?? false;
@@ -874,6 +880,7 @@ namespace OdinNative.Wrapper.Room
         /// Join a room
         /// </summary>
         /// <param name="token">token for json authentication string</param>
+        /// <remarks>Sends <see cref="InitialUserData"/> with the join request if set</remarks>
         /// <param name="roomName">room name for json authentication string</param>
         /// <param name="cipher">optional crypto</param>
         /// <returns>true on successfully request join or false</returns>
@@ -881,14 +888,26 @@ namespace OdinNative.Wrapper.Room
             new RoomCreateObject 
             { 
                 token = token, 
-                room_Id = roomName 
+                room_Id = roomName,
+                user_data = GetInitialUserData()
             }, cipher);
         internal bool Join(RoomCreateObject auth, OdinCipherHandle cipher = null) => this.Create(JSONWriter.ToJson(auth), cipher);
 
+        /// <summary>
+        /// Join a room
+        /// </summary>
+        /// <remarks>Sends <see cref="InitialUserData"/> with the join request if set</remarks>
+        /// <param name="token">token for json authentication string</param>
+        /// <param name="cipher">optional crypto</param>
+        /// <returns>true on successfully request join or false</returns>
         public bool Join(string token, OdinCipherHandle cipher = null) => this.Join(new RoomCreateObject
         {
             token = token,
+            user_data = GetInitialUserData()
         }, cipher);
+
+        // an empty value is left out of the join request instead of joining with empty user data
+        private string GetInitialUserData() => string.IsNullOrEmpty(InitialUserData) ? null : InitialUserData;
 
         /// <summary>
         /// Join a room with a json authentication string

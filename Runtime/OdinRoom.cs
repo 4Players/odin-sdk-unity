@@ -59,6 +59,13 @@ namespace OdinNative.Unity
         /// </summary>
         public string Token;
         /// <summary>
+        /// User data of the local peer that is sent together with the join request
+        /// </summary>
+        /// <remarks>Uses the same format as <see cref="OdinNative.Wrapper.Room.Room.UpdateUserData(string)"/> and has to be set before the <see cref="Token"/>.
+        /// Later changes are sent with <see cref="OdinNative.Wrapper.Room.Room.UpdateUserData(string)"/>; ODIN keeps the latest user data and sends it again by itself on reconnects.</remarks>
+        [Tooltip("User data sent with the join request, e.g. a json string. Change it after joining with Room.UpdateUserData.")]
+        public string InitialUserData;
+        /// <summary>
         /// Unity mixer
         /// </summary>
         public AudioMixerGroup AudioMixerGroup;
@@ -654,6 +661,7 @@ namespace OdinNative.Unity
             if (string.IsNullOrEmpty(Token) == false && _Room?.IsJoined == false && IsConsumed == false)
             {
                 OdinCipherHandle cipher = CryptoCipher?.Handle;
+                ApplyInitialUserData();
                 if (_Room.Join(Token, cipher))
                     IsConsumed = true;
                 else
@@ -695,6 +703,13 @@ namespace OdinNative.Unity
             }
         }
 
+        // the user data is part of the join request of the native room
+        private void ApplyInitialUserData()
+        {
+            if (_Room is Room room)
+                room.InitialUserData = InitialUserData;
+        }
+
         /// <summary>
         /// Room join
         /// </summary>
@@ -705,6 +720,7 @@ namespace OdinNative.Unity
         {
             if (string.IsNullOrEmpty(token) || _Room == null || _Room.IsJoined) return false;
 
+            ApplyInitialUserData();
             // consume so Update() does not attempt a second join while this one is connecting
             return IsConsumed = _Room.Join(token);
         }
@@ -720,6 +736,7 @@ namespace OdinNative.Unity
         {
             if(string.IsNullOrEmpty(token) || _Room == null || _Room.IsJoined) return false;
 
+            ApplyInitialUserData();
             // consume so Update() does not attempt a second join while this one is connecting
             return IsConsumed = _Room.Join(token, cipher);
         }
