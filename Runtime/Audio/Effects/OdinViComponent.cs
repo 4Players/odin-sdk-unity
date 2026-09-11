@@ -77,7 +77,8 @@ namespace OdinNative.Unity.Audio
                 {
                     if (_warn)
                     {
-                        OdinLog.LogWarning($"{gameObject.name} {nameof(OdinViComponent)} can not create/add {nameof(ViEffect)} without a pipeline");
+                        // no pipeline is a regular state, e.g. an encoder before the room is joined
+                        OdinLog.LogInfo($"{gameObject.name} {nameof(OdinViComponent)} can not create/add {nameof(ViEffect)} without a pipeline");
                         _warn = false;
                     }
                     return;

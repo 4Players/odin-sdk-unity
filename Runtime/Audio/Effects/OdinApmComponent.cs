@@ -78,7 +78,8 @@ namespace OdinNative.Unity.Audio
                 {
                     if (_warn)
                     {
-                        OdinLog.LogWarning($"{gameObject.name} {nameof(OdinApmComponent)} can not create/add {nameof(ApmEffect)} without a pipeline");
+                        // no pipeline is a regular state, e.g. an encoder before the room is joined
+                        OdinLog.LogInfo($"{gameObject.name} {nameof(OdinApmComponent)} can not create/add {nameof(ApmEffect)} without a pipeline");
                         _warn = false;
                     }
                     return;

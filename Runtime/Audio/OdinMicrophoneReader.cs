@@ -5,6 +5,7 @@ using OdinNative.Wrapper;
 using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 #if PLATFORM_ANDROID || UNITY_ANDROID
 using UnityEngine.Android;
 #endif
@@ -105,6 +106,7 @@ namespace OdinNative.Unity.Audio
         void OnEnable()
         {
             AudioSettings.OnAudioConfigurationChanged += AudioSettings_OnAudioConfigurationChanged;
+            SceneManager.sceneLoaded += SceneManager_OnSceneLoaded;
             if (InputClip != null && Microphone.IsRecording(InputDevice)) IsStreaming = true;
 
             OnMicrophoneData += PushAudio;
@@ -295,7 +297,11 @@ namespace OdinNative.Unity.Audio
             IsStreaming = false;
             OnMicrophoneData -= PushAudio;
             AudioSettings.OnAudioConfigurationChanged -= AudioSettings_OnAudioConfigurationChanged;
+            SceneManager.sceneLoaded -= SceneManager_OnSceneLoaded;
         }
+
+        // loading a scene blocks the main thread while the device keeps capturing
+        private void SceneManager_OnSceneLoaded(Scene scene, LoadSceneMode mode) => _SceneLoadedSinceLastPull = true;
 
         void OnDestroy()
         {
@@ -351,6 +357,7 @@ namespace OdinNative.Unity.Audio
         /// </summary>
         private const float MaxDrainSeconds = 0.2f;
         private float _LastDrainWarningTime = float.NegativeInfinity;
+        private bool _SceneLoadedSinceLastPull;
         private static readonly global::Unity.Profiling.ProfilerMarker GetDataMarker = new global::Unity.Profiling.ProfilerMarker("ODIN.Microphone.GetData");
         private static readonly global::Unity.Profiling.ProfilerMarker DispatchAudioMarker = new global::Unity.Profiling.ProfilerMarker("ODIN.Microphone.DispatchAudio");
 
@@ -406,6 +413,10 @@ namespace OdinNative.Unity.Audio
                 return;
             }
 
+            // a stall caused by a scene load is expected, any other stall is worth a warning
+            bool sceneLoaded = _SceneLoadedSinceLastPull;
+            _SceneLoadedSinceLastPull = false;
+
             int newPosition = Microphone.GetPosition(InputDevice);
             // device is not recording or buffer got collected
             if (_MicPosition == newPosition || MicBuffers == null) return;
@@ -429,10 +440,13 @@ namespace OdinNative.Unity.Audio
             if (dataToRead > maxFramesPerPull)
             {
                 int skip = dataToRead - maxFramesPerPull;
-                if (Time.unscaledTime - _LastDrainWarningTime >= 1f)
+                string dropMessage = $"{nameof(OdinMicrophoneReader)} dropping {skip} captured frames ({(float)skip / InputClip.frequency:0.00}s) to catch up after a stall";
+                if (sceneLoaded)
+                    OdinLog.LogInfo($"{dropMessage} caused by a scene load");
+                else if (Time.unscaledTime - _LastDrainWarningTime >= 1f)
                 {
                     _LastDrainWarningTime = Time.unscaledTime;
-                    OdinLog.LogWarning($"{nameof(OdinMicrophoneReader)} dropping {skip} captured frames ({(float)skip / InputClip.frequency:0.00}s) to catch up after a stall");
+                    OdinLog.LogWarning(dropMessage);
                 }
                 _MicPosition = (_MicPosition + skip) % InputClip.samples;
                 dataToRead = maxFramesPerPull;
