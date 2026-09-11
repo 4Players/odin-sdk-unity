@@ -1,6 +1,6 @@
 {
   "name": "io.fourplayers.odin",
-  "version": "20206.0.0",
+  "version": "20206.1.0",
   "displayName": "4Players ODIN",
   "description": "A Unity integration plugin to integrate 4Players ODIN technology into your game.",
   "unity": "2022.3",
