@@ -36,7 +36,14 @@ namespace OdinNative.Wrapper
         /// </summary>
         public MediaPipeline Pipeline { get; set; }
 
+        /// <summary>
+        /// Channels the encoder currently has a position for and therefore transmits on
+        /// </summary>
+        /// <remarks>Tracks <see cref="SetPosition"/>, <see cref="ClearPosition"/> and <see cref="SetChannels"/></remarks>
         public Utility.ChannelMask ChannelMask { get; private set; }
+        /// <summary>
+        /// Last position set with <see cref="SetPosition"/>
+        /// </summary>
         public OdinPosition Position { get; private set; }
         public byte[] AddtionalData { get; private set; }
 
@@ -104,6 +111,9 @@ namespace OdinNative.Wrapper
         /// <summary>
         /// Set native position in channel 
         /// </summary>
+        /// <remarks>The encoder transmits on every channel it has a position for, see <see cref="ClearPosition"/> to stop transmitting on a channel.</remarks>
+        /// <param name="mask">channels to set the position for</param>
+        /// <param name="position">3d position</param>
         /// <returns>3d position</returns>
         public OdinPosition SetPosition(Utility.ChannelMask mask, OdinPosition position)
         {
@@ -112,21 +122,46 @@ namespace OdinNative.Wrapper
             if (Handle.IsAlive == false) return position;
             var result = Odin.Library.Methods.EncoderSetPosition(Handle, mask, position);
             OdinLog.Assert(Utility.IsOk(result), $"{nameof(Odin.Library.Methods.EncoderSetPosition)} in {nameof(MediaEncoder.SetPosition)}: {Utility.OdinLastErrorString()} (code {result})");
+            if (Utility.IsOk(result))
+                ChannelMask |= mask;
             return Position = position;
+        }
+
+        /// <summary>
+        /// Clear native position in channel
+        /// </summary>
+        /// <remarks>The encoder stops transmitting on the cleared channels until a position is set again with <see cref="SetPosition"/>.</remarks>
+        /// <param name="mask">channels to clear the position of</param>
+        /// <returns>true on success or false</returns>
+        public bool ClearPosition(Utility.ChannelMask mask)
+        {
+            OdinLog.Assert(Handle.IsAlive, $"{nameof(ClearPosition)} {nameof(MediaEncoder)} handle is released");
+
+            if (Handle.IsAlive == false) return false;
+            var result = Odin.Library.Methods.EncoderClearPosition(Handle, mask);
+            OdinLog.Assert(Utility.IsOk(result), $"{nameof(Odin.Library.Methods.EncoderClearPosition)} in {nameof(MediaEncoder.ClearPosition)}: {Utility.OdinLastErrorString()} (code {result})");
+            if (Utility.IsOk(result))
+                ChannelMask &= ~mask;
+            return Utility.IsOk(result);
         }
 
         /// <summary>
         /// Set active native channels
         /// </summary>
+        /// <remarks>Sets the last <see cref="Position"/> for the channels in <paramref name="mask"/> and clears the position of all other channels.</remarks>
         /// <returns>channel mask</returns>
         public Utility.ChannelMask SetChannels(Utility.ChannelMask mask)
         {
             OdinLog.Assert(Handle.IsAlive, $"{nameof(SetChannels)} {nameof(MediaEncoder)} handle is released");
 
             if (Handle.IsAlive == false) return ChannelMask = Utility.ChannelMask.None;
-            var result = Odin.Library.Methods.EncoderSetPosition(Handle, mask, Position);
-            OdinLog.Assert(Utility.IsOk(result), $"{nameof(Odin.Library.Methods.EncoderSetPosition)} in {nameof(MediaEncoder.SetChannels)}: {Utility.OdinLastErrorString()} (code {result})");
-            return ChannelMask = mask;
+            // channels outside of the mask would keep transmitting with their previous position
+            Utility.ChannelMask removed = ChannelMask & ~mask;
+            if (removed != Utility.ChannelMask.None)
+                ClearPosition(removed);
+            if (mask != Utility.ChannelMask.None)
+                SetPosition(mask, Position);
+            return ChannelMask;
         }
 
         /// <summary>
