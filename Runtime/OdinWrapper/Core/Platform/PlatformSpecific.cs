@@ -125,6 +125,15 @@ namespace OdinNative.Core.Platform
                     location = GetLocationWindows(handle) ?? name;
                     return true;
                 case SupportedPlatform.Android:
+                    // RTLD_NODELETE: keep the library mapped across dlclose/dlopen cycles (ReloadLibrary).
+                    // The native runtime allocates one pthread TLS key per thread_local and never frees them;
+                    // bionic caps a process at 128 keys, so a real unload/reload leaks ~20 keys per cycle and
+                    // eventually aborts with "fatal runtime error: out of TLS keys".
+                    handle = NativeUnixMehods.dlopen(name, 2 /* RTLD_NOW */ | 0x1000 /* RTLD_NODELETE */);
+                    if (handle == IntPtr.Zero)
+                        goto default;
+                    location = name;
+                    return true;
                 case SupportedPlatform.iOS:
                 case SupportedPlatform.Linux:
                 case SupportedPlatform.MacOSX:
