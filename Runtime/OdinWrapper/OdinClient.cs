@@ -142,7 +142,7 @@ namespace OdinNative.Wrapper
                 var room = _Rooms[(ulong)info.RawRoomHandle];
                 if (room == null) return;
 
-                var socket = room.Sockets.GetOrAdd((ulong)socket_id, (k) => new Socket.Socket(room));
+                var socket = room.Sockets.GetOrAdd((ulong)socket_id, (k) => Socket.Socket.FromNative(room, (IntPtr)k));
                 room.OnSocketReceived(new SocketMessageEventArgs()
                 {
                     Socket = socket,

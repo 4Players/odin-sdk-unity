@@ -1151,15 +1151,26 @@ namespace OdinNative.Core.Imports
         /// <remarks>
         /// OdinError odin_socket_send(struct OdinSocket *socket, const uint8_t* message, uint32_t message_length);
         /// </remarks>
-        public OdinError SocketSend(OdinSocketHandle socket, byte[] message)
+        public OdinError SocketSend(OdinSocketHandle socket, byte[] message) => SocketSend(socket, message, 0, message?.Length ?? 0);
+
+        /// <summary>
+        /// <see cref="OdinNative.Core.Imports.NativeLibraryMethods.OdinSocketSendDelegate"/>
+        /// </summary>
+        /// <remarks>
+        /// Sends <paramref name="count"/> bytes starting at <paramref name="offset"/> without copying the managed buffer
+        /// </remarks>
+        public OdinError SocketSend(OdinSocketHandle socket, byte[] message, int offset, int count)
         {
+            if (message == null || offset < 0 || count < 0 || offset + count > message.Length)
+                return OdinError.ODIN_ERROR_ARGUMENT_OUT_OF_BOUNDS;
+
             _DbgTrace();
             using (Lock)
             {
                 GCHandle handle = GCHandle.Alloc(message, GCHandleType.Pinned);
                 try
                 {
-                    return _OdinSocketSend(socket, handle.AddrOfPinnedObject(), (uint)message.Length);
+                    return _OdinSocketSend(socket, IntPtr.Add(handle.AddrOfPinnedObject(), offset), (uint)count);
                 }
                 finally
                 {

@@ -336,7 +336,7 @@ namespace OdinNative.Wrapper.Room
 
             byte[] socketPayload = Utility.GetNativeBuffer(bytesPtr, bytesLength);
 
-            var socket = Sockets.GetOrAdd((ulong)socketHandle, (k) => new Socket.Socket(this));
+            var socket = Sockets.GetOrAdd((ulong)socketHandle, (k) => Socket.Socket.FromNative(this, (IntPtr)k));
             this.OnSocket?.Invoke(this, new SocketMessageEventArgs()
             {
                 Socket = socket,
