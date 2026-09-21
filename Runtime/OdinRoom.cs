@@ -80,8 +80,32 @@ namespace OdinNative.Unity
         public const uint DefaultSampleRate = 48000;
 
         /// <summary>
-        /// Playback samplerate reported by Unity, or <see cref="DefaultSampleRate"/> when the
-        /// Unity audio engine is disabled.
+        /// Samplerate to use for rooms, encoders and decoders instead of the one reported by Unity.
+        /// 0 (default) queries Unity and falls back to <see cref="DefaultSampleRate"/> when the Unity
+        /// audio engine is disabled.
+        /// </summary>
+        /// <remarks>
+        /// Projects that drive FMOD or Wwise with the Unity audio engine disabled set this to the
+        /// samplerate of their audio engine. Set it before the scene with the <see cref="OdinRoom"/>
+        /// loads, e.g. from a method with <see cref="RuntimeInitializeOnLoadMethodAttribute"/>,
+        /// since <see cref="OdinRoom"/> and <see cref="OdinEncoder"/> read <see cref="OutputSampleRate"/>
+        /// in <c>Awake</c>.
+        /// </remarks>
+        public static uint SampleRateOverride { get; set; }
+
+        /// <summary>
+        /// True while the Unity audio engine is disabled (Project Settings > Audio > Disable Unity Audio).
+        /// </summary>
+        /// <remarks>
+        /// Queries <see cref="AudioSettings.GetConfiguration"/>, which reports a samplerate of 0 in that
+        /// state without logging, unlike <see cref="AudioSettings.outputSampleRate"/> which logs a
+        /// warning on every read.
+        /// </remarks>
+        public static bool IsUnityAudioDisabled => AudioSettings.GetConfiguration().sampleRate <= 0;
+
+        /// <summary>
+        /// <see cref="SampleRateOverride"/> if set, otherwise the playback samplerate reported by Unity,
+        /// or <see cref="DefaultSampleRate"/> when the Unity audio engine is disabled.
         /// </summary>
         /// <remarks>
         /// Unity reports 0 while the audio engine is disabled, which projects driving FMOD or Wwise
@@ -91,7 +115,8 @@ namespace OdinNative.Unity
         {
             get
             {
-                int rate = AudioSettings.outputSampleRate;
+                if (SampleRateOverride > 0) return SampleRateOverride;
+                int rate = AudioSettings.GetConfiguration().sampleRate;
                 return rate > 0 ? (uint)rate : DefaultSampleRate;
             }
         }

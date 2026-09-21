@@ -32,7 +32,7 @@ namespace OdinNative.Unity.Samples
         /// <remarks>we recommend to check the <see href="https://docs.unity3d.com/ScriptReference/AudioSettings-driverCapabilities.html">driverCapabilities</see> on input for encoder and output for decoder</remarks>
         private void Awake()
         {
-            UnitySamplerate = AudioSettings.outputSampleRate  == 0 ? 48000 : (uint)AudioSettings.outputSampleRate;
+            UnitySamplerate = OdinRoom.OutputSampleRate;
             UnityIsStereo = AudioSettings.speakerMode >= AudioSpeakerMode.Stereo;
         }
 

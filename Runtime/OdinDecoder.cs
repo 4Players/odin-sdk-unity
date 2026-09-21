@@ -54,8 +54,7 @@ namespace OdinNative.Unity
         public AudioSource Playback;
 
         /// <summary>
-        /// Playback samplerate reported by Unity, or <see cref="OdinRoom.DefaultSampleRate"/> when the
-        /// Unity audio engine is disabled.
+        /// Playback samplerate, see <see cref="OdinRoom.OutputSampleRate"/>.
         /// </summary>
         /// <remarks>
         /// Passing Unity's reported 0 on produced an AudioClip.Create call with zero length and zero
@@ -376,9 +375,9 @@ namespace OdinNative.Unity
             // Unity's audio engine can be switched off entirely, which projects driving FMOD or Wwise
             // commonly do. AudioClip.Create is not valid in that state: it walks an uninitialised
             // pointer inside Unity and takes the process down with an access violation. The raw
-            // samplerate is the signal for it - OutSampleRate deliberately masks the zero, because the
-            // native encoder and decoder still need a usable rate.
-            if (AudioSettings.outputSampleRate <= 0)
+            // samplerate reported by Unity is the signal for it - OutSampleRate deliberately masks the
+            // zero, because the native encoder and decoder still need a usable rate.
+            if (OdinRoom.IsUnityAudioDisabled)
             {
                 // a clip from before the engine went away is useless, and dropping it keeps the
                 // frame update's guard from running on a dead one
