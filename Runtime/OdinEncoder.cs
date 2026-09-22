@@ -44,7 +44,7 @@ namespace OdinNative.Unity
         public MonoBehaviour AudioProvider;
 
         /// <summary>
-        /// Encoder samplerate. Auto-set from <see cref="AudioProvider"/> samplerate if it is an <see cref="OdinMicrophoneReader"/>.
+        /// Input PCM samplerate. Known audio providers supply their actual clip format; zero defaults to OdinRoom.OutputSampleRate.
         /// </summary>
         public uint Samplerate;
         /// <summary>
@@ -73,15 +73,13 @@ namespace OdinNative.Unity
 
         void Awake()
         {
-            Samplerate = OdinRoom.OutputSampleRate;
-            Stereo = false;
+            if (Samplerate == 0) Samplerate = OdinRoom.OutputSampleRate;
         }
 
         void OnEnable()
         {
             if (AudioProvider is OdinMicrophoneReader mic)
             {
-                Samplerate = (uint)mic.Samplerate;
                 mic.OnAudioData.AddListener(PushAudio);
             }
             else if (AudioProvider is OdinAudioReader reader)
@@ -117,28 +115,51 @@ namespace OdinNative.Unity
         public void CreateEncoder()
         {
             if (Room == null || !Room.IsJoined) return;
-            // a disposed encoder (e.g. from a recreated room) has to be replaced
-            if (Encoder != null && Encoder.IsAlive) return;
-            Encoder = null;
-
-            // resolve the actual provider rate now - a microphone may have clamped
-            // the requested samplerate to its device capabilities in the meantime
-            if (AudioProvider is OdinMicrophoneReader mic)
-                Samplerate = (uint)mic.MicrophoneSamplerate;
-            else if (AudioProvider is OdinAudioReader reader && reader.InputClip != null)
-                Samplerate = (uint)reader.InputClip.frequency;
+            if (!ResolveInputFormat()) return;
+            if (Encoder != null && Encoder.IsAlive && Encoder.Samplerate == Samplerate && Encoder.Stereo == Stereo) return;
+            var old = Encoder;
 
             if (Room.LinkInputMedia(Samplerate, Stereo, out var encoder))
             {
+                if (old != null)
+                {
+                    encoder.SetChannels(old.ChannelMask);
+                    if (old.ChannelMask != Utility.ChannelMask.None)
+                        encoder.SetPosition(old.ChannelMask, old.Position);
+                }
                 Encoder = encoder;
+                if (old != null) Room.UnlinkInputMedia(old);
                 Id = encoder.Id;
                 Parent = Room?.Self;
 
-                if (TryGetComponent(out OdinAudioMap map) && (map.MapSelector & OdinAudioMap.MapType.Encoder) != 0)
+                if (old == null && TryGetComponent(out OdinAudioMap map) && (map.MapSelector & OdinAudioMap.MapType.Encoder) != 0)
                     Encoder.SetChannels(map.ChannelMask);
             }
             else
                 OdinLog.LogError($"{nameof(OdinEncoder)} on \"{gameObject.name}\" could not create encoder in room");
+        }
+
+        private bool ResolveInputFormat()
+        {
+            int channels = Stereo ? 2 : 1;
+            if (AudioProvider is OdinMicrophoneReader mic)
+            {
+                Samplerate = (uint)mic.MicrophoneSamplerate;
+                channels = mic.MicrophoneChannels;
+            }
+            else if (AudioProvider is OdinAudioReader reader)
+            {
+                if (reader.InputClip == null) return false;
+                Samplerate = (uint)reader.InputClip.frequency;
+                channels = reader.InputClip.channels;
+            }
+            if (channels != 1 && channels != 2)
+            {
+                OdinLog.LogError($"{nameof(OdinEncoder)} needs mono or stereo PCM; downmix the {channels}-channel source first.");
+                return false;
+            }
+            Stereo = channels == 2;
+            return Samplerate > 0;
         }
 
         /// <summary>
@@ -150,10 +171,12 @@ namespace OdinNative.Unity
         /// <param name="isSilent">silence flag</param>
         public virtual void PushAudio(float[] buffer, int position, bool isSilent)
         {
-            // during a room rejoin the old encoder is already disposed while
-            // OnRoomJoined has not created the replacement yet
-            if (Encoder == null || Encoder.IsAlive == false) return;
             if (Room == null || Room.IsJoined == false) return;
+            // A microphone restart or clip replacement can change the input format. Resolve it
+            // immediately before the first new buffer, not from the output-device notification.
+            if (!ResolveInputFormat()) return;
+            CreateEncoder();
+            if (Encoder == null || !Encoder.IsAlive || Encoder.Samplerate != Samplerate || Encoder.Stereo != Stereo) return;
             Room.SendAudio(buffer, Encoder, isSilent);
         }
 

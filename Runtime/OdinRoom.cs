@@ -1,5 +1,6 @@
 using OdinNative.Core.Imports;
 using OdinNative.Unity.Events;
+using OdinNative.Unity.Audio;
 using OdinNative.Wrapper;
 using OdinNative.Wrapper.Media;
 using OdinNative.Wrapper.Peer.Rpc;
@@ -827,11 +828,46 @@ namespace OdinNative.Unity
             var roomApi = _Room as Room;
             if (roomApi == null || roomApi.IsJoined == false) return;
 
-            // convenience: create the default input media on first pushed audio
-            if (AutoCreateMedia && roomApi.Encoders.IsEmpty)
-                LinkInputMedia(Samplerate, IsStereo, out _);
+            // Keep the legacy room proxy's capture format independent of the output device.
+            if (AutoCreateMedia && (_proxyEncoder != null || roomApi.Encoders.IsEmpty))
+                if (!EnsureProxyEncoder()) return;
 
             roomApi.SendAudio(buffer, isSilent);
+        }
+
+        private MediaEncoder _proxyEncoder;
+
+        // ProxyAudio has no format argument. Local Unity providers supply their format;
+        // external providers should create their encoder explicitly or use OdinEncoder.
+        private bool EnsureProxyEncoder()
+        {
+            uint rate = Samplerate;
+            int channels = 1;
+            if (TryGetComponent(out OdinMicrophoneReader mic))
+            {
+                rate = (uint)mic.MicrophoneSamplerate;
+                channels = mic.MicrophoneChannels;
+            }
+            else if (TryGetComponent(out OdinAudioReader reader) && reader.InputClip != null)
+            {
+                rate = (uint)reader.InputClip.frequency;
+                channels = reader.InputClip.channels;
+            }
+            if (channels != 1 && channels != 2) return false;
+            bool stereo = channels == 2;
+            if (_proxyEncoder != null && _proxyEncoder.IsAlive && _proxyEncoder.Samplerate == rate && _proxyEncoder.Stereo == stereo)
+                return true;
+            if (!LinkInputMedia(rate, stereo, out var encoder)) return false;
+            var old = _proxyEncoder;
+            if (old != null)
+            {
+                encoder.SetChannels(old.ChannelMask);
+                if (old.ChannelMask != Core.Utility.ChannelMask.None)
+                    encoder.SetPosition(old.ChannelMask, old.Position);
+            }
+            _proxyEncoder = encoder;
+            if (old != null) UnlinkInputMedia(old);
+            return true;
         }
 
         /// <summary>
@@ -1013,6 +1049,7 @@ namespace OdinNative.Unity
 
             var room = _Room;
             _Room = null;
+            _proxyEncoder = null;
             room.OnRoomStatusChanged -= Room_OnConnectionStatusChanged;
             room.OnRoomJoined -= Room_OnRoomJoined;
             room.OnPeerJoined -= Room_OnPeerJoined;
