@@ -765,6 +765,10 @@ namespace OdinNative.Wrapper.Room
                         PeerChangedObject peerChangedObjectRoot = JSONParser.FromJson<PeerChangedObject>(json);
                         PeerChangedRpc(peerChangedObjectRoot.Values);
                         break;
+                    case MessageReceivedObject.EVENTNAME:
+                        MessageReceivedObject messageReceivedObjectRoot = JSONParser.FromJson<MessageReceivedObject>(json);
+                        MessageReceivedRpc(messageReceivedObjectRoot.Values);
+                        break;
                     #endregion PeerRpc
 
                     default:
@@ -808,6 +812,11 @@ namespace OdinNative.Wrapper.Room
             this.Name = values.room_name;
             this.Customer = values.customer;
             OnRoomJoined?.Invoke(this, values);
+        }
+
+        private void MessageReceivedRpc(MessageReceivedObjectContainer values)
+        {
+            OnMessageReceived?.Invoke(this, values.sender_peer_id, values.GetPayload());
         }
 
         private void PeerLeftRpc(PeerLeftObjectContainer values)
@@ -1250,12 +1259,35 @@ namespace OdinNative.Wrapper.Room
         }
 
         /// <summary>
-        /// Send a <c>"message"</c> rpc to the server to broadcast the message.
+        /// Send a <c>"SendMessage"</c> rpc to the server to broadcast the message to all peers in the room.
         /// </summary>
+        /// <remarks>Peers receive it as <see cref="OnMessageReceived"/> with the UTF8 bytes of the string</remarks>
         /// <param name="message">UTF8 string</param>
         public virtual bool SendMessage(string message)
         {
-            return SendRpc(new { message = message});
+            return SendMessage(Encoding.UTF8.GetBytes(message ?? string.Empty));
+        }
+
+        /// <summary>
+        /// Send a <c>"SendMessage"</c> rpc to the server with arbitrary bytes.
+        /// </summary>
+        /// <remarks>
+        /// Messages are delivered reliably and in order over the signaling channel and are not affected by
+        /// channel masks or positions. Peers receive them as <see cref="OnMessageReceived"/>.
+        /// </remarks>
+        /// <param name="message">arbitrary data</param>
+        /// <param name="peerIds">receiving peers or null to broadcast to all peers in the room</param>
+        /// <returns>true on success or false</returns>
+        public virtual bool SendMessage(byte[] message, IEnumerable<uint> peerIds = null)
+        {
+            if (message == null) return false;
+
+            // peer_ids is optional on the wire: leave it out entirely for a broadcast
+            var payload = new Dictionary<string, object> { { "message", message } };
+            if (peerIds != null)
+                payload["peer_ids"] = peerIds.ToArray();
+
+            return SendRpc(new Dictionary<string, object> { { "SendMessage", payload } });
         }
 
         /// <summary>
