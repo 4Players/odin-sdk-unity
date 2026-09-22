@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using OdinNative.Wrapper.Media;
 using UnityEngine;
 using static OdinNative.Core.Imports.NativeBindings;
@@ -11,10 +11,11 @@ namespace OdinNative.Unity.Audio
     /// This class is an effect in the odin audio pipeline to loopback pushed audio to apm.
     /// </para>
     /// </summary>
-    /// <remarks>This <see cref="PipelineEffect"/> is a <see cref="OdinNative.Wrapper.Media.CustomEffect{T}"/> and requires a <see cref="OdinNative.Unity.Audio.OdinApmComponent"/> in the pipeline.</remarks>
+    /// <remarks>Attach to a playback/decoder pipeline and assign the APM on the capture/encoder pipeline.
+    /// This tap precedes Unity mixing, volume and spatialization; a mixer loopback is preferable when available.
+    /// Do not feed several decoder taps independently into one APM; mix their playback reference first.</remarks>
     [HelpURL("https://docs.4players.io/voice/unity/next/api/OdinNative.Unity.Audio/OdinECLoopbackComponent/")]
     [AddComponentMenu("Odin/Audio/Effect/EC Loopback")]
-    [RequireComponent(typeof(OdinApmComponent))]
     public class OdinECLoopbackComponent : OdinCustomEffectUnityComponentBase<IntPtr>
     {
         public OdinApmComponent ApmEffect;
@@ -23,12 +24,12 @@ namespace OdinNative.Unity.Audio
         {
             base.Start();
 
-            if (ApmEffect == null)
-                ApmEffect = this.gameObject.GetComponent<OdinApmComponent>();
+            if (ApmEffect != null)
+                ApmEffect.ConfigurePlayback(48000, true);
 
             if (ApmEffect == null && _warn)
             {
-                OdinLog.LogInfo($"{gameObject.name} does not have a {nameof(OdinApmComponent)} to call update playback for this {this.GetType()}");
+                OdinLog.LogError($"{gameObject.name}: assign the capture pipeline's {nameof(OdinApmComponent)} as the playback reference target.");
                 this.enabled = false;
             }
         }
@@ -42,8 +43,15 @@ namespace OdinNative.Unity.Audio
             {
                 Span<float> audioBuffer = audio.GetBuffer();
                 var loopbackBuffer = new float[audioBuffer.Length];
-                if (audioBuffer.TryCopyTo(loopbackBuffer))
-                    UnityQueue.Enqueue(() => ApmEffect.UpdateApmPlayback(loopbackBuffer));
+                // Pipeline callbacks always contain 20 ms at 48 kHz stereo, before decoder egress.
+                // The target APM belongs to the capture pipeline, not this playback pipeline.
+                if (!isSilent) audioBuffer.CopyTo(loopbackBuffer);
+                var target = ApmEffect;
+                UnityQueue.Enqueue(() =>
+                {
+                    if (target != null && target.isActiveAndEnabled)
+                        target.UpdateApmPlayback(loopbackBuffer, 48000, true);
+                });
             }
         }
     }
