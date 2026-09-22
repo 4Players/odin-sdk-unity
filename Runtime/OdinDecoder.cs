@@ -54,23 +54,26 @@ namespace OdinNative.Unity
         public AudioSource Playback;
 
         /// <summary>
-        /// Playback samplerate, see <see cref="OdinRoom.OutputSampleRate"/>.
+        /// Samplerate of the decoded PCM, or <see cref="OdinRoom.OutputSampleRate"/> before a decoder is assigned.
         /// </summary>
         /// <remarks>
-        /// Passing Unity's reported 0 on produced an AudioClip.Create call with zero length and zero
-        /// samplerate, which crashes inside native code, and a zero samplerate in the APM config.
+        /// The native decoder keeps its creation rate across output device changes. Keep the clip and
+        /// read buffers at that rate; Unity resamples the clip for the current output device.
         /// </remarks>
-        public int OutSampleRate => (int)OdinRoom.OutputSampleRate;
+        public int OutSampleRate => (int)(MediaDecoder?.Samplerate ?? OdinRoom.OutputSampleRate);
 
         /// <summary>
-        /// Gets the playback channel count derived from <see href="https://docs.unity3d.com/ScriptReference/AudioSettings-speakerMode.html">AudioSettings.speakerMode</see>, clamped to stereo (1 or 2).
+        /// Channel count of the decoded PCM, independent of the output device's speaker mode.
         /// </summary>
-        public int OutChannels => (int)(AudioSettings.speakerMode >= AudioSpeakerMode.Stereo ? AudioSpeakerMode.Stereo : AudioSpeakerMode.Mono);
+        public int OutChannels => (MediaDecoder?.Stereo ?? Room?.IsStereo ?? false) ? 2 : 1;
 
         /// <summary>
         /// The <see cref="OdinRoom"/> this decoder belongs to
         /// </summary>
         public OdinRoom Room;
+        /// <summary>Recreate room-owned native media when Unity's output format changes.</summary>
+        /// <remarks>Disabled for decoders created with an explicit format through OdinPeer.</remarks>
+        public bool FollowOutputDevice = true;
         /// <summary>
         /// The peer id this decoder plays back audio for
         /// </summary>
@@ -324,7 +327,8 @@ namespace OdinNative.Unity
         void Awake()
         {
             EventQueue = new ConcurrentQueue<KeyValuePair<object, MediaActiveStateChangedEventArgs>>();
-            OnActiveStateChanged = new MediaActiveStateChangedProxy();
+            if (OnActiveStateChanged == null)
+                OnActiveStateChanged = new MediaActiveStateChangedProxy();
 
             this.enabled = false;
         }
@@ -355,6 +359,7 @@ namespace OdinNative.Unity
             Playback.outputAudioMixerGroup = AudioMixerGroup;
             Playback.loop = true;
 
+            Room?.RefreshDecoderOutput(this);
             SetupPlaybackClip();
 
             AudioSettings.OnAudioConfigurationChanged += AudioSettings_OnAudioConfigurationChanged;
@@ -407,19 +412,19 @@ namespace OdinNative.Unity
                 return;
             }
             // see Unity Issue 819365,1246661
-            SpatialClip = AudioClip.Create("spatialClip", clipSamples, 1, OutSampleRate, false);
+            SpatialClip = AudioClip.Create("spatialClip", clipSamples, OutChannels, OutSampleRate, false);
             OdinLog.LogInfo($"AudioClip \"{SpatialClip.name}\" {clipSamples}@{OutSampleRate}Hz, {SpatialClip.length}s {SpatialClip.channels} channels {SpatialClip.samples}@{SpatialClip.frequency}Hz");
             ResetAudioClip();
 
             // sized like the per-FixedUpdate read in ReadOdinAudioData, so the first
             // read does not warn and reallocate
-            _AudioBuffer = new float[Mathf.FloorToInt(Time.fixedUnscaledDeltaTime * OutSampleRate)];
+            _AudioBuffer = new float[Mathf.FloorToInt(Time.fixedUnscaledDeltaTime * OutSampleRate) * OutChannels];
 
             Playback.clip = SpatialClip;
             if (Playback.isPlaying == false)
                 Playback.Play();
 
-            _ClipBuffer = new float[ClipSamples];
+            _ClipBuffer = new float[ClipSamples * OutChannels];
 
             _FrameBufferEndPos = GetTargetFrameBufferEndPosition();
             _FrameBufferEndPos %= ClipSamples;
@@ -432,14 +437,18 @@ namespace OdinNative.Unity
         /// <param name="deviceWasChanged">true if an actual device change (not just a config reset) triggered this</param>
         private void AudioSettings_OnAudioConfigurationChanged(bool deviceWasChanged)
         {
-            if (deviceWasChanged == false || isActiveAndEnabled == false) return;
+            if (isActiveAndEnabled == false) return;
 
-            OdinLog.LogInfo($"{nameof(OdinDecoder)} ({MediaDecoder?.Id}) audio device changed, recreating playback clip");
+            Room?.RefreshDecoderOutput(this);
+            OdinLog.LogInfo($"{nameof(OdinDecoder)} ({MediaDecoder?.Id}) audio configuration changed, recreating playback clip");
             SetupPlaybackClip();
         }
 
         void Reset()
         {
+            if (OnActiveStateChanged == null)
+                OnActiveStateChanged = new MediaActiveStateChangedProxy();
+
             AutoDestroyAudioSource = true;
             AutoDestroyMediaStream = true;
             Activity = false;
@@ -478,7 +487,9 @@ namespace OdinNative.Unity
 
             // Self-guard a clip left empty/stale by a device change, in case the audio
             // configuration changed event above did not fire on the current platform
-            if (SpatialClip == null || SpatialClip.samples <= 0 || SpatialClip.samples != _ClipBuffer?.Length)
+            if (SpatialClip == null || SpatialClip.samples <= 0
+                || SpatialClip.samples * SpatialClip.channels != _ClipBuffer?.Length
+                || SpatialClip.frequency != OutSampleRate || SpatialClip.channels != OutChannels)
                 SetupPlaybackClip();
 
             // SetupPlaybackClip refuses to build a clip at an invalid samplerate. Without one there is
@@ -487,6 +498,7 @@ namespace OdinNative.Unity
 
             // Read => buffer
             ReadOdinAudioData();
+            if (isActiveAndEnabled == false || _IsDestroying || MediaDecoder == null) return;
 
             // Current audio buffer
             float audioBufferSize = GetFrameBufferSize();
@@ -504,7 +516,8 @@ namespace OdinNative.Unity
             if (MediaDecoder == null || MediaDecoder.IsPaused) return;
 
             // readBufferSize is based on the fixed unscaled delta time - we want to read "one frame" from the media stream
-            int readBufferSize = Mathf.FloorToInt(Time.fixedUnscaledDeltaTime * OutSampleRate);
+            int readFrames = Mathf.FloorToInt(Time.fixedUnscaledDeltaTime * OutSampleRate);
+            int readBufferSize = readFrames * OutChannels;
             if (_AudioBuffer == null || _AudioBuffer.Length != readBufferSize)
             {
                 OdinLog.LogWarning($"{nameof(OdinDecoder)} ({MediaDecoder?.Id}) change buffer from {_AudioBuffer?.Length ?? 0} to {readBufferSize}");
@@ -537,13 +550,12 @@ namespace OdinNative.Unity
             // mid-word if the skipped stretch sat inside one.
             for (int i = 0; i < readBufferSize; i++)
             {
-                int writePosition = _FrameBufferEndPos + i;
-                writePosition %= ClipSamples;
+                int writePosition = (_FrameBufferEndPos * OutChannels + i) % _ClipBuffer.Length;
                 _ClipBuffer[writePosition] = _AudioBuffer[i];
             }
 
             // Update the buffer end position
-            _FrameBufferEndPos += readBufferSize;
+            _FrameBufferEndPos += readFrames;
             _FrameBufferEndPos %= ClipSamples;
 
             // Only actual audio counts as "the stream is alive"; silence must not, or a decoder that
@@ -596,10 +608,10 @@ namespace OdinNative.Unity
         public virtual void SetAudioClipData()
         {
             // clean up any already played data from the clip buffer. Otherwise the playback will loop once no new data is inserted
-            int cleanUpCount = GetBufferDistance(_FrameBufferEndPos, CurrentClipPos);
+            int cleanUpCount = GetBufferDistance(_FrameBufferEndPos, CurrentClipPos) * OutChannels;
             for (int i = 0; i < cleanUpCount; i++)
             {
-                int cleanUpIndex = (_FrameBufferEndPos + i) % ClipSamples;
+                int cleanUpIndex = (_FrameBufferEndPos * OutChannels + i) % _ClipBuffer.Length;
                 _ClipBuffer[cleanUpIndex] = 0.0f;
             }
 
@@ -643,7 +655,7 @@ namespace OdinNative.Unity
         /// </summary>
         private void ResetAudioClip()
         {
-            SpatialClip.SetData(new float[ClipSamples], 0);
+            SpatialClip.SetData(new float[ClipSamples * OutChannels], 0);
         }
 
         void OnDisable()

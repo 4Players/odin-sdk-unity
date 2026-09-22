@@ -109,7 +109,13 @@ namespace OdinNative.Unity
         public OdinDecoder AddDecoderComponent(GameObject containerObject, ulong mediaId, bool enable = true)
         {
             if (Parent == null) return null;
-            return AddDecoderComponent(containerObject, mediaId, Parent.Samplerate, Parent.Stereo, enable);
+            var component = AddDecoderComponent(containerObject, mediaId, Parent.Samplerate, Parent.Stereo, false);
+            if (component != null)
+            {
+                component.FollowOutputDevice = true;
+                component.enabled = enable;
+            }
+            return component;
         }
 
         /// <summary>
@@ -138,6 +144,7 @@ namespace OdinNative.Unity
             decoderComponent.PeerId = Id;
             decoderComponent.Parent = GetBasePeer();
             decoderComponent.Id = mediaId;
+            decoderComponent.FollowOutputDevice = false;
             decoderComponent.SetDecoder(decoder);
             decoderComponent.AutoDestroyAudioSource = true;
             decoderComponent.enabled = enable;

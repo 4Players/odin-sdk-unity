@@ -87,11 +87,19 @@ namespace OdinNative.Unity
         /// <remarks>
         /// Projects that drive FMOD or Wwise with the Unity audio engine disabled set this to the
         /// samplerate of their audio engine. Set it before the scene with the <see cref="OdinRoom"/>
-        /// loads, e.g. from a method with <see cref="RuntimeInitializeOnLoadMethodAttribute"/>,
+        /// loads, e.g. from a method annotated with
+        /// <c>[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]</c>,
         /// since <see cref="OdinRoom"/> and <see cref="OdinEncoder"/> read <see cref="OutputSampleRate"/>
-        /// in <c>Awake</c>.
+        /// in <c>Awake</c>. The attribute's default <see cref="RuntimeInitializeLoadType.AfterSceneLoad"/>
+        /// runs after <c>Awake</c> and is too late to configure their samplerate.
         /// </remarks>
         public static uint SampleRateOverride { get; set; }
+
+        /// <summary>Optional output layout override for external audio engines; null follows Unity.</summary>
+        public static bool? StereoOverride { get; set; }
+        /// <summary>ODIN output layout, mono or stereo. Unity handles mixing to surround devices.</summary>
+        public static bool OutputStereo => StereoOverride ??
+            (AudioSettings.GetConfiguration().speakerMode >= AudioSpeakerMode.Stereo);
 
         /// <summary>
         /// True while the Unity audio engine is disabled (Project Settings > Audio > Disable Unity Audio).
@@ -123,7 +131,7 @@ namespace OdinNative.Unity
         /// <summary>
         /// Unity channel flag
         /// </summary>
-        /// <remarks>We let Unity resample/mix audio on demand and use only mono by default internally</remarks>
+        /// <remarks>Follows the output device for automatically created playback media.</remarks>
         public bool IsStereo { get; set; }
 
         /// <summary>
@@ -387,17 +395,15 @@ namespace OdinNative.Unity
         void Awake()
         {
             Samplerate = OutputSampleRate;
-            // we use Mono for convenience setup and less samples to init encoders/decoders
-            // even without a check to 'AudioSettings.speakerMode >= AudioSpeakerMode.Stereo;'
-            // Unity will resample and/or upmix, downmix on AudioClip<->AudioSource
-            // (on true with custom virtual channels override SetAudioClipData in OdinDecoder)
-            IsStereo = false;
+            IsStereo = OutputStereo;
 
             EventQueue = new ConcurrentQueue<KeyValuePair<object, EventArgs>>();
         }
 
         void OnEnable()
         {
+            RefreshOutputFormat();
+            AudioSettings.OnAudioConfigurationChanged += AudioSettings_OnAudioConfigurationChanged;
             Room room = new Room(Gateway, Samplerate, IsStereo);
             _Room = room;
 
@@ -462,13 +468,57 @@ namespace OdinNative.Unity
             {
                 // lost the race against a concurrent datagram, that thread raised the event
                 if (peer.Medias.ContainsKey(AutoDecoderMediaId)) return;
-                if (room.GetOrCreateDecoder(args.PeerId, AutoDecoderMediaId, out decoder) == false || decoder == null) return;
+                if (room.GetOrCreateDecoder(args.PeerId, AutoDecoderMediaId, Samplerate, IsStereo, out decoder) == false || decoder == null) return;
                 OnNativeDecoderCreated?.Invoke(room, args.PeerId, AutoDecoderMediaId);
             }
             // the wrapper routing already ran and dropped this datagram, so push it to the new decoder
             decoder.Push(args.Datagram, args.Payload.Length);
         }
         private readonly object _autoDecoderLock = new object();
+
+        private void AudioSettings_OnAudioConfigurationChanged(bool deviceWasChanged) => RefreshOutputFormat();
+
+        private void RefreshOutputFormat()
+        {
+            // Only the Unity thread queries AudioSettings. Datagram callbacks use these cached values.
+            lock (_autoDecoderLock)
+            {
+                Samplerate = OutputSampleRate;
+                IsStereo = OutputStereo;
+            }
+        }
+
+        internal void RefreshDecoderOutput(OdinDecoder component)
+        {
+            if (!component.FollowOutputDevice) return;
+            RefreshOutputFormat();
+            var old = component.MediaDecoder;
+            if (old == null || !old.IsAlive || (old.Samplerate == Samplerate && old.Stereo == IsStereo)) return;
+            var peer = old.Parent as PeerEntity;
+            if (peer == null) return; // manually owned decoders keep their explicitly supplied format
+
+            lock (_autoDecoderLock)
+            {
+                var replacement = MediaDecoder.Create(Samplerate, IsStereo);
+                if (replacement == null) return;
+                replacement.Id = old.Id;
+                replacement.Parent = old.Parent;
+                replacement.ListenChannelMask = old.ListenChannelMask;
+                replacement.IsPaused = old.IsPaused;
+                if (!peer.Medias.TryUpdate(old.Id, replacement, old))
+                {
+                    replacement.Dispose();
+                    return;
+                }
+                // A peer media can be referenced by more than one playback component.
+                component.SetDecoder(replacement);
+                if (_decoderRegistry.TryGetValue(component.PeerId, out var components))
+                    foreach (var other in components)
+                        if (other != null && ReferenceEquals(other.MediaDecoder, old))
+                            other.SetDecoder(replacement);
+                old.Dispose();
+            }
+        }
 
         [Obsolete("Not subscribed by the component; re-raises the wrapper event and would recurse if wired to the event it re-raises")]
         protected virtual void Room_OnDatagram(object sender, DatagramEventArgs args) => (_Room as Room)?.OnDatagramReceived(args);
@@ -877,7 +927,7 @@ namespace OdinNative.Unity
         /// <returns>new <see cref="MediaDecoder"/> or null</returns>
         public MediaDecoder CreateMediaDecoder(uint peerId)
         {
-            var decoder = _Room.CreateMediaDecoder(peerId);
+            var decoder = (_Room as Room)?.CreateDecoder(peerId, Samplerate, IsStereo);
             if (decoder != null)
                 this.OnNativeDecoderCreated?.Invoke(this, peerId, decoder.Id);
             return decoder;
@@ -958,6 +1008,7 @@ namespace OdinNative.Unity
 
         void OnDisable()
         {
+            AudioSettings.OnAudioConfigurationChanged -= AudioSettings_OnAudioConfigurationChanged;
             if(_Room == null) return;
 
             var room = _Room;

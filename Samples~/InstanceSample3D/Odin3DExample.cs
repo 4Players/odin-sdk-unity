@@ -21,20 +21,8 @@ namespace OdinNative.Unity.Samples
         private Color LastCubeColor;
         private UserData TestSelfUserdata;
         private OdinRoom _Room;
-        private uint UnitySamplerate;
-        private bool UnityIsStereo;
         [Space(10)]
         public bool AddExampleCustomComponent = false;
-
-        /// <summary>
-        /// Get Unity <see cref="AudioSettings"/> for playback to set the correct decoder. <seealso href="https://docs.unity3d.com/ScriptReference/AudioSettings.html"/>
-        /// </summary>
-        /// <remarks>we recommend to check the <see href="https://docs.unity3d.com/ScriptReference/AudioSettings-driverCapabilities.html">driverCapabilities</see> on input for encoder and output for decoder</remarks>
-        private void Awake()
-        {
-            UnitySamplerate = OdinRoom.OutputSampleRate;
-            UnityIsStereo = AudioSettings.speakerMode >= AudioSpeakerMode.Stereo;
-        }
 
         /// <summary>
         /// Init with two examples on how to join a room
@@ -223,7 +211,7 @@ namespace OdinNative.Unity.Samples
                 mediaObject.transform.parent = peerContainer.transform;
 
                 // we created OdinDecoder with AddDecoderComponent(...,enable: false) as disabled to handle custom changes first
-                var decoder = peer.AddDecoderComponent(mediaObject, args.MediaId, UnitySamplerate, UnityIsStereo, enable: false);
+                var decoder = peer.AddDecoderComponent(mediaObject, args.MediaId, enable: false);
                 // enable positional audio for AudioSource (AudioSource.spatialBlend)
                 decoder.SpatialBlend = 1.0f;
                 // listener to handle voice activity
